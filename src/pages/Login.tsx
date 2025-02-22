@@ -1,74 +1,75 @@
-
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { signInWithEmail } from "@/lib/supabase";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      const { error } = await signInWithEmail(email, password);
-      
-      if (error) throw error;
+    if (!email || !password) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      toast.success("Login realizado com sucesso!");
+    const { data, error } = await signInWithEmail(email, password);
+
+    if (error) {
+      toast({
+        title: "Erro ao fazer login",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Login realizado com sucesso!",
+      });
       navigate("/");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sage-50 to-white">
       <Card className="w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Login - SEFAZ TO</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">SIGACE</h1>
+        <p className="text-center text-gray-600 mb-6">Sistema de Gestão de Ações Contra o Estado - Tocantins</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="email"
               type="email"
+              id="email"
+              placeholder="seuemail@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Senha
-            </label>
+            <Label htmlFor="password">Senha</Label>
             <Input
-              id="password"
               type="password"
+              id="password"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
+          <Button type="submit" className="w-full">
+            Entrar
           </Button>
-          <p className="text-center text-sm text-gray-600">
-            Não possui uma conta?{" "}
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Cadastre-se
-            </Link>
-          </p>
         </form>
       </Card>
     </div>

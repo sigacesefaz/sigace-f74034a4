@@ -18,7 +18,7 @@ export function Navbar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <Link to="/" className="text-xl font-semibold text-gray-900">
-              SEFAZ TO
+              SIGACE
             </Link>
             <div className="hidden md:flex space-x-4">
               <Link to="/processes" className="text-gray-600 hover:text-gray-900">

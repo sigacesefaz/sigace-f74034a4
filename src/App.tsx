@@ -9,6 +9,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import ProcessList from "./pages/processes/ProcessList";
+import IntimationList from "./pages/intimations/IntimationList";
+import NotificationList from "./pages/notifications/NotificationList";
+import ReportList from "./pages/reports/ReportList";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "./lib/supabase";
 
@@ -53,6 +57,38 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Index />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/processes"
+            element={
+              <ProtectedRoute>
+                <ProcessList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/intimations"
+            element={
+              <ProtectedRoute>
+                <IntimationList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportList />
               </ProtectedRoute>
             }
           />
