@@ -9,6 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      intimations: {
+        Row: {
+          attachments: Json
+          content: string
+          court: string
+          court_division: string
+          created_at: string
+          created_by: string
+          deadline: string
+          history: Json
+          id: string
+          intimation_date: string
+          method: Database["public"]["Enums"]["intimation_method"]
+          observations: string | null
+          parties: Json
+          process_id: string
+          process_number: string
+          receipt: Json | null
+          related_appeal: Json | null
+          related_decision: Json | null
+          related_hearing: Json | null
+          response: string | null
+          status: Database["public"]["Enums"]["intimation_status"]
+          title: string
+          type: Database["public"]["Enums"]["intimation_type"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          attachments?: Json
+          content: string
+          court: string
+          court_division: string
+          created_at?: string
+          created_by: string
+          deadline: string
+          history?: Json
+          id?: string
+          intimation_date: string
+          method: Database["public"]["Enums"]["intimation_method"]
+          observations?: string | null
+          parties?: Json
+          process_id: string
+          process_number: string
+          receipt?: Json | null
+          related_appeal?: Json | null
+          related_decision?: Json | null
+          related_hearing?: Json | null
+          response?: string | null
+          status?: Database["public"]["Enums"]["intimation_status"]
+          title: string
+          type: Database["public"]["Enums"]["intimation_type"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          attachments?: Json
+          content?: string
+          court?: string
+          court_division?: string
+          created_at?: string
+          created_by?: string
+          deadline?: string
+          history?: Json
+          id?: string
+          intimation_date?: string
+          method?: Database["public"]["Enums"]["intimation_method"]
+          observations?: string | null
+          parties?: Json
+          process_id?: string
+          process_number?: string
+          receipt?: Json | null
+          related_appeal?: Json | null
+          related_decision?: Json | null
+          related_hearing?: Json | null
+          response?: string | null
+          status?: Database["public"]["Enums"]["intimation_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["intimation_type"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intimations_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processes: {
         Row: {
           attachments: string[] | null
@@ -113,6 +205,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      intimation_method: "official_gazette" | "mail" | "officer" | "electronic"
+      intimation_status: "pending" | "completed" | "expired"
+      intimation_type: "defense" | "hearing" | "payment" | "document" | "other"
       user_type: "internal" | "external"
     }
     CompositeTypes: {
