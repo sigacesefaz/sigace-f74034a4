@@ -9,6 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      processes: {
+        Row: {
+          attachments: string[] | null
+          court: string
+          created_at: string
+          defendant: string | null
+          defendant_document: string | null
+          description: string | null
+          id: string
+          instance: string
+          judge: string | null
+          number: string
+          plaintiff: string | null
+          plaintiff_document: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          court: string
+          created_at?: string
+          defendant?: string | null
+          defendant_document?: string | null
+          description?: string | null
+          id?: string
+          instance: string
+          judge?: string | null
+          number: string
+          plaintiff?: string | null
+          plaintiff_document?: string | null
+          status: string
+          tags?: string[] | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          attachments?: string[] | null
+          court?: string
+          created_at?: string
+          defendant?: string | null
+          defendant_document?: string | null
+          description?: string | null
+          id?: string
+          instance?: string
+          judge?: string | null
+          number?: string
+          plaintiff?: string | null
+          plaintiff_document?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

@@ -22,6 +22,15 @@ export default function NewProcess() {
         return;
       }
 
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
       const { error } = await supabase
         .from("processes")
         .insert({
@@ -34,6 +43,7 @@ export default function NewProcess() {
           description: processData.assuntos.map(a => a.nome).join(", "),
           created_at: processData.dataAjuizamento,
           updated_at: new Date().toISOString(),
+          user_id: user.id
         });
 
       if (error) throw error;
