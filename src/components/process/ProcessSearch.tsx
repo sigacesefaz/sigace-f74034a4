@@ -52,7 +52,6 @@ export function ProcessSearch({ onProcessSelect }: ProcessSearchProps) {
               <SelectValue placeholder="Selecione um tribunal" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Selecione um tribunal</SelectItem>
               {courts.ESTADUAL.map((court) => (
                 <SelectItem key={court.id} value={court.endpoint}>
                   {court.name}
