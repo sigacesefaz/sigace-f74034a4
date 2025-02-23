@@ -19,7 +19,7 @@ interface ProcessSearchProps {
 
 export function ProcessSearch({ onProcessSelect }: ProcessSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCourt, setSelectedCourt] = useState("");
+  const [selectedCourt, setSelectedCourt] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -47,15 +47,20 @@ export function ProcessSearch({ onProcessSelect }: ProcessSearchProps) {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tribunal
           </label>
-          <Select onValueChange={setSelectedCourt} value={selectedCourt}>
+          <Select
+            value={selectedCourt}
+            onValueChange={(value) => setSelectedCourt(value)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Selecione um tribunal" />
             </SelectTrigger>
             <SelectContent>
-              {courts.ESTADUAL.map((court) => (
-                <SelectItem key={court.id} value={court.endpoint}>
-                  {court.name}
-                </SelectItem>
+              {Object.entries(courts).map(([category, courtList]) => (
+                courtList.map((court) => (
+                  <SelectItem key={court.id} value={court.endpoint}>
+                    {court.name}
+                  </SelectItem>
+                ))
               ))}
             </SelectContent>
           </Select>
