@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -21,6 +23,15 @@ export function ProcessSearch({ onProcessSelect }: ProcessSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+
+  const courtGroups = {
+    "Tribunais Superiores": courts.SUPERIOR || [],
+    "Justiça Federal": courts.FEDERAL || [],
+    "Justiça Estadual": courts.ESTADUAL || [],
+    "Justiça do Trabalho": courts.TRABALHISTA || [],
+    "Justiça Eleitoral": courts.ELEITORAL || [],
+    "Justiça Militar": courts.MILITAR || [],
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +66,15 @@ export function ProcessSearch({ onProcessSelect }: ProcessSearchProps) {
               <SelectValue placeholder="Selecione um tribunal" />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(courts).map(([category, courtList]) => (
-                courtList.map((court) => (
-                  <SelectItem key={court.id} value={court.endpoint}>
-                    {court.name}
-                  </SelectItem>
-                ))
+              {Object.entries(courtGroups).map(([groupName, courts]) => (
+                <SelectGroup key={groupName}>
+                  <SelectLabel>{groupName}</SelectLabel>
+                  {courts.map((court) => (
+                    <SelectItem key={court.id} value={court.endpoint}>
+                      {court.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>
