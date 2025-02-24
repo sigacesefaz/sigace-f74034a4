@@ -20,19 +20,21 @@ export default {
     },
     extend: {
       colors: {
+        primary: {
+          DEFAULT: "#2e3092",
+          light: "#3f42a3",
+          dark: "#252779",
+        },
+        secondary: {
+          DEFAULT: "#fec30b",
+          light: "#fed23d",
+          dark: "#d1a209",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
@@ -53,18 +55,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sage: {
-          50: "#f8faf8",
-          100: "#f1f4f1",
-          200: "#e3e8e3",
-          300: "#d0d8d0",
-          400: "#a7b5a7",
-          500: "#86978b",
-          600: "#6b7a6f",
-          700: "#57625a",
-          800: "#48504b",
-          900: "#3d443f",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,20 +70,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        fadeIn: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        slideIn: {
-          from: { transform: "translateY(20px)", opacity: "0" },
-          to: { transform: "translateY(0)", opacity: "1" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        fadeIn: "fadeIn 0.5s ease-out",
-        slideIn: "slideIn 0.5s ease-out",
       },
     },
   },

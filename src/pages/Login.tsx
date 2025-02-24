@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,14 +38,21 @@ export default function Login() {
       toast({
         title: "Login realizado com sucesso!",
       });
-      navigate("/");
+      navigate("/processes"); // Alterado para redirecionar para a lista de processos
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sage-50 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 to-white">
       <Card className="w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">SIGACE</h1>
+        <div className="flex justify-center mb-6">
+          <img 
+            src="/lovable-uploads/41d8761a-90fe-4080-9302-a5040d446fb1.png" 
+            alt="SEFAZ Tecnologia" 
+            className="h-12"
+          />
+        </div>
+        <h1 className="text-2xl font-bold text-center text-primary mb-2">SIGACE</h1>
         <p className="text-center text-gray-600 mb-6">Sistema de Gestão de Ações Contra o Estado - Tocantins</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -55,6 +63,7 @@ export default function Login() {
               placeholder="seuemail@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="border-primary/20 focus-visible:ring-primary"
             />
           </div>
           <div>
@@ -65,9 +74,10 @@ export default function Login() {
               placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="border-primary/20 focus-visible:ring-primary"
             />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full bg-primary hover:bg-primary-dark">
             Entrar
           </Button>
         </form>
