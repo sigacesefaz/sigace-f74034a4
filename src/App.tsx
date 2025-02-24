@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import ProcessList from "./pages/processes/ProcessList";
 import NewProcess from "./pages/processes/NewProcess";
 import IntimationList from "./pages/intimations/IntimationList";
+import NewIntimation from "./pages/intimations/NewIntimation";
 import NotificationList from "./pages/notifications/NotificationList";
 import ReportList from "./pages/reports/ReportList";
 import { useEffect, useState } from "react";
@@ -81,6 +83,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <IntimationList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/intimations/new"
+            element={
+              <ProtectedRoute>
+                <NewIntimation />
               </ProtectedRoute>
             }
           />
