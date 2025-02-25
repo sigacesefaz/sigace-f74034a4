@@ -37,8 +37,24 @@ export const courts = {
   ]
 } as const;
 
+interface RequestBody {
+  query: {
+    match: {
+      numeroProcesso: string;
+    };
+  };
+}
+
 export async function searchProcesses(endpoint: string, searchTerm: string): Promise<DatajudProcess[]> {
   const url = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
+  
+  const body: RequestBody = {
+    query: {
+      match: {
+        numeroProcesso: searchTerm
+      }
+    }
+  };
   
   try {
     const response = await fetch(url, {
@@ -47,20 +63,20 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
         'Content-Type': 'application/json',
         'Authorization': `APIKey ${API_KEY}`
       },
-      body: JSON.stringify({
-        query: {
-          match: {
-            numeroProcesso: searchTerm
-          }
-        }
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-      throw new Error('Falha na busca de processos');
+      throw new Error(`Falha na busca de processos: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("API Response:", data); // Logging para debug
+    
+    if (!data.hits || !data.hits.hits || data.hits.hits.length === 0) {
+      return [];
+    }
+    
     return data.hits.hits.map((hit: any) => hit._source);
   } catch (error) {
     console.error('Erro ao buscar processos:', error);
@@ -69,28 +85,38 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
 }
 
 export async function getProcessById(endpoint: string, processNumber: string): Promise<DatajudProcess | null> {
+  const url = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
+  
+  const body: RequestBody = {
+    query: {
+      match: {
+        numeroProcesso: processNumber
+      }
+    }
+  };
+  
   try {
-    const response = await fetch(`https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `APIKey ${API_KEY}`
       },
-      body: JSON.stringify({
-        query: {
-          match: {
-            numeroProcesso: processNumber
-          }
-        }
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-      throw new Error('Falha ao buscar processo');
+      throw new Error(`Falha ao buscar processo: ${response.status}`);
     }
 
     const data = await response.json();
-    return data.hits.hits[0]?._source || null;
+    console.log("API Response for process:", data); // Logging para debug
+    
+    if (!data.hits || !data.hits.hits || data.hits.hits.length === 0) {
+      return null;
+    }
+    
+    return data.hits.hits[0]._source || null;
   } catch (error) {
     console.error('Erro ao buscar processo:', error);
     throw error;
