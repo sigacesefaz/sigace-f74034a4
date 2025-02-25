@@ -18,7 +18,17 @@ import {
   Bell
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pagination } from "@/components/ui/pagination";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationNextButton,
+  PaginationPrevButton
+} from "@/components/ui/pagination";
 
 interface ProcessDetailsProps {
   process: DatajudProcess;
@@ -263,13 +273,13 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
                 {/* Paginação */}
                 <div className="flex justify-center mt-6">
                   <Pagination>
-                    <Pagination.Content>
-                      <Pagination.Item>
-                        <Pagination.PrevButton
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevButton
                           onClick={() => setCurrentEventsPage(p => Math.max(1, p - 1))}
                           disabled={currentEventsPage === 1}
                         />
-                      </Pagination.Item>
+                      </PaginationItem>
                       
                       {Array.from({ length: totalEventPages }).map((_, i) => {
                         const page = i + 1;
@@ -280,34 +290,34 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
                           (page >= currentEventsPage - 1 && page <= currentEventsPage + 1)
                         ) {
                           return (
-                            <Pagination.Item key={page}>
-                              <Pagination.Link
+                            <PaginationItem key={page}>
+                              <PaginationLink
                                 isActive={page === currentEventsPage}
                                 onClick={() => setCurrentEventsPage(page)}
                               >
                                 {page}
-                              </Pagination.Link>
-                            </Pagination.Item>
+                              </PaginationLink>
+                            </PaginationItem>
                           );
                         }
                         // Adicionar ellipsis para indicar páginas omitidas
                         if (page === currentEventsPage - 2 || page === currentEventsPage + 2) {
                           return (
-                            <Pagination.Item key={`ellipsis-${page}`}>
-                              <Pagination.Ellipsis />
-                            </Pagination.Item>
+                            <PaginationItem key={`ellipsis-${page}`}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
                           );
                         }
                         return null;
                       })}
                       
-                      <Pagination.Item>
-                        <Pagination.NextButton
+                      <PaginationItem>
+                        <PaginationNextButton
                           onClick={() => setCurrentEventsPage(p => Math.min(totalEventPages, p + 1))}
                           disabled={currentEventsPage === totalEventPages}
                         />
-                      </Pagination.Item>
-                    </Pagination.Content>
+                      </PaginationItem>
+                    </PaginationContent>
                   </Pagination>
                 </div>
               </>

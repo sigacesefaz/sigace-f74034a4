@@ -43,6 +43,17 @@ export interface DatajudMovement {
   };
 }
 
+export interface DatajudParty {
+  papel: string;
+  nome: string;
+  tipoPessoa: string;
+  documento?: string;
+  advogados?: {
+    nome: string;
+    inscricao: string;
+  }[];
+}
+
 export interface DatajudProcess {
   id: string;
   tribunal: string;
@@ -57,6 +68,7 @@ export interface DatajudProcess {
   orgaoJulgador: DatajudCourt;
   movimentos: DatajudMovement[];
   dataHoraUltimaAtualizacao: string;
+  partes?: DatajudParty[];
 }
 
 export type CourtType = 
