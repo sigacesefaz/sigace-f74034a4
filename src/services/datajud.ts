@@ -1,8 +1,9 @@
 
 import { DatajudProcess } from "@/types/datajud";
+import { supabase } from "@/lib/supabase";
 
-const API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==";
-
+// API_KEY não é mais necessário aqui, pois será usado na edge function
+// Mantemos a definição dos tribunais
 export const courts = {
   SUPERIOR: [
     { id: "tst", name: "Tribunal Superior do Trabalho", type: "SUPERIOR", endpoint: "api_publica_tst" },
@@ -46,8 +47,6 @@ interface RequestBody {
 }
 
 export async function searchProcesses(endpoint: string, searchTerm: string): Promise<DatajudProcess[]> {
-  const url = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
-  
   const body: RequestBody = {
     query: {
       match: {
@@ -57,21 +56,18 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
   };
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `APIKey ${API_KEY}`
-      },
-      body: JSON.stringify(body)
+    // Usar a edge function como proxy
+    const { data, error } = await supabase.functions.invoke('datajud-proxy', {
+      body: body,
+      query: { endpoint }
     });
 
-    if (!response.ok) {
-      throw new Error(`Falha na busca de processos: ${response.status}`);
+    if (error) {
+      console.error("Error from function:", error);
+      throw new Error(`Falha na busca de processos: ${error.message}`);
     }
 
-    const data = await response.json();
-    console.log("API Response:", data); // Logging para debug
+    console.log("API Response:", data);
     
     if (!data.hits || !data.hits.hits || data.hits.hits.length === 0) {
       return [];
@@ -85,8 +81,6 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
 }
 
 export async function getProcessById(endpoint: string, processNumber: string): Promise<DatajudProcess | null> {
-  const url = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
-  
   const body: RequestBody = {
     query: {
       match: {
@@ -96,21 +90,18 @@ export async function getProcessById(endpoint: string, processNumber: string): P
   };
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `APIKey ${API_KEY}`
-      },
-      body: JSON.stringify(body)
+    // Usar a edge function como proxy
+    const { data, error } = await supabase.functions.invoke('datajud-proxy', {
+      body: body,
+      query: { endpoint }
     });
 
-    if (!response.ok) {
-      throw new Error(`Falha ao buscar processo: ${response.status}`);
+    if (error) {
+      console.error("Error from function:", error);
+      throw new Error(`Falha ao buscar processo: ${error.message}`);
     }
 
-    const data = await response.json();
-    console.log("API Response for process:", data); // Logging para debug
+    console.log("API Response for process:", data);
     
     if (!data.hits || !data.hits.hits || data.hits.hits.length === 0) {
       return null;
