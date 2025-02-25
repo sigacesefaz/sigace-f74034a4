@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 
 interface ProcessSearchProps {
-  onProcessSelect: (processNumber: string, courtEndpoint: string) => void;
+  onProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>; // Alterado para Promise<boolean>
   onManualEntry?: () => void;
 }
 
@@ -48,9 +48,8 @@ export function ProcessSearch({ onProcessSelect, onManualEntry }: ProcessSearchP
     setNoResults(false);
     
     try {
-      const result = await onProcessSelect(searchTerm, selectedCourt);
-      // Se não encontrou resultados
-      if (!result) {
+      const foundResults = await onProcessSelect(searchTerm, selectedCourt);
+      if (!foundResults) {
         setNoResults(true);
       }
     } catch (error) {
