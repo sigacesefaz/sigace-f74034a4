@@ -19,9 +19,7 @@ export const courts = {
     { id: "trf6", name: "TRF 6ª Região", type: "FEDERAL", endpoint: "api_publica_trf6" }
   ],
   ESTADUAL: [
-    { id: "tjto", name: "Tribunal de Justiça do Tocantins", type: "ESTADUAL", endpoint: "api_publica_tjto" },
-    { id: "tjsp", name: "Tribunal de Justiça de São Paulo", type: "ESTADUAL", endpoint: "api_publica_tjsp" },
-    { id: "tjrj", name: "Tribunal de Justiça do Rio de Janeiro", type: "ESTADUAL", endpoint: "api_publica_tjrj" }
+    { id: "tjto", name: "Tribunal de Justiça do Tocantins", type: "ESTADUAL", endpoint: "api_publica_tjto" }
   ],
   TRABALHISTA: [
     { id: "trt1", name: "TRT 1ª Região", type: "TRABALHISTA", endpoint: "api_publica_trt1" },
@@ -47,13 +45,12 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${API_KEY}`
+        'Authorization': `APIKey ${API_KEY}`
       },
       body: JSON.stringify({
         query: {
-          multi_match: {
-            query: searchTerm,
-            fields: ["numeroProcesso", "classe.nome", "assuntos.nome"]
+          match: {
+            numeroProcesso: searchTerm
           }
         }
       })
@@ -77,11 +74,11 @@ export async function getProcessById(endpoint: string, processNumber: string): P
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${API_KEY}`
+        'Authorization': `APIKey ${API_KEY}`
       },
       body: JSON.stringify({
         query: {
-          term: {
+          match: {
             numeroProcesso: processNumber
           }
         }
