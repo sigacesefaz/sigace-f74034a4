@@ -15,7 +15,8 @@ import {
   AlertCircle, 
   Users, 
   Clock,
-  Bell
+  Bell,
+  File
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -24,8 +25,6 @@ import {
   PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
   PaginationNextButton,
   PaginationPrevButton
 } from "@/components/ui/pagination";
@@ -59,33 +58,23 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
     }
   };
 
-  // Filtrar eventos de intimação
+  // Filtrar eventos específicos
   const isIntimationEvent = (evento: any) => {
-    const intimationKeywords = [
-      "intima", 
-      "intimação", 
-      "intimado", 
-      "intimados", 
-      "intimada", 
-      "intimadas",
-      "citação",
-      "citado",
-      "citados",
-      "citada",
-      "citadas",
-      "notificação",
-      "notificado",
-      "notificados",
-      "notificada",
-      "notificadas"
-    ];
-    
-    const nome = evento.nome?.toLowerCase() || "";
-    return intimationKeywords.some(keyword => nome.includes(keyword));
+    // Códigos específicos para intimações
+    const intimationCodes = [12265, 12266];
+    return intimationCodes.includes(evento.codigo);
+  };
+
+  const isDocumentEvent = (evento: any) => {
+    // Código específico para documentos
+    return evento.codigo === 581;
   };
 
   const intimationEvents = process.movimentos ? 
     process.movimentos.filter(isIntimationEvent) : [];
+
+  const documentEvents = process.movimentos ? 
+    process.movimentos.filter(isDocumentEvent) : [];
 
   // Paginação de eventos
   const totalEventPages = process.movimentos ? 
@@ -96,6 +85,76 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
       (currentEventsPage - 1) * eventsPerPage, 
       currentEventsPage * eventsPerPage
     ) : [];
+
+  // Componente de informações adicionais
+  const AdditionalInfo = () => (
+    <div className="space-y-6 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <Calendar className="h-4 w-4" /> Data de Ajuizamento
+            </h3>
+            <p className="mt-1">{formatDate(process.dataAjuizamento)}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <UserCircle className="h-4 w-4" /> Órgão Julgador
+            </h3>
+            <p className="mt-1">{process.orgaoJulgador?.nome || "Não informado"}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <GavelIcon className="h-4 w-4" /> Grau
+            </h3>
+            <p className="mt-1">{process.grau || "Não informado"}</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <FileText className="h-4 w-4" /> Sistema
+            </h3>
+            <p className="mt-1">{process.sistema?.nome || "Não informado"}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <Bookmark className="h-4 w-4" /> Assuntos
+            </h3>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {process.assuntos && process.assuntos.length > 0 ? (
+                process.assuntos.map((assunto, index) => (
+                  <Badge key={index} variant="secondary" className="bg-secondary/10 text-secondary-dark border-0">
+                    {assunto.nome}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-gray-500">Nenhum assunto informado</span>
+              )}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Nível de Sigilo
+            </h3>
+            <p className="mt-1">{process.nivelSigilo || "Não informado"}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Última atualização */}
+      {process.dataHoraUltimaAtualizacao && (
+        <div className="text-xs text-gray-500">
+          Última atualização: {formatDate(process.dataHoraUltimaAtualizacao)}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Card className="p-6 bg-white border-t-4 border-t-primary">
@@ -110,81 +169,16 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
           </Badge>
         </div>
 
-        <Tabs defaultValue="info" className="w-full">
+        {/* Adicionar as informações abaixo do número do processo */}
+        <AdditionalInfo />
+
+        <Tabs defaultValue="parties" className="w-full">
           <TabsList className="w-full justify-start">
-            <TabsTrigger value="info">Informações Adicionais</TabsTrigger>
             <TabsTrigger value="parties">Partes</TabsTrigger>
             <TabsTrigger value="events">Eventos</TabsTrigger>
             <TabsTrigger value="intimations">Intimações</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
-          
-          {/* Aba de Informações Adicionais */}
-          <TabsContent value="info" className="space-y-6 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" /> Data de Ajuizamento
-                  </h3>
-                  <p className="mt-1">{formatDate(process.dataAjuizamento)}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" /> Órgão Julgador
-                  </h3>
-                  <p className="mt-1">{process.orgaoJulgador?.nome || "Não informado"}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <GavelIcon className="h-4 w-4" /> Grau
-                  </h3>
-                  <p className="mt-1">{process.grau || "Não informado"}</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <FileText className="h-4 w-4" /> Sistema
-                  </h3>
-                  <p className="mt-1">{process.sistema?.nome || "Não informado"}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <Bookmark className="h-4 w-4" /> Assuntos
-                  </h3>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {process.assuntos && process.assuntos.length > 0 ? (
-                      process.assuntos.map((assunto, index) => (
-                        <Badge key={index} variant="secondary" className="bg-secondary/10 text-secondary-dark border-0">
-                          {assunto.nome}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-gray-500">Nenhum assunto informado</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" /> Nível de Sigilo
-                  </h3>
-                  <p className="mt-1">{process.nivelSigilo || "Não informado"}</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Última atualização */}
-            {process.dataHoraUltimaAtualizacao && (
-              <div className="text-xs text-gray-500">
-                Última atualização: {formatDate(process.dataHoraUltimaAtualizacao)}
-              </div>
-            )}
-          </TabsContent>
           
           {/* Aba de Partes */}
           <TabsContent value="parties" className="space-y-4 mt-4">
@@ -344,6 +338,7 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
                           <Bell className="h-5 w-5 text-purple-500 mt-0.5" />
                           <div>
                             <span className="font-medium text-purple-800">{evento.nome}</span>
+                            <p className="text-xs text-purple-700 mt-1">Código: {evento.codigo}</p>
                             {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
                               <p className="text-sm text-purple-700 mt-1">
                                 {evento.complementosTabelados
@@ -367,6 +362,47 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
                 <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem intimações</h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Não foram encontradas intimações para este processo.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Nova Aba de Documentos */}
+          <TabsContent value="documents" className="space-y-4 mt-4">
+            {documentEvents.length > 0 ? (
+              <div className="space-y-3">
+                {documentEvents.map((evento, index) => (
+                  <div key={index} className="p-4 bg-blue-50 rounded-md border border-blue-100">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2">
+                          <File className="h-5 w-5 text-blue-500 mt-0.5" />
+                          <div>
+                            <span className="font-medium text-blue-800">{evento.nome}</span>
+                            <p className="text-xs text-blue-700 mt-1">Código: {evento.codigo}</p>
+                            {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
+                              <p className="text-sm text-blue-700 mt-1">
+                                {evento.complementosTabelados
+                                  .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
+                                  .join(" | ")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-blue-600 whitespace-nowrap">
+                          {formatDateTime(evento.dataHora)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <File className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem documentos</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Não foram encontrados documentos para este processo.
                 </p>
               </div>
             )}
