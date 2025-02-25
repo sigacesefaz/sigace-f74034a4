@@ -30,6 +30,5 @@ file_size_limit = "50MiB"
 [analytics]
 enabled = false
 
-[[functions]]
-name = "datajud-proxy"
+[functions.datajud-proxy]
 verify_jwt = false

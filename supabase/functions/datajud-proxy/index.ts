@@ -19,8 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const endpoint = url.searchParams.get("endpoint");
+    // Get the request body
+    const body = await req.json();
+    const endpoint = body.endpoint;
     
     if (!endpoint) {
       return new Response(
@@ -35,14 +36,14 @@ serve(async (req) => {
       );
     }
 
-    // Get the request body
-    const requestBody = await req.json();
+    // Remove endpoint from the request body before sending to API
+    const { endpoint: _, ...requestData } = body;
     
     // Forward the request to DataJud API
     const apiUrl = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
     
     console.log(`Proxying request to: ${apiUrl}`);
-    console.log(`Request body: ${JSON.stringify(requestBody)}`);
+    console.log(`Request body: ${JSON.stringify(requestData)}`);
     
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -50,7 +51,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
         "Authorization": `APIKey ${API_KEY}`,
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestData),
     });
 
     console.log(`Response status: ${response.status}`);

@@ -58,8 +58,10 @@ export async function searchProcesses(endpoint: string, searchTerm: string): Pro
   try {
     // Usar a edge function como proxy
     const { data, error } = await supabase.functions.invoke('datajud-proxy', {
-      body: body,
-      query: { endpoint }
+      body: {
+        ...body,
+        endpoint
+      }
     });
 
     if (error) {
@@ -92,8 +94,10 @@ export async function getProcessById(endpoint: string, processNumber: string): P
   try {
     // Usar a edge function como proxy
     const { data, error } = await supabase.functions.invoke('datajud-proxy', {
-      body: body,
-      query: { endpoint }
+      body: {
+        ...body,
+        endpoint
+      }
     });
 
     if (error) {
