@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
@@ -37,7 +38,7 @@ PaginationItem.displayName = "PaginationItem"
 type PaginationLinkProps = {
   isActive?: boolean
 } & Pick<ButtonProps, "size"> &
-  React.ComponentProps<"a">
+  React.ComponentProps<"button">
 
 const PaginationLink = ({
   className,
@@ -45,13 +46,14 @@ const PaginationLink = ({
   size = "icon",
   ...props
 }: PaginationLinkProps) => (
-  <a
+  <button
     aria-current={isActive ? "page" : undefined}
     className={cn(
       buttonVariants({
         variant: isActive ? "outline" : "ghost",
         size,
       }),
+      isActive && "bg-primary/10 text-primary border-primary/20",
       className
     )}
     {...props}
@@ -70,7 +72,7 @@ const PaginationPrevious = ({
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <span>Anterior</span>
   </PaginationLink>
 )
 PaginationPrevious.displayName = "PaginationPrevious"
@@ -85,7 +87,7 @@ const PaginationNext = ({
     className={cn("gap-1 pr-2.5", className)}
     {...props}
   >
-    <span>Next</span>
+    <span>Próximo</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 )
@@ -106,12 +108,55 @@ const PaginationEllipsis = ({
 )
 PaginationEllipsis.displayName = "PaginationEllipsis"
 
+// Adicionando componentes simplificados para navegação
+const PaginationPrevButton = ({
+  className,
+  ...props
+}: React.ComponentProps<"button">) => (
+  <button
+    aria-label="Go to previous page"
+    className={cn(
+      buttonVariants({
+        variant: "ghost",
+        size: "icon",
+      }),
+      className
+    )}
+    {...props}
+  >
+    <ChevronLeft className="h-4 w-4" />
+  </button>
+)
+PaginationPrevButton.displayName = "PaginationPrevButton"
+
+const PaginationNextButton = ({
+  className,
+  ...props
+}: React.ComponentProps<"button">) => (
+  <button
+    aria-label="Go to next page"
+    className={cn(
+      buttonVariants({
+        variant: "ghost",
+        size: "icon",
+      }),
+      className
+    )}
+    {...props}
+  >
+    <ChevronRight className="h-4 w-4" />
+  </button>
+)
+PaginationNextButton.displayName = "PaginationNextButton"
+
 export {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
   PaginationLink,
-  PaginationNext,
+  PaginationItem,
   PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+  PaginationPrevButton,
+  PaginationNextButton,
 }
