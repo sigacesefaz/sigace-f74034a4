@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DatajudProcess } from "@/types/datajud";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Calendar, 
@@ -37,7 +37,22 @@ interface ProcessDetailsProps {
 
 export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProps) {
   const [currentEventsPage, setCurrentEventsPage] = useState(1);
-  const eventsPerPage = 10;
+  const [currentIntimationsPage, setCurrentIntimationsPage] = useState(1);
+  const [currentDocumentsPage, setCurrentDocumentsPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  // Formatação do número do processo com máscara
+  const formatProcessNumber = (number: string) => {
+    if (!number) return "";
+    
+    // Remove caracteres não numéricos
+    const numericOnly = number.replace(/\D/g, '');
+    
+    if (numericOnly.length !== 20) return number; // Se não tiver 20 dígitos, retorna o original
+    
+    // Aplica a máscara 0000000-00.0000.0.00.0000
+    return `${numericOnly.substring(0, 7)}-${numericOnly.substring(7, 9)}.${numericOnly.substring(9, 13)}.${numericOnly.substring(13, 14)}.${numericOnly.substring(14, 16)}.${numericOnly.substring(16, 20)}`;
+  };
   
   // Formatação de data brasileira
   const formatDate = (dateString: string) => {
@@ -70,21 +85,100 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
     return evento.codigo === 581;
   };
 
-  const intimationEvents = process.movimentos ? 
-    process.movimentos.filter(isIntimationEvent) : [];
+  // Ordenar eventos por data (mais recentes primeiro)
+  const sortEventsByDate = (events: any[]) => {
+    return [...events].sort((a, b) => {
+      const dateA = new Date(a.dataHora).getTime();
+      const dateB = new Date(b.dataHora).getTime();
+      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+    });
+  };
 
-  const documentEvents = process.movimentos ? 
-    process.movimentos.filter(isDocumentEvent) : [];
+  // Aplicar ordenação e filtros
+  const sortedEvents = process.movimentos ? sortEventsByDate(process.movimentos) : [];
+  const intimationEvents = sortedEvents.filter(isIntimationEvent);
+  const documentEvents = sortedEvents.filter(isDocumentEvent);
 
   // Paginação de eventos
-  const totalEventPages = process.movimentos ? 
-    Math.ceil(process.movimentos.length / eventsPerPage) : 0;
+  const totalEventPages = Math.ceil(sortedEvents.length / itemsPerPage);
+  const totalIntimationPages = Math.ceil(intimationEvents.length / itemsPerPage);
+  const totalDocumentPages = Math.ceil(documentEvents.length / itemsPerPage);
   
-  const paginatedEvents = process.movimentos ? 
-    process.movimentos.slice(
-      (currentEventsPage - 1) * eventsPerPage, 
-      currentEventsPage * eventsPerPage
-    ) : [];
+  const paginatedEvents = sortedEvents.slice(
+    (currentEventsPage - 1) * itemsPerPage, 
+    currentEventsPage * itemsPerPage
+  );
+  
+  const paginatedIntimations = intimationEvents.slice(
+    (currentIntimationsPage - 1) * itemsPerPage, 
+    currentIntimationsPage * itemsPerPage
+  );
+  
+  const paginatedDocuments = documentEvents.slice(
+    (currentDocumentsPage - 1) * itemsPerPage, 
+    currentDocumentsPage * itemsPerPage
+  );
+
+  // Componente reutilizável para paginação
+  const PaginationComponent = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange 
+  }: { 
+    currentPage: number, 
+    totalPages: number, 
+    onPageChange: (page: number) => void 
+  }) => (
+    <div className="flex justify-center mt-6">
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevButton
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            />
+          </PaginationItem>
+          
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const page = i + 1;
+            // Mostrar apenas as páginas próximas à atual
+            if (
+              page === 1 || 
+              page === totalPages ||
+              (page >= currentPage - 1 && page <= currentPage + 1)
+            ) {
+              return (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    isActive={page === currentPage}
+                    onClick={() => onPageChange(page)}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            }
+            // Adicionar ellipsis para indicar páginas omitidas
+            if (page === currentPage - 2 || page === currentPage + 2) {
+              return (
+                <PaginationItem key={`ellipsis-${page}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              );
+            }
+            return null;
+          })}
+          
+          <PaginationItem>
+            <PaginationNextButton
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  );
 
   // Componente de informações adicionais
   const AdditionalInfo = () => (
@@ -162,7 +256,7 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{process.classe?.nome || "Sem classe"}</h2>
-            <p className="text-primary font-mono">{process.numeroProcesso}</p>
+            <p className="text-primary font-mono">{formatProcessNumber(process.numeroProcesso)}</p>
           </div>
           <Badge variant="outline" className="bg-primary/10 text-primary border-0 h-7 px-3">
             {process.tribunal}
@@ -235,7 +329,7 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
           
           {/* Aba de Eventos */}
           <TabsContent value="events" className="space-y-4 mt-4">
-            {process.movimentos && process.movimentos.length > 0 ? (
+            {sortedEvents.length > 0 ? (
               <>
                 <div className="space-y-3">
                   {paginatedEvents.map((movimento, index) => (
@@ -264,56 +358,12 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
                   ))}
                 </div>
 
-                {/* Paginação */}
-                <div className="flex justify-center mt-6">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevButton
-                          onClick={() => setCurrentEventsPage(p => Math.max(1, p - 1))}
-                          disabled={currentEventsPage === 1}
-                        />
-                      </PaginationItem>
-                      
-                      {Array.from({ length: totalEventPages }).map((_, i) => {
-                        const page = i + 1;
-                        // Mostrar apenas as páginas próximas à atual
-                        if (
-                          page === 1 || 
-                          page === totalEventPages ||
-                          (page >= currentEventsPage - 1 && page <= currentEventsPage + 1)
-                        ) {
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                isActive={page === currentEventsPage}
-                                onClick={() => setCurrentEventsPage(page)}
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        }
-                        // Adicionar ellipsis para indicar páginas omitidas
-                        if (page === currentEventsPage - 2 || page === currentEventsPage + 2) {
-                          return (
-                            <PaginationItem key={`ellipsis-${page}`}>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      <PaginationItem>
-                        <PaginationNextButton
-                          onClick={() => setCurrentEventsPage(p => Math.min(totalEventPages, p + 1))}
-                          disabled={currentEventsPage === totalEventPages}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
+                {/* Paginação para Eventos */}
+                <PaginationComponent 
+                  currentPage={currentEventsPage} 
+                  totalPages={totalEventPages} 
+                  onPageChange={setCurrentEventsPage} 
+                />
               </>
             ) : (
               <div className="text-center py-8">
@@ -329,33 +379,42 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
           {/* Aba de Intimações */}
           <TabsContent value="intimations" className="space-y-4 mt-4">
             {intimationEvents.length > 0 ? (
-              <div className="space-y-3">
-                {intimationEvents.map((evento, index) => (
-                  <div key={index} className="p-4 bg-purple-50 rounded-md border border-purple-100">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-2">
-                          <Bell className="h-5 w-5 text-purple-500 mt-0.5" />
-                          <div>
-                            <span className="font-medium text-purple-800">{evento.nome}</span>
-                            <p className="text-xs text-purple-700 mt-1">Código: {evento.codigo}</p>
-                            {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
-                              <p className="text-sm text-purple-700 mt-1">
-                                {evento.complementosTabelados
-                                  .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
-                                  .join(" | ")}
-                              </p>
-                            )}
+              <>
+                <div className="space-y-3">
+                  {paginatedIntimations.map((evento, index) => (
+                    <div key={index} className="p-4 bg-purple-50 rounded-md border border-purple-100">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-2">
+                            <Bell className="h-5 w-5 text-purple-500 mt-0.5" />
+                            <div>
+                              <span className="font-medium text-purple-800">{evento.nome}</span>
+                              <p className="text-xs text-purple-700 mt-1">Código: {evento.codigo}</p>
+                              {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
+                                <p className="text-sm text-purple-700 mt-1">
+                                  {evento.complementosTabelados
+                                    .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
+                                    .join(" | ")}
+                                </p>
+                              )}
+                            </div>
                           </div>
+                          <span className="text-xs text-purple-600 whitespace-nowrap">
+                            {formatDateTime(evento.dataHora)}
+                          </span>
                         </div>
-                        <span className="text-xs text-purple-600 whitespace-nowrap">
-                          {formatDateTime(evento.dataHora)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Paginação para Intimações */}
+                <PaginationComponent 
+                  currentPage={currentIntimationsPage} 
+                  totalPages={totalIntimationPages} 
+                  onPageChange={setCurrentIntimationsPage} 
+                />
+              </>
             ) : (
               <div className="text-center py-8">
                 <Bell className="mx-auto h-12 w-12 text-gray-400" />
@@ -370,33 +429,42 @@ export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProp
           {/* Nova Aba de Documentos */}
           <TabsContent value="documents" className="space-y-4 mt-4">
             {documentEvents.length > 0 ? (
-              <div className="space-y-3">
-                {documentEvents.map((evento, index) => (
-                  <div key={index} className="p-4 bg-blue-50 rounded-md border border-blue-100">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-2">
-                          <File className="h-5 w-5 text-blue-500 mt-0.5" />
-                          <div>
-                            <span className="font-medium text-blue-800">{evento.nome}</span>
-                            <p className="text-xs text-blue-700 mt-1">Código: {evento.codigo}</p>
-                            {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
-                              <p className="text-sm text-blue-700 mt-1">
-                                {evento.complementosTabelados
-                                  .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
-                                  .join(" | ")}
-                              </p>
-                            )}
+              <>
+                <div className="space-y-3">
+                  {paginatedDocuments.map((evento, index) => (
+                    <div key={index} className="p-4 bg-blue-50 rounded-md border border-blue-100">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-2">
+                            <File className="h-5 w-5 text-blue-500 mt-0.5" />
+                            <div>
+                              <span className="font-medium text-blue-800">{evento.nome}</span>
+                              <p className="text-xs text-blue-700 mt-1">Código: {evento.codigo}</p>
+                              {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
+                                <p className="text-sm text-blue-700 mt-1">
+                                  {evento.complementosTabelados
+                                    .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
+                                    .join(" | ")}
+                                </p>
+                              )}
+                            </div>
                           </div>
+                          <span className="text-xs text-blue-600 whitespace-nowrap">
+                            {formatDateTime(evento.dataHora)}
+                          </span>
                         </div>
-                        <span className="text-xs text-blue-600 whitespace-nowrap">
-                          {formatDateTime(evento.dataHora)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Paginação para Documentos */}
+                <PaginationComponent 
+                  currentPage={currentDocumentsPage} 
+                  totalPages={totalDocumentPages} 
+                  onPageChange={setCurrentDocumentsPage} 
+                />
+              </>
             ) : (
               <div className="text-center py-8">
                 <File className="mx-auto h-12 w-12 text-gray-400" />

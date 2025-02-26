@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { courts } from "@/services/datajud";
+import { InputMask } from "@react-input/mask";
 
 const processSchema = z.object({
   number: z.string().min(1, "Número do processo é obrigatório"),
@@ -79,7 +80,15 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Número do Processo*</FormLabel>
                 <FormControl>
-                  <Input placeholder="00000000000000000000" {...field} />
+                  <InputMask
+                    component={Input}
+                    mask="0000000-00.0000.0.00.0000"
+                    placeholder="0000000-00.0000.0.00.0000"
+                    replacement={{ _: /\d/ }}
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -328,10 +337,10 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading} className="text-white">
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="text-white">
             {isLoading ? "Salvando..." : "Salvar Processo"}
           </Button>
         </div>
