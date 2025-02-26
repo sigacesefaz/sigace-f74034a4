@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { InputMask } from "@react-input/mask";
 import { searchProcesses, courts } from "@/services/datajud";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Court } from "@/types/datajud";
 
 // Definição dos esquemas para validação
 const personSchema = z.object({
@@ -90,7 +91,8 @@ export default function NewIntimation() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [processNumber, setProcessNumber] = useState("");
-  const [selectedCourt, setSelectedCourt] = useState(courts.ESTADUAL[0]);
+  // Corrigimos a definição do tipo para usar Court
+  const [selectedCourt, setSelectedCourt] = useState<Court>(courts.ESTADUAL[0]);
   const [formMode, setFormMode] = useState<FormMode>("search");
 
   const form = useForm<IntimationFormData>({
