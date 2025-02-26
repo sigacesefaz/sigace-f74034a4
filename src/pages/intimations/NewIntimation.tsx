@@ -36,7 +36,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { ProcessIntimation } from "@/types/process";
 import { cn } from "@/lib/utils";
-import { InputMask } from "@react-input/mask";
 import { searchProcesses, courts } from "@/services/datajud";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Court } from "@/types/datajud";
@@ -91,7 +90,6 @@ export default function NewIntimation() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [processNumber, setProcessNumber] = useState("");
-  // Corrigimos a definição do tipo para usar Court
   const [selectedCourt, setSelectedCourt] = useState<Court>(courts.ESTADUAL[0]);
   const [formMode, setFormMode] = useState<FormMode>("search");
 
@@ -128,6 +126,7 @@ export default function NewIntimation() {
       }
     } catch (error) {
       toast.error("Erro ao buscar processos");
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +191,10 @@ export default function NewIntimation() {
     }
   };
 
+  const handleProcessNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProcessNumber(e.target.value);
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
@@ -249,13 +252,11 @@ export default function NewIntimation() {
 
               <div className="grid gap-2">
                 <FormLabel htmlFor="processNumber">Número do Processo</FormLabel>
-                <InputMask
-                  component={Input}
-                  mask="0000000-00.0000.0.00.0000"
-                  replacement={{ _: /\d/ }}
-                  defaultValue={processNumber}
-                  onChange={(e) => setProcessNumber(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                <Input
+                  id="processNumber"
+                  value={processNumber}
+                  onChange={handleProcessNumberChange}
+                  className="flex h-10 w-full"
                   placeholder="0000000-00.0000.0.00.0000"
                   disabled={isLoading}
                 />
@@ -277,12 +278,10 @@ export default function NewIntimation() {
               </div>
             )}
 
-            {!isLoading && hasSearched && (
+            {!isLoading && hasSearched && searchResults.length > 0 && (
               <div className="space-y-4">
                 <div className="text-sm font-medium">
-                  {searchResults.length === 0 
-                    ? "Nenhum processo encontrado" 
-                    : `${searchResults.length} processos encontrados`}
+                  {`${searchResults.length} processos encontrados`}
                 </div>
 
                 <div className="space-y-3">
@@ -300,20 +299,35 @@ export default function NewIntimation() {
                     </Card>
                   ))}
                 </div>
+              </div>
+            )}
 
-                {searchResults.length === 0 && (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-500 mb-4">
-                      Não foi possível encontrar o processo. Deseja cadastrar manualmente?
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleManualEntry}
-                    >
-                      Cadastro Manual
-                    </Button>
-                  </div>
-                )}
+            {!isLoading && hasSearched && searchResults.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500 mb-4">
+                  Não foi possível encontrar o processo. Deseja cadastrar manualmente?
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={handleManualEntry}
+                >
+                  Cadastro Manual
+                </Button>
+              </div>
+            )}
+
+            {!isLoading && !hasSearched && (
+              <div className="flex items-center justify-center border rounded-lg p-8">
+                <img 
+                  src="/lovable-uploads/c12c62a2-89a4-41d7-8de4-f3a85e88f80b.png" 
+                  alt="Processo não encontrado" 
+                  className="max-w-xs mx-auto mb-4" 
+                />
+                <div className="text-center">
+                  <p className="text-sm text-gray-500">
+                    Busque um processo pelo número
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -335,15 +349,7 @@ export default function NewIntimation() {
                       <FormItem>
                         <FormLabel>Número do Processo</FormLabel>
                         <FormControl>
-                          <InputMask
-                            component={Input}
-                            mask="0000000-00.0000.0.00.0000"
-                            replacement={{ _: /\d/ }}
-                            defaultValue={field.value}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="0000000-00.0000.0.00.0000"
-                          />
+                          <Input {...field} placeholder="0000000-00.0000.0.00.0000" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -578,12 +584,8 @@ export default function NewIntimation() {
                         <FormItem>
                           <FormLabel>CPF*</FormLabel>
                           <FormControl>
-                            <InputMask
-                              component={Input}
-                              mask="000.000.000-00"
-                              replacement={{ _: /\d/ }}
-                              defaultValue={field.value}
-                              onChange={(e) => field.onChange(e.target.value)}
+                            <Input
+                              {...field}
                               placeholder="000.000.000-00"
                             />
                           </FormControl>

@@ -18,7 +18,6 @@ import { courts } from "@/services/datajud";
 import { searchProcesses } from "@/services/datajud";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { InputMask } from "@react-input/mask";
 
 interface ProcessSearchProps {
   onProcessSelect: (process: string, courtEndpoint: string) => Promise<boolean>;
@@ -61,6 +60,7 @@ export function ProcessSearch({ onProcessSelect, onManualEntry }: ProcessSearchP
       }
     } catch (error) {
       toast.error("Erro ao buscar processos");
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +78,10 @@ export function ProcessSearch({ onProcessSelect, onManualEntry }: ProcessSearchP
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleProcessNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProcessNumber(e.target.value);
   };
 
   return (
@@ -131,14 +135,12 @@ export function ProcessSearch({ onProcessSelect, onManualEntry }: ProcessSearchP
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="number">Número do Processo</Label>
-            <InputMask
-              component={Input}
-              mask="0000000-00.0000.0.00.0000"
-              replacement={{ _: /\d/ }}
-              defaultValue={processNumber}
-              onChange={(e) => setProcessNumber(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Label htmlFor="processNumber">Número do Processo</Label>
+            <Input
+              id="processNumber"
+              value={processNumber}
+              onChange={handleProcessNumberChange}
+              className="flex h-10 w-full"
               placeholder="0000000-00.0000.0.00.0000"
               disabled={isLoading}
             />
