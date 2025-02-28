@@ -91,9 +91,289 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
+        Relationships: []
+      }
+      party_types: {
+        Row: {
+          description: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          description?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          description?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      process_decisions: {
+        Row: {
+          attachments: Json | null
+          created_at: string | null
+          decision_date: string | null
+          decision_type: string | null
+          description: string
+          id: number
+          judge: string | null
+          process_id: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string | null
+          decision_date?: string | null
+          decision_type?: string | null
+          description: string
+          id?: number
+          judge?: string | null
+          process_id: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string | null
+          decision_date?: string | null
+          decision_type?: string | null
+          description?: string
+          id?: number
+          judge?: string | null
+          process_id?: number
+          title?: string
+          updated_at?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "intimations_process_id_fkey"
+            foreignKeyName: "process_decisions_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_details: {
+        Row: {
+          assuntos: Json | null
+          classe: Json | null
+          created_at: string | null
+          data_ajuizamento: string | null
+          data_hora_ultima_atualizacao: string | null
+          formato: Json | null
+          grau: string | null
+          id: number
+          json_completo: Json | null
+          movimentos: Json | null
+          nivele_sigilo: number | null
+          orgao_julgador: Json | null
+          partes: Json | null
+          process_id: number
+          sistema: Json | null
+          tribunal: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assuntos?: Json | null
+          classe?: Json | null
+          created_at?: string | null
+          data_ajuizamento?: string | null
+          data_hora_ultima_atualizacao?: string | null
+          formato?: Json | null
+          grau?: string | null
+          id?: number
+          json_completo?: Json | null
+          movimentos?: Json | null
+          nivele_sigilo?: number | null
+          orgao_julgador?: Json | null
+          partes?: Json | null
+          process_id: number
+          sistema?: Json | null
+          tribunal?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assuntos?: Json | null
+          classe?: Json | null
+          created_at?: string | null
+          data_ajuizamento?: string | null
+          data_hora_ultima_atualizacao?: string | null
+          formato?: Json | null
+          grau?: string | null
+          id?: number
+          json_completo?: Json | null
+          movimentos?: Json | null
+          nivele_sigilo?: number | null
+          orgao_julgador?: Json | null
+          partes?: Json | null
+          process_id?: number
+          sistema?: Json | null
+          tribunal?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_details_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_movements: {
+        Row: {
+          codigo: number | null
+          complemento: string | null
+          complementos_tabelados: Json | null
+          created_at: string | null
+          data_hora: string | null
+          id: number
+          json_completo: Json | null
+          movimento_principal_id: number | null
+          nome: string | null
+          orgao_julgador: Json | null
+          process_id: number
+          tipo: string | null
+        }
+        Insert: {
+          codigo?: number | null
+          complemento?: string | null
+          complementos_tabelados?: Json | null
+          created_at?: string | null
+          data_hora?: string | null
+          id?: number
+          json_completo?: Json | null
+          movimento_principal_id?: number | null
+          nome?: string | null
+          orgao_julgador?: Json | null
+          process_id: number
+          tipo?: string | null
+        }
+        Update: {
+          codigo?: number | null
+          complemento?: string | null
+          complementos_tabelados?: Json | null
+          created_at?: string | null
+          data_hora?: string | null
+          id?: number
+          json_completo?: Json | null
+          movimento_principal_id?: number | null
+          nome?: string | null
+          orgao_julgador?: Json | null
+          process_id?: number
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_movements_movimento_principal_id_fkey"
+            columns: ["movimento_principal_id"]
+            isOneToOne: false
+            referencedRelation: "process_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_movements_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_parties: {
+        Row: {
+          additional_info: Json | null
+          address: Json | null
+          contact_info: Json | null
+          created_at: string | null
+          document_number: string | null
+          entity_type: string
+          id: number
+          name: string
+          party_type_id: number
+          process_id: number
+          representative: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_info?: Json | null
+          address?: Json | null
+          contact_info?: Json | null
+          created_at?: string | null
+          document_number?: string | null
+          entity_type: string
+          id?: number
+          name: string
+          party_type_id: number
+          process_id: number
+          representative?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_info?: Json | null
+          address?: Json | null
+          contact_info?: Json | null
+          created_at?: string | null
+          document_number?: string | null
+          entity_type?: string
+          id?: number
+          name?: string
+          party_type_id?: number
+          process_id?: number
+          representative?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_parties_party_type_id_fkey"
+            columns: ["party_type_id"]
+            isOneToOne: false
+            referencedRelation: "party_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_parties_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_subjects: {
+        Row: {
+          codigo: number | null
+          created_at: string | null
+          id: number
+          nome: string | null
+          principal: boolean | null
+          process_id: number
+        }
+        Insert: {
+          codigo?: number | null
+          created_at?: string | null
+          id?: number
+          nome?: string | null
+          principal?: boolean | null
+          process_id: number
+        }
+        Update: {
+          codigo?: number | null
+          created_at?: string | null
+          id?: number
+          nome?: string | null
+          principal?: boolean | null
+          process_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_subjects_process_id_fkey"
             columns: ["process_id"]
             isOneToOne: false
             referencedRelation: "processes"
@@ -103,67 +383,43 @@ export type Database = {
       }
       processes: {
         Row: {
-          attachments: string[] | null
-          court: string
-          created_at: string
-          defendant: string | null
-          defendant_document: string | null
+          court: string | null
+          created_at: string | null
           description: string | null
-          id: string
-          instance: string
-          judge: string | null
+          id: number
           number: string
           plaintiff: string | null
           plaintiff_document: string | null
-          status: string
-          tags: string[] | null
-          title: string
-          type: string
-          updated_at: string
-          user_id: string
-          value: number | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          attachments?: string[] | null
-          court: string
-          created_at?: string
-          defendant?: string | null
-          defendant_document?: string | null
+          court?: string | null
+          created_at?: string | null
           description?: string | null
-          id?: string
-          instance: string
-          judge?: string | null
+          id?: number
           number: string
           plaintiff?: string | null
           plaintiff_document?: string | null
-          status: string
-          tags?: string[] | null
-          title: string
-          type: string
-          updated_at?: string
-          user_id: string
-          value?: number | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          attachments?: string[] | null
-          court?: string
-          created_at?: string
-          defendant?: string | null
-          defendant_document?: string | null
+          court?: string | null
+          created_at?: string | null
           description?: string | null
-          id?: string
-          instance?: string
-          judge?: string | null
+          id?: number
           number?: string
           plaintiff?: string | null
           plaintiff_document?: string | null
-          status?: string
-          tags?: string[] | null
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-          value?: number | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -205,9 +461,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      court_instance: "primeira" | "segunda" | "superior" | "supremo"
       intimation_method: "official_gazette" | "mail" | "officer" | "electronic"
       intimation_status: "pending" | "completed" | "expired"
       intimation_type: "defense" | "hearing" | "payment" | "document" | "other"
+      process_class:
+        | "Ação Civil Pública"
+        | "Ação Trabalhista"
+        | "Mandado de Segurança"
+        | "Recurso Ordinário"
+        | "Agravo de Petição"
+        | "Outros"
+      process_priority: "Normal" | "Urgente" | "Alta" | "Baixa"
+      process_status: "Em andamento" | "Arquivado" | "Suspenso" | "Baixado"
+      process_type: "liminar" | "recurso" | "outros"
       user_type: "internal" | "external"
     }
     CompositeTypes: {
