@@ -1,0 +1,17 @@
+Tabela processes
+
+Name			Data Type			Format	
+id 			uuid				uuid	
+number 			character varying		varchar	
+title 			character varying		varchar	
+description 		text				text	
+status 			character varying		varchar	
+type 			USER-DEFINED			process_type	
+instance 		USER-DEFINED			court_instance	
+value 			numeric				numeric	
+court 			character varying		varchar	
+user_id 		uuid				uuid	
+created_at 		timestamp with time zone	timestamptz	
+updated_at 		timestamp with time zone	timestamptz	
+plaintiff 		character varying		varchar	
+plaintiff_document 	character varying		varchar

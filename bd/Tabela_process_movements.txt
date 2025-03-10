@@ -1,0 +1,11 @@
+Tabela process_movements
+
+Name			Data Type			Format	
+id      		uuid	        		uuid	
+process_id      	uuid	        		uuid	
+código  		integer				int4	
+nome			text				text	
+data hora		timestampwith time zone		timestamptz	
+complementos tabelados 	jsonb				jsonb	
+orgao_julgador 		jsonb				jsonb	
+created_at 		timestamp with time zone	timestamptz
