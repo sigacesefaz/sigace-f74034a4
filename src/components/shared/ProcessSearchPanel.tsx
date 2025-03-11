@@ -1,255 +1,143 @@
-import { useState, useEffect } from "react";
-import { useDebounce } from "use-debounce";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Court, DatajudProcess, DatajudHit } from "@/types/datajud";
-import { courts } from "@/services/datajud";
-import { searchProcesses } from "@/services/datajud";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+
+import { useState, useEffect, SetStateAction } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { courts, searchProcesses } from '@/services/datajud';
+import { formatProcessNumber } from '@/lib/utils';
+import { DatajudMovimentoProcessual } from '@/types/datajud';
 
 interface ProcessSearchPanelProps {
-  onProcessSelect: (process: DatajudProcess, courtEndpoint: string) => Promise<boolean>;
-  onManualEntry?: () => void; // Changed from onManual to onManualEntry to match usage
-  buttonLabel?: string;
+  onProcessSelect: (processes: DatajudMovimentoProcessual[]) => void;
   isLoading?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export function ProcessSearchPanel({ onProcessSelect, onManualEntry, buttonLabel, isLoading: externalLoading }: ProcessSearchPanelProps) {
-  const [processNumber, setProcessNumber] = useState("");
-  const [searchTerm] = useDebounce(processNumber, 500);
-  const [isLoading, setIsLoading] = useState(false);
-  // Definir o Tribunal de Justiça do Tocantins como padrão
-  const tjtoDefault = courts.ESTADUAL.find(court => court.id === "tjto") || courts.ESTADUAL[0];
-  const [court, setCourt] = useState<Court | null>(tjtoDefault);
-  // Changed to DatajudHit[] type to match the searchProcesses return type
-  const [searchResults, setSearchResults] = useState<DatajudHit[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
+export function ProcessSearchPanel({ onProcessSelect, isLoading = false, size = 'md' }: ProcessSearchPanelProps) {
+  const [processNumber, setProcessNumber] = useState('');
+  const [selectedCourt, setSelectedCourt] = useState('');
+  const [searchingProcess, setSearchingProcess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [foundProcesses, setFoundProcesses] = useState<DatajudMovimentoProcessual[]>([]);
 
-  // Formatação do número do processo (remove caracteres não numéricos)
-  const cleanProcessNumber = (value: string) => {
-    return value.replace(/\D/g, '');
+  const clearProcessNumber = (input: string) => {
+    // Remove any non-numeric characters
+    return input.replace(/\D/g, '');
   };
 
-  const validateProcessNumber = (number: string): boolean => {
-    // Verifica se segue o padrão 0000000-00.0000.0.00.0000
-    const regex = /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/;
-    return regex.test(number);
-  };
-
-  useEffect(() => {
-    if (searchTerm && searchTerm.length >= 5) {
-      handleSearch();
-    }
-  }, [searchTerm, court]);
-
-  const handleSearch = async () => {
-    if (!processNumber.trim() || !court) {
+  const handleProcessSearch = async () => {
+    if (!processNumber || !selectedCourt) {
+      setError('Preencha o número do processo e selecione um tribunal');
       return;
     }
 
-    // Para pesquisa, aceitamos o formato tanto com quanto sem formatação
-    // Validamos apenas se tiver a formatação completa
-    if (processNumber.includes("-") || processNumber.includes(".")) {
-      if (!validateProcessNumber(processNumber)) {
-        toast.error("Formato inválido. Use: 0000000-00.0000.0.00.0000");
-        return;
-      }
-    }
+    setError(null);
+    setSearchingProcess(true);
+    setSearched(false);
 
-    setIsLoading(true);
     try {
-      // Usar o número do processo completo sem limpar caracteres especiais para a API
-      const results = await searchProcesses(court.endpoint, processNumber);
-      setSearchResults(results);
-      setHasSearched(true);
+      const cleanProcessNumber = clearProcessNumber(processNumber);
+      const results = await searchProcesses(selectedCourt, cleanProcessNumber);
+      
+      setFoundProcesses(results);
+      setSearched(true);
       
       if (results.length === 0) {
-        toast.info("Nenhum processo encontrado");
+        setError('Nenhum processo encontrado com os critérios informados');
       }
-    } catch (error) {
-      console.error("Erro ao buscar processos:", error);
-      toast.error("Erro ao buscar processos");
-      setSearchResults([]);
+    } catch (err) {
+      console.error('Erro ao buscar processo:', err);
+      setError('Erro ao buscar processo. Verifique os critérios informados e tente novamente.');
     } finally {
-      setIsLoading(false);
+      setSearchingProcess(false);
     }
   };
 
-  const handleSelectProcess = async (hit: DatajudHit) => {
-    if (!court) return;
-    
-    setIsLoading(true);
-    try {
-      // Pass the process from the hit to the onProcessSelect function
-      const success = await onProcessSelect(hit.process, court.endpoint);
-      if (!success) {
-        toast.error("Erro ao selecionar processo");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  const handleProcessSelectClick = (processos: DatajudMovimentoProcessual[]) => {
+    onProcessSelect(processos);
+    setFoundProcesses([]);
+    setSearched(false);
   };
 
-  const handleProcessNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const numericValue = value.replace(/\D/g, '').slice(0, 20); // Limitar a 20 caracteres numéricos
-    
-    // Aplicar máscara
-    let maskedValue = '';
-    if (numericValue.length > 0) {
-      // Aplicar formato: 0000000-00.0000.0.00.0000
-      const parts = [];
-      if (numericValue.length > 0) parts.push(numericValue.slice(0, Math.min(7, numericValue.length)));
-      if (numericValue.length > 7) parts.push('-' + numericValue.slice(7, Math.min(9, numericValue.length)));
-      if (numericValue.length > 9) parts.push('.' + numericValue.slice(9, Math.min(13, numericValue.length)));
-      if (numericValue.length > 13) parts.push('.' + numericValue.slice(13, Math.min(14, numericValue.length)));
-      if (numericValue.length > 14) parts.push('.' + numericValue.slice(14, Math.min(16, numericValue.length)));
-      if (numericValue.length > 16) parts.push('.' + numericValue.slice(16, Math.min(20, numericValue.length)));
-      
-      maskedValue = parts.join('');
-    }
-    
-    setProcessNumber(maskedValue);
+  const handleProcessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setProcessNumber(value);
+    setError(null);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium">Buscar Processo</h3>
-          <p className="text-sm text-gray-500">
-            Informe o número do processo que deseja importar
-          </p>
+    <div>
+      <div className={`grid ${size === 'sm' ? 'grid-cols-1 gap-2' : 'md:grid-cols-3 gap-4'}`}>
+        <div className={size === 'sm' ? 'col-span-1' : 'md:col-span-1'}>
+          <Select value={selectedCourt} onValueChange={setSelectedCourt}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o Tribunal" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Selecione o Tribunal</SelectItem>
+              {Object.values(courts).flat().map((court) => (
+                <SelectItem key={court.id} value={court.endpoint}>
+                  {court.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="court">Tribunal</Label>
-            <Select 
-              value={court?.id || ""} 
-              onValueChange={(value) => {
-                const selectedCourt = Object.values(courts)
-                  .flat()
-                  .find(c => c.id === value);
-                setCourt(selectedCourt || null);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um tribunal" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(courts)
-                  .filter(([key]) => 
-                    // Filtrar apenas os tribunais ESTADUAL e FEDERAL
-                    key === "ESTADUAL" || key === "FEDERAL" || key === "SUPERIOR"
-                  )
-                  .map(([courtType, courtsList]) => (
-                    <div key={courtType}>
-                      <div className="px-2 py-1.5 text-sm font-semibold">
-                        {courtType === "ESTADUAL" ? "Justiça Estadual" : 
-                         courtType === "FEDERAL" ? "Justiça Federal" : 
-                         "Tribunais Superiores"}
-                      </div>
-                      {courtsList.map((court) => (
-                        <SelectItem key={court.id} value={court.id}>
-                          {court.name}
-                        </SelectItem>
-                      ))}
-                      <Separator className="my-1" />
-                    </div>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className={size === 'sm' ? 'col-span-1' : 'md:col-span-1'}>
+          <Input
+            value={processNumber}
+            onChange={handleProcessNumberChange}
+            placeholder="Número do Processo"
+            className="w-full"
+          />
+        </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="processNumber">Número do Processo</Label>
-            <Input
-              id="processNumber"
-              value={processNumber}
-              onChange={handleProcessNumberChange}
-              className="flex h-10 w-full"
-              placeholder="0000000-00.0000.0.00.0000"
-              disabled={isLoading}
-            />
-          </div>
-
+        <div className={size === 'sm' ? 'col-span-1' : 'md:col-span-1'}>
           <Button 
-            type="button" 
-            onClick={handleSearch} 
-            disabled={!processNumber || isLoading}
-            className="text-white"
+            onClick={handleProcessSearch} 
+            className="w-full"
+            disabled={!processNumber || !selectedCourt || searchingProcess || isLoading}
           >
-            Buscar Processo
+            {searchingProcess || isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" /> Buscando...
+              </>
+            ) : (
+              'Buscar Processo'
+            )}
           </Button>
         </div>
       </div>
 
-      {isLoading && (
-        <div className="space-y-3">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
+      {error && (
+        <div className="mt-4 p-2 text-red-600 bg-red-50 rounded">
+          {error}
         </div>
       )}
 
-      {!isLoading && hasSearched && (
-        <div className="space-y-4">
-          <div className="text-sm font-medium">
-            {searchResults.length === 0 
-              ? "Nenhum processo encontrado" 
-              : `${searchResults.length} processos encontrados`}
-          </div>
-
-          <div className="space-y-3">
-            {searchResults.slice(0, 5).map((hit, index) => (
-              <Card 
-                key={index} 
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-                onClick={() => handleSelectProcess(hit)}
-              >
-                <div className="flex flex-col gap-2">
-                  <div className="font-medium">{hit.process.classe?.nome || "Sem classe"}</div>
-                  <div className="text-sm text-muted-foreground font-mono">{hit.process.numeroProcesso}</div>
-                  <div className="text-xs text-gray-500">{hit.process.tribunal}</div>
-                </div>
+      {searched && foundProcesses.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-medium text-lg mb-2">Resultados da busca:</h3>
+          <div className="space-y-2">
+            {foundProcesses.map((movimento, index) => (
+              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent 
+                  className="p-4 flex justify-between items-center"
+                  onClick={() => handleProcessSelectClick([movimento])}
+                >
+                  <div>
+                    <p className="font-semibold">{formatProcessNumber(movimento.process.numeroProcesso)}</p>
+                    <p className="text-sm text-gray-600">{movimento.process.classe?.nome || "Não informado"}</p>
+                    <p className="text-xs text-gray-500">Tribunal: {movimento.process.tribunal}</p>
+                  </div>
+                  <Button size="sm">Selecionar</Button>
+                </CardContent>
               </Card>
             ))}
-          </div>
-
-          {searchResults.length === 0 && onManualEntry && (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-4">
-                Não foi possível encontrar o processo. Deseja cadastrar manualmente?
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={onManualEntry}
-                className="text-white"
-              >
-                Cadastro Manual
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isLoading && !hasSearched && (
-        <div className="flex items-center justify-center border rounded-lg p-8">
-          <div className="text-center">
-            <p className="text-sm text-gray-500 mb-4">
-              Busque um processo pelo número
-            </p>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { ArrowLeft, ArrowRight, Save } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
@@ -13,6 +14,7 @@ interface ProcessDetailsProps {
   onSave: () => void;
   onCancel: () => void;
   isImport?: boolean;
+  importProgress?: number;
 }
 
 export function ProcessDetails({ 
@@ -20,7 +22,8 @@ export function ProcessDetails({
   mainProcess, 
   onSave, 
   onCancel, 
-  isImport = true 
+  isImport = true,
+  importProgress = 0
 }: ProcessDetailsProps) {
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("events");
@@ -253,6 +256,17 @@ export function ProcessDetails({
           </div>
         )}
         
+        {/* Progress indicator for imports */}
+        {isImport && importProgress > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Importando processo...</span>
+              <span>{Math.round(importProgress)}%</span>
+            </div>
+            <Progress value={importProgress} className="h-2" />
+          </div>
+        )}
+        
         {/* Overview section sempre visível */}
         <div className="mt-4">
           <ProcessOverview />
@@ -263,12 +277,33 @@ export function ProcessDetails({
       <Card className="p-6">
         <Tabs defaultValue="events" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
-            <TabsTrigger value="events">Eventos</TabsTrigger>
+            <TabsTrigger value="events">Movimentação</TabsTrigger>
+            <TabsTrigger value="intimation">Intimação</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
+            <TabsTrigger value="decisions">Decisão</TabsTrigger>
             <TabsTrigger value="parties">Partes</TabsTrigger>
           </TabsList>
           
           <TabsContent value="events">
             <MovementsList />
+          </TabsContent>
+          
+          <TabsContent value="intimation">
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma intimação disponível</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="documents">
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhum documento disponível</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="decisions">
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma decisão disponível</p>
+            </div>
           </TabsContent>
           
           <TabsContent value="parties">
@@ -285,7 +320,11 @@ export function ProcessDetails({
         </Button>
         
         {isImport && (
-          <Button onClick={onSave} className="bg-primary text-white">
+          <Button 
+            onClick={onSave} 
+            className="bg-primary text-white"
+            disabled={importProgress > 0 && importProgress < 100}
+          >
             <Save className="h-4 w-4 mr-2" />
             Importar Processo
           </Button>

@@ -21,6 +21,7 @@ export default function NewProcess() {
   const [processMovimentos, setProcessMovimentos] = useState<DatajudMovimentoProcessual[] | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   const handleProcessSelect = async (processNumber: string, courtEndpoint: string) => {
     setIsLoading(true);
@@ -77,6 +78,8 @@ export default function NewProcess() {
     }
     
     setIsLoading(true);
+    setImportProgress(5); // Iniciar a barra de progresso
+    
     try {
       const {
         data: {
@@ -86,12 +89,16 @@ export default function NewProcess() {
       
       if (!user) {
         toast("Usuário não autenticado", "", { variant: "destructive" });
+        setImportProgress(0);
+        setIsLoading(false);
         return;
       }
 
       // Obter o processo principal (primeiro movimento processual)
       const mainMovimento = processMovimentos[0];
       const mainProcess = mainMovimento.process;
+      
+      setImportProgress(10);
 
       // Verificar se o processo já existe
       const { data: existingProcess } = await supabase
@@ -102,9 +109,12 @@ export default function NewProcess() {
 
       if (existingProcess) {
         toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
+        setImportProgress(0);
         setIsLoading(false);
         return;
       }
+      
+      setImportProgress(20);
 
       // Inserir o processo principal na tabela processes
       const { data: newProcess, error: insertError } = await supabase
@@ -121,25 +131,32 @@ export default function NewProcess() {
           plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
           plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
           is_parent: true,
-          parent_id: null
+          parent_id: null,
+          metadata: mainProcess
         })
         .select('id')
         .single();
+        
+      setImportProgress(40);
 
       if (insertError) {
         console.error("Erro ao inserir processo principal:", insertError);
         toast("Erro ao importar processo", insertError.message, { variant: "destructive" });
+        setImportProgress(0);
         setIsLoading(false);
         return;
       }
 
       if (!newProcess?.id) {
         toast("Erro ao obter ID do processo principal criado", "", { variant: "destructive" });
+        setImportProgress(0);
         setIsLoading(false);
         return;
       }
 
       const mainProcessId = newProcess.id;
+      
+      setImportProgress(50);
 
       // Armazenar os detalhes do processo principal
       try {
@@ -161,6 +178,8 @@ export default function NewProcess() {
             data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
             json_completo: mainProcess // Armazenar o JSON completo
           });
+          
+        setImportProgress(60);
 
         if (detailsError) {
           console.error("Erro ao inserir detalhes do processo principal:", detailsError);
@@ -169,16 +188,30 @@ export default function NewProcess() {
         console.error("Erro ao inserir detalhes do processo principal:", error);
       }
 
+      // Processar os movimentos e assuntos em paralelo para otimizar
+      setImportProgress(65);
+      
+      const savePromises = [];
+      
       // Processar os movimentos do processo principal
       if (mainProcess.movimentos && mainProcess.movimentos.length > 0) {
-        await saveProcessMovements(mainProcessId, mainProcess.movimentos);
+        savePromises.push(saveProcessMovements(mainProcessId, mainProcess.movimentos));
       }
       
       // Processar os assuntos do processo principal
       if (mainProcess.assuntos && mainProcess.assuntos.length > 0) {
-        await saveProcessSubjects(mainProcessId, mainProcess.assuntos);
+        savePromises.push(saveProcessSubjects(mainProcessId, mainProcess.assuntos));
       }
-
+      
+      // Processar as partes do processo principal
+      if (mainProcess.partes && mainProcess.partes.length > 0) {
+        savePromises.push(saveProcessParties(mainProcessId, mainProcess.partes));
+      }
+      
+      // Esperar todas as operações paralelas terminarem
+      await Promise.all(savePromises);
+      setImportProgress(90);
+      
       // Processar os movimentos processuais adicionais (mesma numeração processual, mas diferentes movimentos)
       if (processMovimentos.length > 1) {
         // Aqui vamos anexar todos os movimentos adicionais ao processo principal
@@ -193,6 +226,8 @@ export default function NewProcess() {
           }
         }
       }
+      
+      setImportProgress(100);
 
       toast("Processo importado com sucesso", "", { variant: "success" });
       navigate("/processes");
@@ -205,6 +240,8 @@ export default function NewProcess() {
       } else {
         toast("Erro ao importar processo", "", { variant: "destructive" });
       }
+      
+      setImportProgress(0);
     } finally {
       setIsLoading(false);
     }
@@ -212,31 +249,46 @@ export default function NewProcess() {
 
   // Função para salvar os movimentos de um processo
   const saveProcessMovements = async (processId: string | number, movements: DatajudProcess["movimentos"]) => {
+    if (!movements || movements.length === 0) return;
+    
     try {
-      // Inserir cada movimento individualmente para evitar problemas de tamanho
-      for (const movement of movements) {
-        const { error: movementError } = await supabase
-          .from("process_movements")
-          .insert({
-            process_id: processId,
-            codigo: movement.codigo, 
-            nome: movement.nome || "",
-            data_hora: movement.dataHora,
-            tipo: movement.tipo || "",
-            complemento: Array.isArray(movement.complemento) ? movement.complemento.join(", ") : (movement.complemento || ""),
-            complementos_tabelados: movement.complementosTabelados || [],
-            orgao_julgador: movement.orgaoJulgador || {},
-            movimento_principal_id: null,
-            json_completo: movement
-          });
-
-        if (movementError) {
-          console.error(`Erro ao inserir movimento ${movement.codigo}:`, movementError);
-        }
+      // Preparar todos os movimentos para inserção em batch (lotes)
+      const batchSize = 50;
+      const batches = [];
+      
+      for (let i = 0; i < movements.length; i += batchSize) {
+        const batch = movements.slice(i, i + batchSize).map(movement => ({
+          process_id: processId,
+          codigo: movement.codigo, 
+          nome: movement.nome || "",
+          data_hora: movement.dataHora,
+          tipo: movement.tipo || "",
+          complemento: Array.isArray(movement.complemento) ? movement.complemento.join(", ") : (movement.complemento || ""),
+          complementos_tabelados: movement.complementosTabelados || [],
+          orgao_julgador: movement.orgaoJulgador || {},
+          movimento_principal_id: null,
+          json_completo: movement
+        }));
         
-        // Se o movimento tem complementos tabelados, inseri-los também
+        batches.push(batch);
+      }
+      
+      // Inserir os lotes em paralelo
+      await Promise.all(batches.map(async batch => {
+        const { error } = await supabase
+          .from("process_movements")
+          .insert(batch);
+          
+        if (error) {
+          console.error("Erro ao inserir lote de movimentos:", error);
+        }
+      }));
+      
+      // Processar os complementos tabelados em uma segunda passagem
+      // Este é um exemplo simplificado, você precisaria rastrear IDs
+      for (const movement of movements) {
         if (movement.complementosTabelados && Array.isArray(movement.complementosTabelados) && movement.complementosTabelados.length > 0) {
-          // Obter o ID do movimento principal que acabamos de inserir
+          // Obter o ID do movimento principal
           const { data: insertedMovement } = await supabase
             .from("process_movements")
             .select("id")
@@ -248,26 +300,35 @@ export default function NewProcess() {
             .single();
             
           if (insertedMovement) {
-            for (const complemento of movement.complementosTabelados) {
-              const { error: complementoError } = await supabase
-                .from("process_movements")
-                .insert({
-                  process_id: processId,
-                  codigo: complemento.codigo || movement.codigo,
-                  nome: complemento.nome || complemento.descricao || "Complemento",
-                  data_hora: movement.dataHora,
-                  tipo: "COMPLEMENTO_TABELADO",
-                  complemento: complemento.descricao || "",
-                  complementos_tabelados: [],
-                  orgao_julgador: movement.orgaoJulgador || {},
-                  movimento_principal_id: insertedMovement.id,
-                  json_completo: complemento
-                });
-                
-              if (complementoError) {
-                console.error(`Erro ao inserir complemento tabelado:`, complementoError);
-              }
+            const complementoBatches = [];
+            
+            for (let i = 0; i < movement.complementosTabelados.length; i += batchSize) {
+              const complementoBatch = movement.complementosTabelados.slice(i, i + batchSize).map(complemento => ({
+                process_id: processId,
+                codigo: complemento.codigo || movement.codigo,
+                nome: complemento.nome || complemento.descricao || "Complemento",
+                data_hora: movement.dataHora,
+                tipo: "COMPLEMENTO_TABELADO",
+                complemento: complemento.descricao || "",
+                complementos_tabelados: [],
+                orgao_julgador: movement.orgaoJulgador || {},
+                movimento_principal_id: insertedMovement.id,
+                json_completo: complemento
+              }));
+              
+              complementoBatches.push(complementoBatch);
             }
+            
+            // Inserir os lotes de complementos em paralelo
+            await Promise.all(complementoBatches.map(async batch => {
+              const { error } = await supabase
+                .from("process_movements")
+                .insert(batch);
+                
+              if (error) {
+                console.error("Erro ao inserir lote de complementos:", error);
+              }
+            }));
           }
         }
       }
@@ -278,29 +339,59 @@ export default function NewProcess() {
 
   // Função para salvar os assuntos de um processo
   const saveProcessSubjects = async (processId: string | number, subjects: DatajudProcess["assuntos"]) => {
+    if (!subjects || subjects.length === 0) return;
+    
     try {
-      for (let i = 0; i < subjects.length; i++) {
-        const subject = subjects[i];
-        const { error: subjectError } = await supabase
-          .from("process_subjects")
-          .insert({
-            process_id: processId,
-            codigo: subject.codigo,
-            nome: subject.nome || "",
-            principal: i === 0 // Considerar o primeiro como principal
-          });
-
-        if (subjectError) {
-          console.error(`Erro ao inserir assunto ${subject.nome}:`, subjectError);
-        }
+      const subjectsData = subjects.map((subject, index) => ({
+        process_id: processId,
+        codigo: subject.codigo,
+        nome: subject.nome || "",
+        principal: index === 0 // Considerar o primeiro como principal
+      }));
+      
+      const { error } = await supabase
+        .from("process_subjects")
+        .insert(subjectsData);
+        
+      if (error) {
+        console.error("Erro ao inserir assuntos:", error);
       }
     } catch (error) {
       console.error("Erro ao inserir assuntos do processo:", error);
     }
   };
+  
+  // Função para salvar as partes do processo
+  const saveProcessParties = async (processId: string | number, parties: any[]) => {
+    if (!parties || parties.length === 0) return;
+    
+    try {
+      const partiesData = parties.map(party => ({
+        process_id: processId,
+        nome: party.nome || "",
+        papel: party.papel || "",
+        tipo_pessoa: party.tipoPessoa || "",
+        documento: party.documento || "",
+        advogados: party.advogados || [],
+        json_completo: party
+      }));
+      
+      const { error } = await supabase
+        .from("process_parties")
+        .insert(partiesData);
+        
+      if (error) {
+        console.error("Erro ao inserir partes:", error);
+      }
+    } catch (error) {
+      console.error("Erro ao inserir partes do processo:", error);
+    }
+  };
 
   const handleCreateManualProcess = async (processData: any) => {
     setIsLoading(true);
+    setImportProgress(5);
+    
     try {
       const {
         data: {
@@ -311,6 +402,8 @@ export default function NewProcess() {
         toast("Usuário não autenticado", "", { variant: "destructive" });
         return;
       }
+      
+      setImportProgress(30);
 
       // Verificar se o processo já existe
       const { data: existingProcess } = await supabase
@@ -321,10 +414,13 @@ export default function NewProcess() {
 
       if (existingProcess) {
         toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
+        setImportProgress(0);
         setIsLoading(false);
         return;
       }
-
+      
+      setImportProgress(60);
+      
       const {
         error
       } = await supabase.from("processes").insert({
@@ -335,12 +431,19 @@ export default function NewProcess() {
         is_parent: true,
         parent_id: null
       });
+      
+      setImportProgress(90);
+      
       if (error) throw error;
+      
+      setImportProgress(100);
+      
       toast("Processo cadastrado com sucesso", "", { variant: "success" });
       navigate("/processes");
     } catch (error) {
       console.error("Erro ao cadastrar processo:", error);
       toast("Erro ao cadastrar processo", "", { variant: "destructive" });
+      setImportProgress(0);
     } finally {
       setIsLoading(false);
     }
@@ -349,6 +452,7 @@ export default function NewProcess() {
   const handleCancel = () => {
     setCurrentMode("search");
     setProcessMovimentos(null);
+    setImportProgress(0);
   };
 
   return (
@@ -395,7 +499,8 @@ export default function NewProcess() {
             processMovimentos={processMovimentos} 
             mainProcess={processMovimentos[0].process} 
             onSave={handleSaveProcess} 
-            onCancel={handleCancel} 
+            onCancel={handleCancel}
+            importProgress={importProgress} 
           />
         )}
 
@@ -407,6 +512,16 @@ export default function NewProcess() {
             </Button>
             <Card className="p-6">
               <ProcessForm onSubmit={handleCreateManualProcess} onCancel={handleCancel} />
+              
+              {importProgress > 0 && (
+                <div className="mt-6">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Importando processo...</span>
+                    <span>{Math.round(importProgress)}%</span>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                </div>
+              )}
             </Card>
           </>
         )}

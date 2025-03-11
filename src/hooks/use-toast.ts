@@ -1,9 +1,9 @@
 
 import { toast as sonnerToast } from "sonner";
-import type { ToastProps as SonnerToastProps } from "sonner";
+import type { ToastOptions as SonnerToastOptions } from "sonner";
 
 // Define our custom ToastProps that includes title
-export interface ToastProps extends Omit<SonnerToastProps, "title"> {
+export interface ToastProps extends Omit<SonnerToastOptions, "title"> {
   title?: string;
   description?: string;
 }
