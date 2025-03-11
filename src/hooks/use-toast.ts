@@ -5,16 +5,16 @@ import type { ExternalToast } from "sonner";
 export type ToastProps = ExternalToast;
 
 export function toast(props: ToastProps): void;
-export function toast(message: string, props?: Omit<ToastProps, "title">): void;
+export function toast(message: string, props?: Omit<ToastProps, "description">): void;
 export function toast(
   title: string,
-  message: string,
-  props?: Omit<ToastProps, "title" | "description">
+  description: string,
+  props?: Omit<ToastProps, "description">
 ): void;
 export function toast(
   messageOrProps: string | ToastProps,
-  descriptionOrProps?: string | Omit<ToastProps, "title">,
-  props?: Omit<ToastProps, "title" | "description">
+  descriptionOrProps?: string | Omit<ToastProps, "description">,
+  props?: Omit<ToastProps, "description">
 ) {
   if (typeof messageOrProps === "string") {
     const description = typeof descriptionOrProps === "string" ? descriptionOrProps : undefined;
@@ -34,6 +34,7 @@ export function toast(
   return sonnerToast(messageOrProps);
 }
 
+// Simple hook to provide the toast function
 const useToast = () => {
   return { toast };
 };

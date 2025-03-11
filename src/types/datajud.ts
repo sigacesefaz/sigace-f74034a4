@@ -1,3 +1,4 @@
+
 export interface DatajudFormat {
   codigo: number;
   nome: string;
@@ -75,6 +76,15 @@ export interface DatajudProcess {
     codigo?: number;
     nome?: string;
   };
+}
+
+// Add DatajudHit interface to fix missing type errors
+export interface DatajudHit {
+  _id: string;
+  _index: string;
+  _score: number;
+  _source: DatajudProcessSource;
+  process: DatajudProcess;
 }
 
 export interface DatajudMovimentoProcessual {
