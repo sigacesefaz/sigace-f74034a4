@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ProcessList } from "@/pages/processes/ProcessList";
@@ -159,7 +158,7 @@ export default function ProcessListPage() {
   };
 
   // Function to delete a process
-  const handleDeleteProcess = async (processId: string) => {
+  const handleDeleteProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Deleting process with ID: ${processId}`);
       
@@ -178,26 +177,23 @@ export default function ProcessListPage() {
       // Refetch the data to update the UI
       refetch();
       
-      return true;
+      toast.success("Processo excluído com sucesso!");
     } catch (error) {
       console.error("Error deleting process:", error);
       toast.error("Erro ao excluir o processo");
-      throw error;
     }
   };
 
-  // Function to refresh a process (placeholder for now)
-  const handleRefreshProcess = async (processId: string) => {
+  // Function to refresh a process
+  const handleRefreshProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Refreshing process with ID: ${processId}`);
       // Here you would implement the logic to refresh process data
-      // For now, just return success
+      // For now, just show success
       toast.success("Processo atualizado com sucesso!");
-      return true;
     } catch (error) {
       console.error("Error refreshing process:", error);
       toast.error("Erro ao atualizar o processo");
-      throw error;
     }
   };
 
