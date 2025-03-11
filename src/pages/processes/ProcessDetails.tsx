@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ProcessDetails as ProcessDetailsComponent } from "@/components/process/ProcessDetails";
 import { ArrowLeft } from "lucide-react";
-import { DatajudHit, DatajudProcess } from "@/types/datajud";
+import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 
 // Interface simplificada para o componente
 interface SimplifiedDatajudProcess {
@@ -85,7 +85,7 @@ export default function ProcessDetailsPage() {
           console.error("Erro ao carregar assuntos do processo:", subjectsError);
         }
         
-        // Buscar processos relacionados (hits) para este processo principal
+        // Buscar processos relacionados (movimentos processuais) para este processo principal
         const { data: relatedProcesses, error: relatedError } = await supabase
           .from('processes')
           .select('*')
@@ -239,8 +239,8 @@ export default function ProcessDetailsPage() {
 
   const datajudProcess = convertToDatajudProcess(processData);
   
-  // Create a main DatajudHit for the parent process
-  const mainHit: DatajudHit = {
+  // Create a main DatajudMovimentoProcessual for the parent process
+  const mainMovimento: DatajudMovimentoProcessual = {
     id: datajudProcess.id || "1",
     index: "process",
     score: 1,
@@ -248,8 +248,8 @@ export default function ProcessDetailsPage() {
     rawData: null
   };
   
-  // Create hits for related processes
-  const relatedHits: DatajudHit[] = processData.relatedProcesses?.map((relatedProcess: any) => {
+  // Create movimentos processuais for related processes
+  const relatedMovimentos: DatajudMovimentoProcessual[] = processData.relatedProcesses?.map((relatedProcess: any) => {
     const relatedDatajudProcess = convertToDatajudProcess(relatedProcess);
     return {
       id: relatedProcess.id,
@@ -260,8 +260,8 @@ export default function ProcessDetailsPage() {
     };
   }) || [];
   
-  // Combine main hit with related hits
-  const processHits = [mainHit, ...relatedHits];
+  // Combine main movimento with related movimentos
+  const processMovimentos = [mainMovimento, ...relatedMovimentos];
 
   return (
     <div className="container mx-auto py-8">
@@ -278,7 +278,7 @@ export default function ProcessDetailsPage() {
       </div>
 
       <ProcessDetailsComponent
-        processHits={processHits}
+        processMovimentos={processMovimentos}
         mainProcess={datajudProcess}
         onSave={handleSave}
         onCancel={handleCancel}

@@ -1,5 +1,5 @@
 
-import { Court, CourtType, DatajudProcess, DatajudAPIResponse, DatajudProcessSource, DatajudIntimation, DatajudHit } from "@/types/datajud";
+import { Court, CourtType, DatajudProcess, DatajudAPIResponse, DatajudProcessSource, DatajudIntimation, DatajudMovimentoProcessual } from "@/types/datajud";
 import { supabase } from "@/lib/supabase";
 
 export const courts: Record<CourtType, Court[]> = {
@@ -108,8 +108,8 @@ const mapSourceToProcess = (source: DatajudProcessSource, id: string): DatajudPr
   };
 };
 
-// Convert complete hit to DatajudHit model
-const mapHitToDatajudHit = (hit: any): DatajudHit => {
+// Convert complete hit to DatajudMovimentoProcessual model
+const mapHitToDatajudMovimentoProcessual = (hit: any): DatajudMovimentoProcessual => {
   return {
     id: hit._id,
     index: hit._index,
@@ -126,7 +126,7 @@ const formatProcessNumberForQuery = (processNumber: string): string => {
   return cleanNumber;
 };
 
-export async function getProcessById(courtEndpoint: string, processNumber: string): Promise<DatajudHit[] | null> {
+export async function getProcessById(courtEndpoint: string, processNumber: string): Promise<DatajudMovimentoProcessual[] | null> {
   try {
     console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
     
@@ -141,7 +141,7 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
           "numeroProcesso": formattedNumber
         }
       },
-      size: 10 // Aumentar tamanho para buscar mais hits relacionados
+      size: 10 // Aumentar tamanho para buscar mais movimentos processuais relacionados
     };
     
     console.log("Request body:", JSON.stringify(requestBody, null, 2));
@@ -173,11 +173,11 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
       return null;
     }
     
-    // Mapear todos os hits encontrados
-    const hits = data.hits.hits.map(hit => mapHitToDatajudHit(hit));
+    // Mapear todos os movimentos processuais encontrados
+    const movimentosProcessuais = data.hits.hits.map(hit => mapHitToDatajudMovimentoProcessual(hit));
     
-    console.log("Processed data:", hits);
-    return hits;
+    console.log("Processed data:", movimentosProcessuais);
+    return movimentosProcessuais;
     
   } catch (error) {
     console.error("Error fetching process:", error);
@@ -185,7 +185,7 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
   }
 }
 
-export async function searchProcesses(courtEndpoint: string, processNumber: string): Promise<DatajudHit[]> {
+export async function searchProcesses(courtEndpoint: string, processNumber: string): Promise<DatajudMovimentoProcessual[]> {
   try {
     console.log(`Buscando processos com número ${processNumber} no tribunal ${courtEndpoint}`);
     
@@ -200,7 +200,7 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
           "numeroProcesso.keyword": formattedNumber
         }
       },
-      size: 10  // Aumentar tamanho para buscar mais hits relacionados
+      size: 10  // Aumentar tamanho para buscar mais movimentos processuais relacionados
     };
     
     console.log("Search request body:", JSON.stringify(requestBody, null, 2));
@@ -232,11 +232,11 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
       return [];
     }
     
-    // Mapear todos os hits encontrados
-    const hits = data.hits.hits.map(hit => mapHitToDatajudHit(hit));
+    // Mapear todos os movimentos processuais encontrados
+    const movimentosProcessuais = data.hits.hits.map(hit => mapHitToDatajudMovimentoProcessual(hit));
     
-    console.log("Search results:", hits);
-    return hits;
+    console.log("Search results:", movimentosProcessuais);
+    return movimentosProcessuais;
     
   } catch (error) {
     console.error("Error searching processes:", error);

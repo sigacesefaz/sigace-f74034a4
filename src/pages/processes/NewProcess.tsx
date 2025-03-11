@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DatajudHit, DatajudProcess } from "@/types/datajud";
+import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { ArrowLeft } from "lucide-react";
 
 type FormMode = "search" | "details" | "manual";
@@ -18,7 +18,7 @@ export default function NewProcess() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<FormMode>("search");
-  const [processHits, setProcessHits] = useState<DatajudHit[] | null>(null);
+  const [processMovimentos, setProcessMovimentos] = useState<DatajudMovimentoProcessual[] | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined);
   const [showManualEntry, setShowManualEntry] = useState(false);
 
@@ -27,9 +27,9 @@ export default function NewProcess() {
     try {
       console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
       
-      const hits = await getProcessById(courtEndpoint, processNumber);
+      const movimentos = await getProcessById(courtEndpoint, processNumber);
       
-      if (!hits || hits.length === 0) {
+      if (!movimentos || movimentos.length === 0) {
         toast.error("Processo não encontrado");
         setShowManualEntry(true);
         setCurrentMode("search"); // Manter no modo de busca para exibir o botão de cadastro manual
@@ -37,8 +37,16 @@ export default function NewProcess() {
         return false;
       }
       
-      console.log(`Processo encontrado com ${hits.length} hits:`, hits);
-      setProcessHits(hits);
+      console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
+      
+      // Filtramos para exibir apenas o primeiro movimento (principal) e seus relacionados
+      // Lógica: todos os movimentos com o mesmo número de processo são considerados do mesmo processo
+      const firstProcess = movimentos[0].process.numeroProcesso;
+      const filteredMovimentos = movimentos.filter(m => m.process.numeroProcesso === firstProcess);
+      
+      console.log(`Filtrado para ${filteredMovimentos.length} movimento(s) do mesmo processo`);
+      
+      setProcessMovimentos(filteredMovimentos);
       setSelectedCourt(courtEndpoint);
       setCurrentMode("details");
       setShowManualEntry(false);
@@ -62,7 +70,7 @@ export default function NewProcess() {
   };
 
   const handleSaveProcess = async () => {
-    if (!processHits || processHits.length === 0 || !selectedCourt) {
+    if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
       toast.error("Dados do processo incompletos.");
       return;
     }
@@ -80,9 +88,9 @@ export default function NewProcess() {
         return;
       }
 
-      // Obter o processo principal (primeiro hit)
-      const mainHit = processHits[0];
-      const mainProcess = mainHit.process;
+      // Obter o processo principal (primeiro movimento processual)
+      const mainMovimento = processMovimentos[0];
+      const mainProcess = mainMovimento.process;
 
       // Verificar se o processo já existe
       const { data: existingProcess } = await supabase
@@ -170,80 +178,17 @@ export default function NewProcess() {
         await saveProcessSubjects(mainProcessId, mainProcess.assuntos);
       }
 
-      // Processar os hits adicionais (subprocessos)
-      if (processHits.length > 1) {
-        for (let i = 1; i < processHits.length; i++) {
-          const subHit = processHits[i];
-          const subProcess = subHit.process;
+      // Processar os movimentos processuais adicionais (mesma numeração processual, mas diferentes movimentos)
+      if (processMovimentos.length > 1) {
+        // Aqui vamos anexar todos os movimentos adicionais ao processo principal
+        // em vez de criar processos separados
+        for (let i = 1; i < processMovimentos.length; i++) {
+          const additionalMovimento = processMovimentos[i];
+          const additionalProcess = additionalMovimento.process;
           
-          // Inserir o subprocesso na tabela processes vinculado ao processo principal
-          const { data: newSubProcess, error: subInsertError } = await supabase
-            .from("processes")
-            .insert({
-              number: subProcess.numeroProcesso,
-              title: `${subProcess.classe?.nome || 'Subprocesso'} - ${subProcess.numeroProcesso}`,
-              description: subProcess.assuntos?.map(a => a.nome).join(", ") || "",
-              status: subProcess.situacao?.nome || "Em andamento",
-              court: subProcess.tribunal,
-              user_id: user.id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              plaintiff: subProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
-              plaintiff_document: subProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
-              is_parent: false,
-              parent_id: mainProcessId
-            })
-            .select('id')
-            .single();
-
-          if (subInsertError) {
-            console.error(`Erro ao inserir subprocesso ${i}:`, subInsertError);
-            continue;
-          }
-
-          if (!newSubProcess?.id) {
-            console.error(`Erro ao obter ID do subprocesso ${i} criado`);
-            continue;
-          }
-
-          const subProcessId = newSubProcess.id;
-
-          // Armazenar os detalhes do subprocesso
-          try {
-            const { error: subDetailsError } = await supabase
-              .from("process_details")
-              .insert({
-                process_id: subProcessId,
-                tribunal: subProcess.tribunal,
-                data_ajuizamento: subProcess.dataAjuizamento,
-                grau: subProcess.grau,
-                nivele_sigilo: subProcess.nivelSigilo,
-                formato: subProcess.formato,
-                sistema: subProcess.sistema,
-                classe: subProcess.classe,
-                assuntos: subProcess.assuntos,
-                orgao_julgador: subProcess.orgaoJulgador,
-                movimentos: subProcess.movimentos,
-                partes: subProcess.partes,
-                data_hora_ultima_atualizacao: subProcess.dataHoraUltimaAtualizacao,
-                json_completo: subProcess // Armazenar o JSON completo
-              });
-
-            if (subDetailsError) {
-              console.error(`Erro ao inserir detalhes do subprocesso ${i}:`, subDetailsError);
-            }
-          } catch (error) {
-            console.error(`Erro ao inserir detalhes do subprocesso ${i}:`, error);
-          }
-
-          // Processar os movimentos do subprocesso
-          if (subProcess.movimentos && subProcess.movimentos.length > 0) {
-            await saveProcessMovements(subProcessId, subProcess.movimentos);
-          }
-          
-          // Processar os assuntos do subprocesso
-          if (subProcess.assuntos && subProcess.assuntos.length > 0) {
-            await saveProcessSubjects(subProcessId, subProcess.assuntos);
+          // Verificamos se tem movimentos adicionais e adicionamos ao processo principal
+          if (additionalProcess.movimentos && additionalProcess.movimentos.length > 0) {
+            await saveProcessMovements(mainProcessId, additionalProcess.movimentos);
           }
         }
       }
@@ -402,7 +347,7 @@ export default function NewProcess() {
 
   const handleCancel = () => {
     setCurrentMode("search");
-    setProcessHits(null);
+    setProcessMovimentos(null);
   };
 
   return (
@@ -444,10 +389,10 @@ export default function NewProcess() {
           </Card>
         )}
 
-        {currentMode === "details" && processHits && processHits.length > 0 && (
+        {currentMode === "details" && processMovimentos && processMovimentos.length > 0 && (
           <ProcessDetails 
-            processHits={processHits} 
-            mainProcess={processHits[0].process} 
+            processMovimentos={processMovimentos} 
+            mainProcess={processMovimentos[0].process} 
             onSave={handleSaveProcess} 
             onCancel={handleCancel} 
           />

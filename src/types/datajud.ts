@@ -1,4 +1,3 @@
-
 export interface DatajudFormat {
   codigo: number;
   nome: string;
@@ -78,8 +77,7 @@ export interface DatajudProcess {
   };
 }
 
-// New Hit interface to represent an individual hit from the API
-export interface DatajudHit {
+export interface DatajudMovimentoProcessual {
   id: string;
   index: string;
   score: number;
@@ -120,7 +118,6 @@ export interface DatajudIntimation {
   prazo?: string | Date;
 }
 
-// API Response interfaces to match the JSON schema
 export interface DatajudAPIResponse {
   took: number;
   timed_out: boolean;
@@ -193,7 +190,6 @@ export interface DatajudProcessSource {
   };
 }
 
-// Add Process interface with SimpleProcess type
 export interface SimpleProcess {
   id: string;
   number: string;
@@ -219,13 +215,11 @@ export interface SimpleProcess {
   parent_id?: string | null;
 }
 
-// Add IntimationFormProps
 export interface IntimationFormProps {
   onSubmit: (formData: any) => Promise<void>;
   onBack: () => void;
 }
 
-// New interface for pagination support
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;
