@@ -28,7 +28,9 @@ import {
   FileText,
   Users,
   PenSquare,
-  Plus
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import {
   Dialog,
@@ -105,6 +107,7 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentTab, setCurrentTab] = useState("Movimentação");
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentHitIndex, setCurrentHitIndex] = useState(0);
   const { toast } = useToast();
 
   // Validar que o processo é um objeto válido
@@ -133,17 +136,35 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
     setIsExpanded(!isExpanded);
   };
 
+  // Navegação entre hits relacionados
+  const nextHit = () => {
+    if (relatedHits.length > 0) {
+      setCurrentHitIndex((prev) => (prev + 1) % relatedHits.length);
+    }
+  };
+
+  const prevHit = () => {
+    if (relatedHits.length > 0) {
+      setCurrentHitIndex((prev) => (prev - 1 + relatedHits.length) % relatedHits.length);
+    }
+  };
+
+  // Obtém o hit atual ou o processo principal se não houver hits ou o índice atual for 0
+  const currentProcess = currentHitIndex === 0 || relatedHits.length === 0 
+    ? process 
+    : relatedHits[currentHitIndex - 1];
+
   // Extrair informações do processo com tratamento de segurança
-  const metadata = process.metadata || {};
+  const metadata = currentProcess.metadata || {};
   
   // Extrair valores básicos com tratamento de segurança
-  const processNumber = formatProcessNumber(safeStringValue(process.number || getSafeNestedValue(metadata, 'numeroProcesso', '')));
-  const lastUpdate = process.updated_at 
-    ? formatDate(process.updated_at) 
+  const processNumber = formatProcessNumber(safeStringValue(currentProcess.number || getSafeNestedValue(metadata, 'numeroProcesso', '')));
+  const lastUpdate = currentProcess.updated_at 
+    ? formatDate(currentProcess.updated_at) 
     : "Não informado";
   
   // Informações básicas com tratamento seguro
-  const title = safeStringValue(process.title || getSafeNestedValue(metadata, 'classe.nome'), "Mandado de Segurança Cível");
+  const title = safeStringValue(currentProcess.title || getSafeNestedValue(metadata, 'classe.nome'), "Mandado de Segurança Cível");
   const dataAjuizamento = safeStringValue(getSafeNestedValue(metadata, 'dataAjuizamento', ''));
   const sistema = safeStringValue(getSafeNestedValue(metadata, 'sistema.nome', 'Inválido'));
   const grau = safeStringValue(getSafeNestedValue(metadata, 'grau', 'G1'));
@@ -244,6 +265,40 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
         <CardContent className="border-t pt-4">
           {/* Visão geral do processo principal */}
           <div className="mb-6">
+            {/* Navegação entre hits com indicação do hit atual */}
+            {relatedHits.length > 0 && (
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold">
+                  {currentHitIndex === 0 ? "Processo Principal" : `Hit Relacionado ${currentHitIndex}/${relatedHits.length}`}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevHit}
+                    disabled={relatedHits.length === 0}
+                    className="h-8 w-8 p-0"
+                    title="Hit anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm">
+                    {currentHitIndex + (relatedHits.length > 0 ? 0 : 1)}/{relatedHits.length + 1}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextHit}
+                    disabled={relatedHits.length === 0}
+                    className="h-8 w-8 p-0"
+                    title="Próximo hit"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             <h3 className="text-base font-semibold mb-3">Visão geral do processo</h3>
             
             {/* Grid de informações básicas */}
@@ -306,12 +361,12 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
             </div>
           </div>
           
-          {/* Hits Relacionados */}
-          {relatedHits.length > 0 && (
+          {/* Lista de Hits Relacionados (só mostra quando está visualizando o processo principal) */}
+          {currentHitIndex === 0 && relatedHits.length > 0 && (
             <div className="mb-4">
               <h3 className="text-base font-semibold mb-3">Hits Relacionados</h3>
               <div className="space-y-3">
-                {relatedHits.map((hit) => {
+                {relatedHits.map((hit, index) => {
                   const hitMetadata = hit.metadata || {};
                   const hitTitle = safeStringValue(hit.title || getSafeNestedValue(hitMetadata, 'classe.nome'), "Processo Relacionado");
                   const hitNumber = formatProcessNumber(safeStringValue(hit.number || getSafeNestedValue(hitMetadata, 'numeroProcesso', '')));
@@ -325,16 +380,26 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
                           <div className="text-blue-600 text-sm">{hitNumber}</div>
                           <div className="text-xs text-gray-500 mt-1">{hitDate}</div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          className="text-green-600"
-                        >
-                          <Link to={`/processes/${hit.id}`}>
-                            <Eye className="h-4 w-4 mr-1" /> Ver
-                          </Link>
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCurrentHitIndex(index + 1)}
+                            className="text-blue-600"
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> Visualizar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            className="text-green-600"
+                          >
+                            <Link to={`/processes/${hit.id}`}>
+                              <Eye className="h-4 w-4 mr-1" /> Abrir
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
