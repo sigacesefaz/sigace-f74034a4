@@ -1,5 +1,5 @@
 
-import { toast as sonnerToast, type Toast, type ToasterProps } from "sonner";
+import { toast as sonnerToast, type ToasterProps } from "sonner";
 
 // Define our custom ToastProps that includes title
 export interface ToastProps extends Omit<ToasterProps, "title"> {

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,7 +25,10 @@ import {
   Info,
   Building2,
   ShieldAlert,
-  FileText
+  FileText,
+  Users,
+  PenSquare,
+  Plus
 } from "lucide-react";
 import {
   Dialog,
@@ -40,6 +44,8 @@ import { formatProcessNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { safeStringValue, isEmpty } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 // Função para formatar datas de forma segura
 const formatDate = (dateString: string) => {
@@ -83,14 +89,23 @@ interface ProcessCardProps {
     updated_at?: string;
     metadata?: any;
   };
+  relatedHits?: Array<{
+    id: string;
+    number: string;
+    title?: string;
+    created_at?: string;
+    updated_at?: string;
+    metadata?: any;
+  }>;
   onDelete?: (id: string) => void;
   onView?: (id: string) => void;
 }
 
-export function ProcessCard({ process, onDelete, onView }: ProcessCardProps) {
+export function ProcessCard({ process, relatedHits = [], onDelete, onView }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentTab, setCurrentTab] = useState("Movimentação");
   const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
 
   // Validar que o processo é um objeto válido
   if (!process || typeof process !== 'object') {
@@ -142,6 +157,9 @@ export function ProcessCard({ process, onDelete, onView }: ProcessCardProps) {
   // Movimentações com tratamento seguro
   const movimentos = Array.isArray(metadata.movimentos) ? metadata.movimentos : [];
   const totalMovimentos = movimentos.length;
+
+  // Partes do processo
+  const partes = Array.isArray(metadata.partes) ? metadata.partes : [];
   
   return (
     <Card className="mb-4 w-full shadow-sm">
@@ -224,64 +242,106 @@ export function ProcessCard({ process, onDelete, onView }: ProcessCardProps) {
       {/* Conteúdo expandido */}
       {isExpanded && (
         <CardContent className="border-t pt-4">
-          {/* Grid de informações básicas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <Calendar className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Data de Ajuizamento</div>
-                  <div className="text-sm">{formatDate(dataAjuizamento)}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <Info className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Sistema</div>
-                  <div className="text-sm">{sistema}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Grau</div>
-                  <div className="text-sm">{grau}</div>
-                </div>
-              </div>
-            </div>
+          {/* Visão geral do processo principal */}
+          <div className="mb-6">
+            <h3 className="text-base font-semibold mb-3">Visão geral do processo</h3>
             
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <Building2 className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Órgão Julgador</div>
-                  <div className="text-sm">{orgaoJulgador}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <ShieldAlert className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Nível de Sigilo</div>
-                  <div className="text-sm">{nivelSigilo}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Assuntos</div>
+            {/* Grid de informações básicas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <Calendar className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
                   <div>
-                    <Badge variant="outline" className="text-xs py-1 bg-yellow-50">
-                      {assuntoPrincipal}
-                    </Badge>
+                    <div className="text-sm font-medium">Data de Ajuizamento</div>
+                    <div className="text-sm">{formatDate(dataAjuizamento)}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <Info className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Sistema</div>
+                    <div className="text-sm">{sistema}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Grau</div>
+                    <div className="text-sm">{grau}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <Building2 className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Órgão Julgador</div>
+                    <div className="text-sm">{orgaoJulgador}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <ShieldAlert className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Nível de Sigilo</div>
+                    <div className="text-sm">{nivelSigilo}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Assuntos</div>
+                    <div>
+                      <Badge variant="outline" className="text-xs py-1 bg-yellow-50">
+                        {assuntoPrincipal}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Hits Relacionados */}
+          {relatedHits.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-base font-semibold mb-3">Hits Relacionados</h3>
+              <div className="space-y-3">
+                {relatedHits.map((hit) => {
+                  const hitMetadata = hit.metadata || {};
+                  const hitTitle = safeStringValue(hit.title || getSafeNestedValue(hitMetadata, 'classe.nome'), "Processo Relacionado");
+                  const hitNumber = formatProcessNumber(safeStringValue(hit.number || getSafeNestedValue(hitMetadata, 'numeroProcesso', '')));
+                  const hitDate = hit.created_at ? formatDate(hit.created_at) : "Data não informada";
+                  
+                  return (
+                    <div key={hit.id} className="border rounded-md p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{hitTitle}</h4>
+                          <div className="text-blue-600 text-sm">{hitNumber}</div>
+                          <div className="text-xs text-gray-500 mt-1">{hitDate}</div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="text-green-600"
+                        >
+                          <Link to={`/processes/${hit.id}`}>
+                            <Eye className="h-4 w-4 mr-1" /> Ver
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           {/* Tabs de navegação */}
           <Tabs defaultValue="Movimentação" onValueChange={setCurrentTab} className="mt-4">
@@ -302,6 +362,7 @@ export function ProcessCard({ process, onDelete, onView }: ProcessCardProps) {
               <TabsTrigger value="Partes">Partes</TabsTrigger>
             </TabsList>
             
+            {/* Tab de Movimentação */}
             <TabsContent value="Movimentação" className="pt-4">
               <div className="flex items-center justify-between mb-4">
                 <Select defaultValue="Mais recentes primeiro">
@@ -392,27 +453,200 @@ export function ProcessCard({ process, onDelete, onView }: ProcessCardProps) {
               </div>
             </TabsContent>
             
+            {/* Tab de Intimação */}
             <TabsContent value="Intimação">
-              <div className="text-center py-8 text-gray-500">
-                <p>Nenhuma intimação disponível</p>
+              <div className="py-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-medium">Intimações</h3>
+                  <Button size="sm" variant="outline" className="flex items-center">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Intimação
+                  </Button>
+                </div>
+                <div className="text-center py-4 text-gray-500">
+                  <p>Nenhuma intimação registrada para este processo</p>
+                </div>
               </div>
             </TabsContent>
             
+            {/* Tab de Documentos */}
             <TabsContent value="Documentos">
-              <div className="text-center py-8 text-gray-500">
-                <p>Nenhum documento disponível</p>
+              <div className="py-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-medium">Documentos</h3>
+                  <Button size="sm" variant="outline" className="flex items-center">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Documento
+                  </Button>
+                </div>
+                <div className="text-center py-4 text-gray-500">
+                  <p>Nenhum documento disponível para este processo</p>
+                </div>
               </div>
             </TabsContent>
             
+            {/* Tab de Decisão */}
             <TabsContent value="Decisão">
-              <div className="text-center py-8 text-gray-500">
-                <p>Nenhuma decisão disponível</p>
+              <div className="py-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-medium">Decisões</h3>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="flex items-center">
+                        <PenSquare className="h-4 w-4 mr-2" />
+                        Nova Decisão
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[550px]">
+                      <DialogHeader>
+                        <DialogTitle>Cadastrar Nova Decisão</DialogTitle>
+                        <DialogDescription>
+                          Preencha os dados da decisão relativa ao processo.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="title" className="text-sm font-medium">Título da Decisão</label>
+                            <Input id="title" placeholder="Ex: Sentença, Decisão Liminar..." />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="type" className="text-sm font-medium">Tipo de Decisão</label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sentenca">Sentença</SelectItem>
+                                <SelectItem value="liminar">Liminar</SelectItem>
+                                <SelectItem value="despacho">Despacho</SelectItem>
+                                <SelectItem value="acordao">Acórdão</SelectItem>
+                                <SelectItem value="outros">Outros</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="judge" className="text-sm font-medium">Juiz/Relator</label>
+                            <Input id="judge" placeholder="Nome do juiz ou relator" />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="description" className="text-sm font-medium">Descrição/Conteúdo</label>
+                            <Input 
+                              id="description" 
+                              placeholder="Descrição resumida da decisão" 
+                              className="min-h-[100px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" onClick={() => toast("Decisão cadastrada com sucesso")}>Salvar Decisão</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div className="text-center py-4 text-gray-500">
+                  <p>Nenhuma decisão registrada para este processo</p>
+                </div>
               </div>
             </TabsContent>
             
+            {/* Tab de Partes */}
             <TabsContent value="Partes">
-              <div className="text-center py-8 text-gray-500">
-                <p>Nenhuma parte disponível</p>
+              <div className="py-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-medium">Partes do Processo</h3>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        Nova Parte
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[550px]">
+                      <DialogHeader>
+                        <DialogTitle>Cadastrar Nova Parte</DialogTitle>
+                        <DialogDescription>
+                          Adicione informações sobre uma parte envolvida no processo.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="name" className="text-sm font-medium">Nome/Razão Social</label>
+                            <Input id="name" placeholder="Nome da parte" />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="party_type" className="text-sm font-medium">Tipo de Parte</label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="autor">Autor</SelectItem>
+                                <SelectItem value="reu">Réu</SelectItem>
+                                <SelectItem value="testemunha">Testemunha</SelectItem>
+                                <SelectItem value="perito">Perito</SelectItem>
+                                <SelectItem value="terceiro_interessado">Terceiro Interessado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="document" className="text-sm font-medium">CPF/CNPJ</label>
+                            <Input id="document" placeholder="Documento de identificação" />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="representative" className="text-sm font-medium">Representante Legal</label>
+                            <Input id="representative" placeholder="Nome do representante" />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" onClick={() => toast("Parte cadastrada com sucesso")}>Salvar Parte</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                {partes && partes.length > 0 ? (
+                  <div className="space-y-3">
+                    {partes.map((parte: any, index: number) => {
+                      const tipoParte = safeStringValue(parte.tipo);
+                      const nomeParte = safeStringValue(parte.pessoa?.nome);
+                      
+                      return (
+                        <div key={index} className="border rounded-md p-3">
+                          <div className="flex justify-between">
+                            <div>
+                              <Badge variant="outline" className="mb-1 bg-blue-50 text-blue-700">
+                                {tipoParte}
+                              </Badge>
+                              <h4 className="font-medium">{nomeParte}</h4>
+                              {parte.pessoa?.numeroDocumentoPrincipal && (
+                                <p className="text-sm text-gray-500">
+                                  Documento: {parte.pessoa.numeroDocumentoPrincipal}
+                                </p>
+                              )}
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4 mr-1" /> Detalhes
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <p>Nenhuma parte registrada para este processo</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
