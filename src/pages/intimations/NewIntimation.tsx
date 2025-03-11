@@ -6,10 +6,10 @@ import { IntimationDetails } from "@/components/intimation/IntimationDetails";
 import { IntimationForm } from "@/components/intimation/IntimationForm";
 import { getProcessById } from "@/services/datajud";
 import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DatajudProcess, DatajudHit } from "@/types/datajud";
+import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { ArrowLeft } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 
@@ -19,7 +19,7 @@ export default function NewIntimation() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<FormMode>("search");
-  const [processData, setProcessData] = useState<DatajudHit[] | null>(null);
+  const [processMovimentos, setProcessMovimentos] = useState<DatajudMovimentoProcessual[] | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -29,25 +29,25 @@ export default function NewIntimation() {
     try {
       console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
       
-      const processData = await getProcessById(courtEndpoint, processNumber);
+      const movimentos = await getProcessById(courtEndpoint, processNumber);
       
-      if (!processData || processData.length === 0) {
-        toast.error("Processo não encontrado");
+      if (!movimentos || movimentos.length === 0) {
+        toast("Processo não encontrado", "", { variant: "destructive" });
         setShowManualEntry(true);
         setCurrentMode("search"); // Manter no modo de busca para exibir o botão de cadastro manual
         setIsLoading(false);
         return false;
       }
       
-      console.log("Processo encontrado:", processData);
-      setProcessData(processData);
+      console.log("Processo encontrado:", movimentos);
+      setProcessMovimentos(movimentos);
       setSelectedCourt(courtEndpoint);
       setCurrentMode("details");
       setShowManualEntry(false);
       return true;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
-      toast.error("Erro ao importar processo");
+      toast("Erro ao importar processo", "", { variant: "destructive" });
       setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
       return false;
     } finally {
@@ -61,13 +61,13 @@ export default function NewIntimation() {
 
   const handleSaveIntimation = async (formData: any) => {
     try {
-      if (!processData || processData.length === 0) {
-        toast.error("Dados do processo incompletos");
+      if (!processMovimentos || processMovimentos.length === 0) {
+        toast("Dados do processo incompletos", "", { variant: "destructive" });
         return;
       }
       
-      // Get the main process from the first hit
-      const mainProcess = processData[0].process;
+      // Get the main process from the first movimento
+      const mainProcess = processMovimentos[0].process;
       
       // Create base intimation data
       const intimationData = {
@@ -90,7 +90,7 @@ export default function NewIntimation() {
           
         if (uploadError) {
           console.error("Erro ao fazer upload do arquivo:", uploadError);
-          toast.error("Erro ao fazer upload do comprovante");
+          toast("Erro ao fazer upload do comprovante", "", { variant: "destructive" });
         } else {
           intimationData.receipt_file = filePath;
         }
@@ -100,17 +100,17 @@ export default function NewIntimation() {
 
       if (error) throw error;
 
-      toast.success("Intimação salva com sucesso!");
+      toast("Intimação salva com sucesso", "", { variant: "success" });
       navigate("/intimations");
     } catch (error) {
       console.error("Erro ao salvar intimação:", error);
-      toast.error("Erro ao salvar intimação");
+      toast("Erro ao salvar intimação", "", { variant: "destructive" });
     }
   };
 
   const handleCancel = () => {
     setCurrentMode("search");
-    setProcessData(null);
+    setProcessMovimentos(null);
   };
 
   return (
@@ -155,10 +155,10 @@ export default function NewIntimation() {
           </Card>
         )}
 
-        {currentMode === "details" && processData && processData.length > 0 && (
+        {currentMode === "details" && processMovimentos && processMovimentos.length > 0 && (
           <Card className="p-6">
             <IntimationDetails 
-              process={processData[0].process} 
+              process={processMovimentos[0].process} 
               onConfirm={handleSaveIntimation} 
               onBack={handleCancel} 
             />

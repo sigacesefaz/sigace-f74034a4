@@ -441,7 +441,9 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: number
+          is_parent: boolean | null
           number: string
+          parent_id: number | null
           plaintiff: string | null
           plaintiff_document: string | null
           status: string | null
@@ -454,7 +456,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          is_parent?: boolean | null
           number: string
+          parent_id?: number | null
           plaintiff?: string | null
           plaintiff_document?: string | null
           status?: string | null
@@ -467,7 +471,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          is_parent?: boolean | null
           number?: string
+          parent_id?: number | null
           plaintiff?: string | null
           plaintiff_document?: string | null
           status?: string | null
@@ -475,7 +481,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "processes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

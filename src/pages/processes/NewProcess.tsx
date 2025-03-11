@@ -6,7 +6,7 @@ import { ProcessDetails } from "@/components/process/ProcessDetails";
 import { ProcessForm } from "@/components/process/ProcessForm";
 import { getProcessById } from "@/services/datajud";
 import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
@@ -30,7 +30,7 @@ export default function NewProcess() {
       const movimentos = await getProcessById(courtEndpoint, processNumber);
       
       if (!movimentos || movimentos.length === 0) {
-        toast.error("Processo não encontrado");
+        toast("Processo não encontrado", "", { variant: "destructive" });
         setShowManualEntry(true);
         setCurrentMode("search"); // Manter no modo de busca para exibir o botão de cadastro manual
         setIsLoading(false);
@@ -39,21 +39,22 @@ export default function NewProcess() {
       
       console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
       
-      // Filtramos para exibir apenas o primeiro movimento (principal) e seus relacionados
-      // Lógica: todos os movimentos com o mesmo número de processo são considerados do mesmo processo
-      const firstProcess = movimentos[0].process.numeroProcesso;
-      const filteredMovimentos = movimentos.filter(m => m.process.numeroProcesso === firstProcess);
+      // Agrupamos os movimentos pelo mesmo número de processo
+      const numeroProcessoPrincipal = movimentos[0].process.numeroProcesso;
+      const movimentosDoProcesso = movimentos.filter(m => 
+        m.process.numeroProcesso === numeroProcessoPrincipal
+      );
       
-      console.log(`Filtrado para ${filteredMovimentos.length} movimento(s) do mesmo processo`);
+      console.log(`Filtrado para ${movimentosDoProcesso.length} movimento(s) do mesmo processo`);
       
-      setProcessMovimentos(filteredMovimentos);
+      setProcessMovimentos(movimentosDoProcesso);
       setSelectedCourt(courtEndpoint);
       setCurrentMode("details");
       setShowManualEntry(false);
       return true;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
-      toast.error("Erro ao importar processo");
+      toast("Erro ao importar processo", "", { variant: "destructive" });
       setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
       return false;
     } finally {
@@ -71,7 +72,7 @@ export default function NewProcess() {
 
   const handleSaveProcess = async () => {
     if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
-      toast.error("Dados do processo incompletos.");
+      toast("Dados do processo incompletos", "", { variant: "destructive" });
       return;
     }
     
@@ -84,7 +85,7 @@ export default function NewProcess() {
       } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error("Usuário não autenticado");
+        toast("Usuário não autenticado", "", { variant: "destructive" });
         return;
       }
 
@@ -100,7 +101,7 @@ export default function NewProcess() {
         .maybeSingle();
 
       if (existingProcess) {
-        toast.error("Este processo já foi cadastrado anteriormente.");
+        toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
         setIsLoading(false);
         return;
       }
@@ -127,13 +128,13 @@ export default function NewProcess() {
 
       if (insertError) {
         console.error("Erro ao inserir processo principal:", insertError);
-        toast.error(`Erro ao importar processo: ${insertError.message}`);
+        toast("Erro ao importar processo", insertError.message, { variant: "destructive" });
         setIsLoading(false);
         return;
       }
 
       if (!newProcess?.id) {
-        toast.error("Erro ao obter ID do processo principal criado");
+        toast("Erro ao obter ID do processo principal criado", "", { variant: "destructive" });
         setIsLoading(false);
         return;
       }
@@ -193,16 +194,16 @@ export default function NewProcess() {
         }
       }
 
-      toast.success("Processo importado com sucesso!");
+      toast("Processo importado com sucesso", "", { variant: "success" });
       navigate("/processes");
     } catch (error) {
       console.error("Erro ao importar processo:", error);
       
       // Exibir mensagem de erro mais detalhada
       if (error instanceof Error) {
-        toast.error(`Erro ao importar processo: ${error.message}`);
+        toast("Erro ao importar processo", error.message, { variant: "destructive" });
       } else {
-        toast.error("Erro ao importar processo");
+        toast("Erro ao importar processo", "", { variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -307,7 +308,7 @@ export default function NewProcess() {
         }
       } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Usuário não autenticado");
+        toast("Usuário não autenticado", "", { variant: "destructive" });
         return;
       }
 
@@ -319,7 +320,7 @@ export default function NewProcess() {
         .maybeSingle();
 
       if (existingProcess) {
-        toast.error("Este processo já foi cadastrado anteriormente.");
+        toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
         setIsLoading(false);
         return;
       }
@@ -335,11 +336,11 @@ export default function NewProcess() {
         parent_id: null
       });
       if (error) throw error;
-      toast.success("Processo cadastrado com sucesso!");
+      toast("Processo cadastrado com sucesso", "", { variant: "success" });
       navigate("/processes");
     } catch (error) {
       console.error("Erro ao cadastrar processo:", error);
-      toast.error("Erro ao cadastrar processo");
+      toast("Erro ao cadastrar processo", "", { variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -409,10 +410,6 @@ export default function NewProcess() {
             </Card>
           </>
         )}
-
-        <div className="mt-4 flex justify-end">
-          
-        </div>
       </div>
     </div>
   );

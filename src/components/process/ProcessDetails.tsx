@@ -23,7 +23,7 @@ export function ProcessDetails({
   isImport = true 
 }: ProcessDetailsProps) {
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("events");
   
   // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
@@ -125,7 +125,7 @@ export function ProcessDetails({
     </div>
   );
   
-  // Renderizar últimos movimentos
+  // Renderizar movimentos processuais
   const MovementsList = () => (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Movimentos Processuais</h3>
@@ -253,7 +253,7 @@ export function ProcessDetails({
           </div>
         )}
         
-        {/* Overview sections sempre visível */}
+        {/* Overview section sempre visível */}
         <div className="mt-4">
           <ProcessOverview />
         </div>

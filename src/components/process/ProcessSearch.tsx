@@ -17,7 +17,7 @@ import { Court, DatajudProcess, DatajudHit } from "@/types/datajud";
 import { courts } from "@/services/datajud";
 import { searchProcesses } from "@/services/datajud";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface ProcessSearchProps {
   onProcessSelect: (process: string, courtEndpoint: string) => Promise<boolean>;
@@ -32,8 +32,7 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
   // Definir o Tribunal de Justiça do Tocantins como padrão
   const tjtoDefault = courts.ESTADUAL.find(court => court.id === "tjto") || courts.ESTADUAL[0];
   const [court, setCourt] = useState<Court | null>(tjtoDefault);
-  // Use DatajudHit[] instead of DatajudProcess[] to match the type from searchProcesses
-  const [searchResults, setSearchResults] = useState<DatajudHit[]>([]);
+  const [searchResults, setSearchResults] = useState<DatajudProcess[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
   // Formatação do número do processo (remove caracteres não numéricos)
@@ -63,7 +62,7 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
     // Validamos apenas se tiver a formatação completa
     if (processNumber.includes("-") || processNumber.includes(".")) {
       if (!validateProcessNumber(processNumber)) {
-        toast.error("Formato inválido. Use: 0000000-00.0000.0.00.0000");
+        toast("Formato inválido", "Use: 0000000-00.0000.0.00.0000", { variant: "destructive" });
         return;
       }
     }
@@ -72,29 +71,42 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
     try {
       // Usar o número do processo completo sem limpar caracteres especiais para a API
       const results = await searchProcesses(court.endpoint, processNumber);
-      setSearchResults(results);
+      
+      // Agrupar resultados por número de processo para mostrar apenas processos únicos
+      const uniqueProcesses = new Map<string, DatajudProcess>();
+      
+      results.forEach(hit => {
+        if (!uniqueProcesses.has(hit.process.numeroProcesso)) {
+          uniqueProcesses.set(hit.process.numeroProcesso, hit.process);
+        }
+      });
+      
+      // Converter o Map para array
+      const uniqueProcessArray = Array.from(uniqueProcesses.values());
+      
+      setSearchResults(uniqueProcessArray);
       setHasSearched(true);
       
-      if (results.length === 0) {
-        toast.info("Nenhum processo encontrado");
+      if (uniqueProcessArray.length === 0) {
+        toast("Nenhum processo encontrado", "", { variant: "default" });
       }
     } catch (error) {
       console.error("Erro ao buscar processos:", error);
-      toast.error("Erro ao buscar processos");
+      toast("Erro ao buscar processos", "", { variant: "destructive" });
       setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSelectProcess = async (hit: DatajudHit) => {
+  const handleSelectProcess = async (process: DatajudProcess) => {
     if (!court) return;
     
     setIsLoading(true);
     try {
-      const success = await onProcessSelect(hit.process.numeroProcesso, court.endpoint);
+      const success = await onProcessSelect(process.numeroProcesso, court.endpoint);
       if (!success) {
-        toast.error("Erro ao selecionar processo");
+        toast("Erro ao selecionar processo", "", { variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -208,20 +220,20 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
           <div className="text-sm font-medium">
             {searchResults.length === 0 
               ? "Nenhum processo encontrado" 
-              : `${searchResults.length} processos encontrados`}
+              : `${searchResults.length} processo${searchResults.length !== 1 ? 's' : ''} encontrado${searchResults.length !== 1 ? 's' : ''}`}
           </div>
 
           <div className="space-y-3">
-            {searchResults.slice(0, 5).map((hit, index) => (
+            {searchResults.map((process, index) => (
               <Card 
                 key={index} 
                 className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-                onClick={() => handleSelectProcess(hit)}
+                onClick={() => handleSelectProcess(process)}
               >
                 <div className="flex flex-col gap-2">
-                  <div className="font-medium">{hit.process.classe?.nome || "Sem classe"}</div>
-                  <div className="text-sm text-muted-foreground font-mono">{hit.process.numeroProcesso}</div>
-                  <div className="text-xs text-gray-500">{hit.process.tribunal}</div>
+                  <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
+                  <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
+                  <div className="text-xs text-gray-500">{process.tribunal}</div>
                 </div>
               </Card>
             ))}

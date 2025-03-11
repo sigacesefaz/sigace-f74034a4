@@ -122,7 +122,7 @@ const mapHitToDatajudMovimentoProcessual = (hit: any): DatajudMovimentoProcessua
 // Helper para formatação do número do processo
 const formatProcessNumberForQuery = (processNumber: string): string => {
   // Remove qualquer formatação existente (pontos, traços, espaços)
-  const cleanNumber = processNumber.replace(/[^0-9]/g, '');
+  const cleanNumber = processNumber.replace(/\D/g, '');
   return cleanNumber;
 };
 
