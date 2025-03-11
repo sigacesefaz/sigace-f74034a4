@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { ArrowLeft } from "lucide-react";
 

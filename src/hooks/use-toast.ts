@@ -1,9 +1,8 @@
 
-import { toast as sonnerToast } from "sonner";
-import type { ToastOptions as SonnerToastOptions } from "sonner";
+import { toast as sonnerToast, type Toast, type ToasterProps } from "sonner";
 
 // Define our custom ToastProps that includes title
-export interface ToastProps extends Omit<SonnerToastOptions, "title"> {
+export interface ToastProps extends Omit<ToasterProps, "title"> {
   title?: string;
   description?: string;
 }
@@ -50,8 +49,6 @@ export function toast(
 }
 
 // Simple hook to provide the toast function
-const useToast = () => {
+export const useToast = () => {
   return { toast };
 };
-
-export { useToast };
