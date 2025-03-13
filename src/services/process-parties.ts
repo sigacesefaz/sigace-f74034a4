@@ -2,96 +2,62 @@
 import { supabase } from "@/lib/supabase";
 import { PartyType } from "@/types/process";
 
-export async function getPartiesByProcessId(processId: string): Promise<PartyType[]> {
-  try {
-    const { data, error } = await supabase
-      .from("process_parties")
-      .select("*")
-      .eq("process_id", processId);
+export async function getPartiesByProcessId(processId: string) {
+  const { data, error } = await supabase
+    .from("process_parties")
+    .select("*")
+    .eq("process_id", processId)
+    .order("created_at", { ascending: false });
 
-    if (error) throw error;
-
-    if (data && data.length > 0) {
-      return data.map(party => ({
-        id: party.id,
-        document: party.document || "",
-        name: party.name,
-        type: party.type as "AUTHOR" | "DEFENDANT" | "MP",
-        subtype: party.subtype || "",
-        personType: party.person_type as "physical" | "legal"
-      }));
-    }
-
-    return [];
-  } catch (error) {
-    console.error("Error fetching process parties:", error);
+  if (error) {
+    console.error("Error fetching parties:", error);
     throw error;
   }
+
+  return data as PartyType[];
 }
 
-export async function createParty(party: Omit<PartyType, "id"> & { process_id: string }): Promise<PartyType> {
-  try {
-    const { data, error } = await supabase
-      .from("process_parties")
-      .insert({
-        process_id: party.process_id,
-        name: party.name,
-        type: party.type,
-        subtype: party.subtype,
-        person_type: party.personType,
-        document: party.document
-      })
-      .select()
-      .single();
+export async function createParty(partyData: Omit<PartyType, "id"> & { process_id: string }) {
+  const { data, error } = await supabase
+    .from("process_parties")
+    .insert(partyData)
+    .select()
+    .single();
 
-    if (error) throw error;
-
-    return {
-      id: data.id,
-      document: data.document || "",
-      name: data.name,
-      type: data.type as "AUTHOR" | "DEFENDANT" | "MP",
-      subtype: data.subtype || "",
-      personType: data.person_type as "physical" | "legal"
-    };
-  } catch (error) {
-    console.error("Error creating process party:", error);
+  if (error) {
+    console.error("Error creating party:", error);
     throw error;
   }
+
+  return data as PartyType;
 }
 
-export async function updateParty(partyId: string, party: Partial<PartyType>): Promise<void> {
-  try {
-    const updateData: any = {};
-    
-    if (party.name) updateData.name = party.name;
-    if (party.type) updateData.type = party.type;
-    if (party.subtype) updateData.subtype = party.subtype;
-    if (party.personType) updateData.person_type = party.personType;
-    if (party.document) updateData.document = party.document;
+export async function updateParty(id: string, partyData: Partial<Omit<PartyType, "id">>) {
+  const { data, error } = await supabase
+    .from("process_parties")
+    .update(partyData)
+    .eq("id", id)
+    .select()
+    .single();
 
-    const { error } = await supabase
-      .from("process_parties")
-      .update(updateData)
-      .eq("id", partyId);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error updating process party:", error);
+  if (error) {
+    console.error("Error updating party:", error);
     throw error;
   }
+
+  return data as PartyType;
 }
 
-export async function deleteParty(partyId: string): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from("process_parties")
-      .delete()
-      .eq("id", partyId);
+export async function deleteParty(id: string) {
+  const { error } = await supabase
+    .from("process_parties")
+    .delete()
+    .eq("id", id);
 
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error deleting process party:", error);
+  if (error) {
+    console.error("Error deleting party:", error);
     throw error;
   }
+
+  return true;
 }

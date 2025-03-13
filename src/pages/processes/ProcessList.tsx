@@ -641,5 +641,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {
-
+      {reportDialogOpen && selectedProcess && (
+        <ProcessReportDialog 
+          process={selectedProcess} 
+          open={reportDialogOpen} 
+          onOpenChange={setReportDialogOpen} 
+        />
+      )}
+    </div>
+  );
+}
