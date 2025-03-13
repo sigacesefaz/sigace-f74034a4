@@ -1,4 +1,3 @@
-
 export interface DatajudFormat {
   codigo: number;
   nome: string;
@@ -223,6 +222,22 @@ export interface SimpleProcess {
   instance?: string;
   is_parent: boolean;
   parent_id?: string | null;
+  metadata?: {
+    sistema?: {
+      codigo: number;
+      nome: string;
+    };
+    orgaoJulgador?: {
+      codigo: number;
+      nome: string;
+      codigoMunicipioIBGE?: number;
+    };
+    nivelSigilo?: number;
+    grau?: string;
+    dataAjuizamento?: string;
+  };
+  hits?: DatajudHit[];
+  movimentacoes?: DatajudMovimentoProcessual[];
 }
 
 export interface IntimationFormProps {

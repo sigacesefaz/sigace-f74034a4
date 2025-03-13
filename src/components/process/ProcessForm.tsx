@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -103,24 +102,26 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
             name="court"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tribunal*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <div className="grid gap-2">
+                  <FormLabel htmlFor="court" className="text-lg font-bold text-primary">Tribunal</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tribunal" />
-                    </SelectTrigger>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um tribunal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courts.ESTADUAL.map((court) => (
+                          <SelectItem key={court.id} value={court.name}>
+                            {court.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
-                  <SelectContent>
-                    {courts.ESTADUAL.map((court) => (
-                      <SelectItem key={court.id} value={court.name}>
-                        {court.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -132,10 +133,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título*</FormLabel>
-              <FormControl>
-                <Input placeholder="Título do processo" {...field} />
-              </FormControl>
+              <div className="grid gap-2">
+                <FormLabel htmlFor="subject" className="text-lg font-bold text-primary">Assunto</FormLabel>
+                <FormControl>
+                  <Input placeholder="Título do processo" {...field} />
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -199,23 +202,27 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
             name="instance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Instância*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma instância" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="primeira">Primeira</SelectItem>
-                    <SelectItem value="segunda">Segunda</SelectItem>
-                    <SelectItem value="superior">Superior</SelectItem>
-                    <SelectItem value="supremo">Supremo</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel>Classe do Processo*</FormLabel>
+                <div className="flex gap-2">
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma classe" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="primeira">Primeira Instância</SelectItem>
+                      <SelectItem value="segunda">Segunda Instância</SelectItem>
+                      <SelectItem value="superior">Superior</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={onCancel}>
+                    Importar Processo
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -339,12 +346,9 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading} className="text-white">
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading} className="text-white">
-            {isLoading ? "Salvando..." : "Salvar Processo"}
+        <div className="flex justify-end space-x-4">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </form>

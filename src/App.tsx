@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import ProcessListPage from "./pages/processes/ProcessListPage";
 import NewProcess from "./pages/processes/NewProcess";
 import ProcessDetails from "./pages/processes/ProcessDetails";
 import ProcessCardExample from "./pages/processes/ProcessCardExample";
+import { ProcessReportPage } from "./pages/processes/ProcessReportPage";
 import IntimationList from "./pages/intimations/IntimationList";
 import NewIntimation from "./pages/intimations/NewIntimation";
 import NotificationList from "./pages/notifications/NotificationList";
@@ -101,6 +101,16 @@ const App = () => (
               <ProtectedRoute>
                 <MainLayout>
                   <ProcessDetails />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/processes/:id/report"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProcessReportPage />
                 </MainLayout>
               </ProtectedRoute>
             }

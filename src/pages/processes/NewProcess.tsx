@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
@@ -117,7 +116,22 @@ export default function NewProcess() {
       
       setImportProgress(20);
 
-      // Inserir o processo principal na tabela processes
+      console.log("Dados do processo a ser inserido:", {
+        number: mainProcess.numeroProcesso,
+        title: `${mainProcess.classe?.nome || 'Processo'} - ${mainProcess.numeroProcesso}`,
+        description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
+        status: mainProcess.situacao?.nome || "Em andamento",
+        court: mainProcess.tribunal,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
+        plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
+        is_parent: true,
+        parent_id: null,
+        metadata: JSON.stringify(mainProcess) // Convertendo o objeto para string
+      });
+
       const { data: newProcess, error: insertError } = await supabase
         .from("processes")
         .insert({
@@ -133,7 +147,7 @@ export default function NewProcess() {
           plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
           is_parent: true,
           parent_id: null,
-          metadata: mainProcess
+          metadata: JSON.stringify(mainProcess) // Convertendo o objeto para string
         })
         .select('id')
         .single();
@@ -142,7 +156,15 @@ export default function NewProcess() {
 
       if (insertError) {
         console.error("Erro ao inserir processo principal:", insertError);
-        toast("Erro ao importar processo", insertError.message, { variant: "destructive" });
+        console.error("Detalhes do erro:", {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        toast("Erro ao importar processo", { 
+          description: insertError.message,
+          variant: "destructive" 
+        });
         setImportProgress(0);
         setIsLoading(false);
         return;
@@ -453,14 +475,19 @@ export default function NewProcess() {
   const handleCancel = () => {
     setCurrentMode("search");
     setProcessMovimentos(null);
-    setImportProgress(0);
+    setSelectedCourt(undefined);
+    setShowManualEntry(false);
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate('/processes')} className="mr-2">
+          <Button 
+            variant="ghost" 
+            onClick={() => currentMode === "search" ? navigate('/processes') : setCurrentMode("search")} 
+            className="mr-2"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
@@ -495,13 +522,15 @@ export default function NewProcess() {
           </Card>
         )}
 
-        {currentMode === "details" && processMovimentos && processMovimentos.length > 0 && (
-          <ProcessDetails 
-            processMovimentos={processMovimentos} 
-            mainProcess={processMovimentos[0].process} 
-            onSave={handleSaveProcess} 
-            onCancel={handleCancel}
-            importProgress={importProgress} 
+        {currentMode === "details" && processMovimentos && (
+          <ProcessDetails
+            processMovimentos={processMovimentos}
+            mainProcess={processMovimentos[0].process}
+            isImport={true}
+            importProgress={importProgress}
+            onSave={handleSaveProcess}
+            onCancel={() => setCurrentMode("search")}
+            handleProcessSelect={handleProcessSelect}
           />
         )}
 

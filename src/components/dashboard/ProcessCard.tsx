@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -105,7 +104,7 @@ interface ProcessCardProps {
 
 export function ProcessCard({ process, relatedHits = [], onDelete, onView }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentTab, setCurrentTab] = useState("Movimentação");
+  const [currentTab, setCurrentTab] = useState("movimentacao");
   const [currentPage, setCurrentPage] = useState(1);
   const [currentHitIndex, setCurrentHitIndex] = useState(0);
   const { toast } = useToast();
@@ -181,540 +180,297 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
 
   // Partes do processo
   const partes = Array.isArray(metadata.partes) ? metadata.partes : [];
+
+  // Intimações com tratamento seguro
+  const intimacoes = Array.isArray(metadata.intimacoes) ? metadata.intimacoes : [];
+  
+  // Documentos com tratamento seguro
+  const documentos = Array.isArray(metadata.documentos) ? metadata.documentos : [];
+
+  // Decisões com tratamento seguro
+  const decisoes = Array.isArray(metadata.decisoes) ? metadata.decisoes : [];
   
   return (
     <Card className="mb-4 w-full shadow-sm">
       <div className="px-4 pt-4 pb-2">
         {/* Cabeçalho com tipo e última atualização */}
         <div className="flex items-center justify-between mb-2">
-          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-none">TIPO</Badge>
+          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-none">
+            {currentHitIndex === 0 ? "PROCESSO PRINCIPAL" : "PROCESSO RELACIONADO"}
+          </Badge>
           <span className="text-gray-500 text-xs">Última atualização: {lastUpdate}</span>
         </div>
         
         {/* Título e número do processo */}
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="text-blue-600 font-medium">{processNumber}</div>
-        
-        {/* Formato */}
-        <div className="flex items-center mt-1 mb-2">
-          <span className="text-sm mr-2">Formato:</span>
-          <Badge variant="outline" className="bg-blue-100 text-blue-600 border-blue-200">
-            Eletrônico
-          </Badge>
-        </div>
-        
-        {/* Botões de ação na linha de baixo */}
-        <div className="flex justify-between items-center mt-2 border-t pt-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={toggleExpand}
-            className="text-sm font-normal"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" /> Ver menos
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" /> Ver mais
-              </>
-            )}
-          </Button>
-          
-          <div className="flex space-x-1">
-            <Button variant="ghost" size="sm" onClick={handleView} title="Visualizar">
-              <Eye className="h-4 w-4" />
+
+        {/* Navegação entre hits */}
+        {relatedHits.length > 0 && (
+          <div className="flex items-center gap-2 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={prevHit}
+              className="px-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" title="Imprimir">
-              <Printer className="h-4 w-4" />
+            <span className="text-sm text-gray-500">
+              {currentHitIndex + 1} de {relatedHits.length + 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextHit}
+              className="px-2"
+            >
+              <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" title="Compartilhar">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-red-600" title="Excluir">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmar exclusão</DialogTitle>
-                  <DialogDescription>
-                    Você tem certeza que deseja excluir este processo?<br />
-                    Esta ação não pode ser desfeita.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter className="mt-4">
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancelar</Button>
-                  </DialogClose>
-                  <Button variant="destructive" onClick={handleDelete}>
-                    Excluir
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </div>
-        </div>
-      </div>
-      
-      {/* Conteúdo expandido */}
-      {isExpanded && (
-        <CardContent className="border-t pt-4">
-          {/* Visão geral do processo principal */}
-          <div className="mb-6">
-            {/* Navegação entre hits com indicação do hit atual */}
-            {relatedHits.length > 0 && (
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold">
-                  {currentHitIndex === 0 ? "Processo Principal" : `Hit Relacionado ${currentHitIndex}/${relatedHits.length}`}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={prevHit}
-                    disabled={relatedHits.length === 0}
-                    className="h-8 w-8 p-0"
-                    title="Hit anterior"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm">
-                    {currentHitIndex + (relatedHits.length > 0 ? 0 : 1)}/{relatedHits.length + 1}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={nextHit}
-                    disabled={relatedHits.length === 0}
-                    className="h-8 w-8 p-0"
-                    title="Próximo hit"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            <h3 className="text-base font-semibold mb-3">Visão geral do processo</h3>
-            
-            {/* Grid de informações básicas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <Calendar className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Data de Ajuizamento</div>
-                    <div className="text-sm">{formatDate(dataAjuizamento)}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <Info className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Sistema</div>
-                    <div className="text-sm">{sistema}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Grau</div>
-                    <div className="text-sm">{grau}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <Building2 className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Órgão Julgador</div>
-                    <div className="text-sm">{orgaoJulgador}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <ShieldAlert className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Nível de Sigilo</div>
-                    <div className="text-sm">{nivelSigilo}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <FileText className="h-5 w-5 mr-2 text-gray-500 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Assuntos</div>
-                    <div>
-                      <Badge variant="outline" className="text-xs py-1 bg-yellow-50">
-                        {assuntoPrincipal}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Lista de Hits Relacionados (só mostra quando está visualizando o processo principal) */}
-          {currentHitIndex === 0 && relatedHits.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-base font-semibold mb-3">Hits Relacionados</h3>
-              <div className="space-y-3">
-                {relatedHits.map((hit, index) => {
-                  const hitMetadata = hit.metadata || {};
-                  const hitTitle = safeStringValue(hit.title || getSafeNestedValue(hitMetadata, 'classe.nome'), "Processo Relacionado");
-                  const hitNumber = formatProcessNumber(safeStringValue(hit.number || getSafeNestedValue(hitMetadata, 'numeroProcesso', '')));
-                  const hitDate = hit.created_at ? formatDate(hit.created_at) : "Data não informada";
-                  
-                  return (
-                    <div key={hit.id} className="border rounded-md p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{hitTitle}</h4>
-                          <div className="text-blue-600 text-sm">{hitNumber}</div>
-                          <div className="text-xs text-gray-500 mt-1">{hitDate}</div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCurrentHitIndex(index + 1)}
-                            className="text-blue-600"
-                          >
-                            <Eye className="h-4 w-4 mr-1" /> Visualizar
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            className="text-green-600"
-                          >
-                            <Link to={`/processes/${hit.id}`}>
-                              <Eye className="h-4 w-4 mr-1" /> Abrir
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+        )}
+        
+        {/* Botão Expandir/Recolher */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleExpand}
+          className="mt-2"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="h-4 w-4 mr-2" />
+              Ver menos
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4 mr-2" />
+              Ver mais
+            </>
           )}
-          
-          {/* Tabs de navegação */}
-          <Tabs defaultValue="Movimentação" onValueChange={setCurrentTab} className="mt-4">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="Movimentação">
-                Movimentação 
-                <Badge variant="secondary" className="ml-2">{totalMovimentos}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="Intimação">
-                Intimação
-                <Badge variant="secondary" className="ml-2">0</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="Documentos">
-                Documentos
-                <Badge variant="secondary" className="ml-2">0</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="Decisão">Decisão</TabsTrigger>
-              <TabsTrigger value="Partes">Partes</TabsTrigger>
-            </TabsList>
-            
-            {/* Tab de Movimentação */}
-            <TabsContent value="Movimentação" className="pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <Select defaultValue="Mais recentes primeiro">
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Ordenação" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mais recentes primeiro">Mais recentes primeiro</SelectItem>
-                    <SelectItem value="Mais antigos primeiro">Mais antigos primeiro</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <div className="flex space-x-2">
-                  <Input placeholder="dd/mm/aaaa" className="w-32" />
-                  <Input placeholder="Nome do movimento" className="w-48" />
-                  <Input placeholder="Código" className="w-24" />
-                </div>
-                
-                <div className="flex items-center space-x-1">
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm">Página 1 de {Math.max(1, Math.ceil(totalMovimentos / 5))}</span>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                </div>
+        </Button>
+      </div>
+
+      {isExpanded && (
+        <CardContent>
+          {/* Grid de informações do processo */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="flex items-start gap-2">
+              <Calendar className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Data do Ajuizamento</div>
+                <div className="text-sm">{formatDate(dataAjuizamento)}</div>
               </div>
-              
-              {/* Lista de movimentações */}
-              <div className="space-y-2">
-                {movimentos.length > 0 ? (
-                  movimentos.slice(0, 5).map((movimento, index) => (
-                    <div key={index} className="border rounded-md p-3">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Badge variant="outline" className="mr-2 text-xs">
-                          {safeStringValue(movimento.codigo, "-")}
-                        </Badge>
-                        <span className="text-xs">
-                          {formatDate(safeStringValue(movimento.dataHora || movimento.data_hora))}
-                        </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Sistema</div>
+                <div className="text-sm">{sistema}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Grau</div>
+                <div className="text-sm">{grau}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Órgão Julgador</div>
+                <div className="text-sm">{orgaoJulgador}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Nível de Sigilo</div>
+                <div className="text-sm">{nivelSigilo}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <FileText className="h-4 w-4 text-gray-500 mt-1" />
+              <div>
+                <div className="text-sm text-gray-500">Assunto Principal</div>
+                <div className="text-sm">{assuntoPrincipal}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Abas */}
+          <Tabs defaultValue="movimentacao" className="w-full">
+            <TabsList className="w-full bg-transparent border-b">
+              <TabsTrigger value="movimentacao" className="flex-1">
+                Movimentação
+                {movimentos.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {movimentos.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="intimacao" className="flex-1">
+                Intimação
+                {intimacoes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {intimacoes.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="documentos" className="flex-1">
+                Documentos
+                {documentos.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {documentos.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="decisao" className="flex-1">
+                Decisão
+                {decisoes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {decisoes.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="partes" className="flex-1">
+                Partes
+                {partes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {partes.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="movimentacao" className="py-4">
+              <div className="space-y-4">
+                {movimentos.map((movimento: any, index: number) => (
+                  <div key={index} className="flex items-start gap-4 border-b pb-4">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500">
+                        {formatDate(movimento.dataHora)}
                       </div>
-                      <div className="font-medium">{safeStringValue(movimento.nome)}</div>
-                      {/* Complementos tabelados se existirem */}
-                      {Array.isArray(movimento.complementosTabelados) && movimento.complementosTabelados.length > 0 && (
-                        <div className="mt-1 text-sm text-gray-600">
-                          {movimento.complementosTabelados.map((comp: any, idx: number) => (
-                            <div key={idx} className="text-sm">{safeStringValue(comp)}</div>
-                          ))}
+                      <div className="font-medium">{movimento.nome}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="intimacao" className="py-4">
+              <div className="space-y-4">
+                {intimacoes.map((intimacao: any, index: number) => (
+                  <div key={index} className="flex items-start gap-4 border-b pb-4">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500">
+                        {formatDate(intimacao.data)}
+                      </div>
+                      <div className="font-medium">{intimacao.descricao}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="documentos" className="py-4">
+              <div className="space-y-4">
+                {documentos.map((documento: any, index: number) => (
+                  <div key={index} className="flex items-start gap-4 border-b pb-4">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500">
+                        {formatDate(documento.data)}
+                      </div>
+                      <div className="font-medium">{documento.descricao}</div>
+                      {documento.tipo && (
+                        <div className="text-sm text-gray-500">
+                          Tipo: {documento.tipo}
                         </div>
                       )}
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <p>Nenhuma movimentação encontrada</p>
                   </div>
-                )}
-                
-                {/* Exemplos de movimentações para visualização */}
-                {movimentos.length === 0 && (
-                  <>
-                    <div className="border rounded-md p-3">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Badge variant="outline" className="mr-2 text-xs">11383</Badge>
-                        <span className="text-xs">09 de maio de 2023 às 16:24</span>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="decisao" className="py-4">
+              <div className="space-y-4">
+                {decisoes.map((decisao: any, index: number) => (
+                  <div key={index} className="flex items-start gap-4 border-b pb-4">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500">
+                        {formatDate(decisao.data)}
                       </div>
-                      <div className="font-medium">Ato ordinatório</div>
+                      <div className="font-medium">{decisao.descricao}</div>
                     </div>
-                    
-                    <div className="border rounded-md p-3">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Badge variant="outline" className="mr-2 text-xs">123</Badge>
-                        <span className="text-xs">05 de maio de 2023 às 16:14</span>
-                      </div>
-                      <div className="font-medium">Remessa</div>
-                    </div>
-                    
-                    <div className="border rounded-md p-3">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Badge variant="outline" className="mr-2 text-xs">11010</Badge>
-                        <span className="text-xs">05 de maio de 2023 às 14:43</span>
-                      </div>
-                      <div className="font-medium">Mero expediente</div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </TabsContent>
-            
-            {/* Tab de Intimação */}
-            <TabsContent value="Intimação">
-              <div className="py-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-medium">Intimações</h3>
-                  <Button size="sm" variant="outline" className="flex items-center">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Intimação
-                  </Button>
-                </div>
-                <div className="text-center py-4 text-gray-500">
-                  <p>Nenhuma intimação registrada para este processo</p>
-                </div>
-              </div>
-            </TabsContent>
-            
-            {/* Tab de Documentos */}
-            <TabsContent value="Documentos">
-              <div className="py-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-medium">Documentos</h3>
-                  <Button size="sm" variant="outline" className="flex items-center">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Novo Documento
-                  </Button>
-                </div>
-                <div className="text-center py-4 text-gray-500">
-                  <p>Nenhum documento disponível para este processo</p>
-                </div>
-              </div>
-            </TabsContent>
-            
-            {/* Tab de Decisão */}
-            <TabsContent value="Decisão">
-              <div className="py-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-medium">Decisões</h3>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="flex items-center">
-                        <PenSquare className="h-4 w-4 mr-2" />
-                        Nova Decisão
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[550px]">
-                      <DialogHeader>
-                        <DialogTitle>Cadastrar Nova Decisão</DialogTitle>
-                        <DialogDescription>
-                          Preencha os dados da decisão relativa ao processo.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="space-y-2">
-                            <label htmlFor="title" className="text-sm font-medium">Título da Decisão</label>
-                            <Input id="title" placeholder="Ex: Sentença, Decisão Liminar..." />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="type" className="text-sm font-medium">Tipo de Decisão</label>
-                            <Select>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sentenca">Sentença</SelectItem>
-                                <SelectItem value="liminar">Liminar</SelectItem>
-                                <SelectItem value="despacho">Despacho</SelectItem>
-                                <SelectItem value="acordao">Acórdão</SelectItem>
-                                <SelectItem value="outros">Outros</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="judge" className="text-sm font-medium">Juiz/Relator</label>
-                            <Input id="judge" placeholder="Nome do juiz ou relator" />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="description" className="text-sm font-medium">Descrição/Conteúdo</label>
-                            <Input 
-                              id="description" 
-                              placeholder="Descrição resumida da decisão" 
-                              className="min-h-[100px]"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button type="submit" onClick={() => toast("Decisão cadastrada com sucesso")}>Salvar Decisão</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                <div className="text-center py-4 text-gray-500">
-                  <p>Nenhuma decisão registrada para este processo</p>
-                </div>
-              </div>
-            </TabsContent>
-            
-            {/* Tab de Partes */}
-            <TabsContent value="Partes">
-              <div className="py-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-medium">Partes do Processo</h3>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="flex items-center">
-                        <Users className="h-4 w-4 mr-2" />
-                        Nova Parte
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[550px]">
-                      <DialogHeader>
-                        <DialogTitle>Cadastrar Nova Parte</DialogTitle>
-                        <DialogDescription>
-                          Adicione informações sobre uma parte envolvida no processo.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="space-y-2">
-                            <label htmlFor="name" className="text-sm font-medium">Nome/Razão Social</label>
-                            <Input id="name" placeholder="Nome da parte" />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="party_type" className="text-sm font-medium">Tipo de Parte</label>
-                            <Select>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="autor">Autor</SelectItem>
-                                <SelectItem value="reu">Réu</SelectItem>
-                                <SelectItem value="testemunha">Testemunha</SelectItem>
-                                <SelectItem value="perito">Perito</SelectItem>
-                                <SelectItem value="terceiro_interessado">Terceiro Interessado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="document" className="text-sm font-medium">CPF/CNPJ</label>
-                            <Input id="document" placeholder="Documento de identificação" />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label htmlFor="representative" className="text-sm font-medium">Representante Legal</label>
-                            <Input id="representative" placeholder="Nome do representante" />
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button type="submit" onClick={() => toast("Parte cadastrada com sucesso")}>Salvar Parte</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                
-                {partes && partes.length > 0 ? (
-                  <div className="space-y-3">
-                    {partes.map((parte: any, index: number) => {
-                      const tipoParte = safeStringValue(parte.tipo);
-                      const nomeParte = safeStringValue(parte.pessoa?.nome);
-                      
-                      return (
-                        <div key={index} className="border rounded-md p-3">
-                          <div className="flex justify-between">
-                            <div>
-                              <Badge variant="outline" className="mb-1 bg-blue-50 text-blue-700">
-                                {tipoParte}
-                              </Badge>
-                              <h4 className="font-medium">{nomeParte}</h4>
-                              {parte.pessoa?.numeroDocumentoPrincipal && (
-                                <p className="text-sm text-gray-500">
-                                  Documento: {parte.pessoa.numeroDocumentoPrincipal}
-                                </p>
-                              )}
-                            </div>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4 mr-1" /> Detalhes
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <p>Nenhuma parte registrada para este processo</p>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="partes" className="py-4">
+              <div className="space-y-4">
+                {partes.map((parte: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="font-medium mb-2">{parte.nome}</div>
+                    <div className="text-sm text-gray-500">Papel: {parte.papel}</div>
+                    {parte.documento && (
+                      <div className="text-sm text-gray-500">
+                        Documento: {parte.documento}
+                      </div>
+                    )}
+                    {Array.isArray(parte.advogados) && parte.advogados.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-sm font-medium">Advogados:</div>
+                        {parte.advogados.map((advogado: any, advIndex: number) => (
+                          <div key={advIndex} className="text-sm text-gray-500">
+                            {advogado.nome} - OAB: {advogado.inscricao}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             </TabsContent>
           </Tabs>
+
+          {/* Ações */}
+          <div className="flex justify-end gap-2 mt-4">
+            {onView && (
+              <Button variant="outline" size="sm" onClick={handleView}>
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </Button>
+            )}
+            {onDelete && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirmar exclusão</DialogTitle>
+                    <DialogDescription>
+                      Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button variant="destructive" onClick={handleDelete}>
+                      Excluir
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </CardContent>
       )}
     </Card>

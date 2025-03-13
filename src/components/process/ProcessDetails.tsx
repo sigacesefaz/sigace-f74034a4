@@ -1,33 +1,37 @@
-
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
-import { ArrowLeft, ArrowRight, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
 
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   mainProcess: DatajudProcess;
-  onSave: () => void;
+  onSave: () => Promise<void>;
   onCancel: () => void;
   isImport?: boolean;
   importProgress?: number;
+  handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
 }
 
-export function ProcessDetails({ 
-  processMovimentos, 
-  mainProcess, 
-  onSave, 
-  onCancel, 
-  isImport = true,
-  importProgress = 0
+export function ProcessDetails({
+  processMovimentos,
+  mainProcess,
+  isImport = false,
+  onSave,
+  onCancel,
+  importProgress = 0,
+  handleProcessSelect
 }: ProcessDetailsProps) {
+  const navigate = useNavigate();
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("events");
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isTabsExpanded, setIsTabsExpanded] = useState(false);
+  const itemsPerPage = 10;
+
   // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
   const currentProcess = currentMovimento.process;
@@ -46,6 +50,19 @@ export function ProcessDetails({
     }
   };
 
+  // Ordenar movimentos do mais recente para o mais antigo e calcular paginação
+  const currentPageMovimentos = useMemo(() => {
+    const sortedMovimentos = [...(currentProcess.movimentos || [])].sort((a, b) => {
+      return new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime();
+    });
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedMovimentos.slice(start, start + itemsPerPage);
+  }, [currentProcess.movimentos, currentPage, itemsPerPage]);
+
+  const totalEventos = currentProcess.movimentos?.length || 0;
+  const totalPages = Math.ceil(totalEventos / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
   // Formatar para exibição
   const formatProcessNumber = (number: string) => {
     if (!number) return "";
@@ -53,125 +70,6 @@ export function ProcessDetails({
     if (numericOnly.length !== 20) return number;
     return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
   };
-
-  // Informações gerais do processo
-  const ProcessOverview = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Dados do Processo</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="font-medium text-gray-600">Número do Processo:</span>
-              <p>{formatProcessNumber(currentProcess.numeroProcesso)}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Classe:</span>
-              <p>{currentProcess.classe?.nome || "Não informado"}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Data de Ajuizamento:</span>
-              <p>{formatDate(currentProcess.dataAjuizamento)}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Tribunal:</span>
-              <p>{currentProcess.tribunal || "Não informado"}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Grau:</span>
-              <p>{currentProcess.grau || "Não informado"}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Órgão Julgador</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="font-medium text-gray-600">Nome:</span>
-              <p>{currentProcess.orgaoJulgador?.nome || "Não informado"}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Código:</span>
-              <p>{currentProcess.orgaoJulgador?.codigo || "Não informado"}</p>
-            </div>
-          </div>
-          
-          <h3 className="text-lg font-semibold mt-4 mb-2">Sistema</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="font-medium text-gray-600">Nome:</span>
-              <p>{currentProcess.sistema?.nome || "Não informado"}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Formato:</span>
-              <p>{currentProcess.formato?.nome || "Não informado"}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Assuntos</h3>
-        {currentProcess.assuntos && currentProcess.assuntos.length > 0 ? (
-          <ul className="list-disc pl-5 space-y-1">
-            {currentProcess.assuntos.map((assunto, index) => (
-              <li key={index}>
-                {assunto.nome} (Código: {assunto.codigo})
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500">Nenhum assunto encontrado</p>
-        )}
-      </div>
-    </div>
-  );
-  
-  // Renderizar movimentos processuais
-  const MovementsList = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Movimentos Processuais</h3>
-      {currentProcess.movimentos && currentProcess.movimentos.length > 0 ? (
-        <div className="space-y-4">
-          {currentProcess.movimentos.slice(0, 20).map((movimento, index) => (
-            <div key={index} className="border rounded-md p-4">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h4 className="font-medium">{movimento.nome}</h4>
-                  <p className="text-sm text-gray-600">
-                    Código: {movimento.codigo}
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {formatDate(movimento.dataHora)}
-                </div>
-              </div>
-              
-              {movimento.complementosTabelados && movimento.complementosTabelados.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-600">Complementos:</p>
-                  <ul className="text-sm pl-5 list-disc space-y-1 mt-1">
-                    {movimento.complementosTabelados.map((complemento, i) => (
-                      <li key={i}>{complemento.descricao || complemento.nome}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {currentProcess.movimentos.length > 20 && (
-            <p className="text-center text-sm text-gray-500 italic">
-              Exibindo os 20 movimentos mais recentes de {currentProcess.movimentos.length} no total.
-            </p>
-          )}
-        </div>
-      ) : (
-        <p className="text-gray-500">Nenhum movimento processual encontrado</p>
-      )}
-    </div>
-  );
 
   // Componente para exibir as partes do processo
   const PartiesList = () => (
@@ -212,18 +110,43 @@ export function ProcessDetails({
   );
 
   return (
-    <div className="space-y-6">
-      {/* Visão geral do processo (sempre visível) */}
+    <div>
       <Card className="p-4">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold mb-2">{currentProcess.classe?.nome || "Processo"}</h2>
-          <p className="text-lg font-semibold">{formatProcessNumber(currentProcess.numeroProcesso)}</p>
-          <div className="text-sm text-gray-600 mt-1">
-            <div>Tribunal: {currentProcess.tribunal}</div>
-            <div>Órgão Julgador: {currentProcess.orgaoJulgador?.nome || "Não informado"}</div>
-            <div>Data de Ajuizamento: {formatDate(currentProcess.dataAjuizamento)}</div>
+        {/* Cabeçalho do processo */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold">{currentProcess.classe?.nome || "Processo"}</h2>
+            <p className="text-lg">{formatProcessNumber(currentProcess.numeroProcesso)}</p>
+            <div className="text-sm text-gray-600 mt-2">
+              <div>Tribunal: {currentProcess.tribunal}</div>
+              <div>Órgão Julgador: {currentProcess.orgaoJulgador?.nome}</div>
+              <div>Data de Ajuizamento: {formatDate(currentProcess.dataAjuizamento)}</div>
+            </div>
           </div>
+          
+          {/* Botão de importar processo */}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => handleProcessSelect && handleProcessSelect(currentProcess.numeroProcesso, currentProcess.tribunal)}
+            className="flex items-center gap-2"
+            disabled={importProgress > 0 && importProgress < 100}
+          >
+            <Download className="h-4 w-4" />
+            Importar Processo
+          </Button>
         </div>
+
+        {/* Progress indicator for imports */}
+        {importProgress > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Importando processo...</span>
+              <span>{Math.round(importProgress)}%</span>
+            </div>
+            <Progress value={importProgress} className="h-2" />
+          </div>
+        )}
         
         {/* Navegação entre movimentos processuais */}
         {totalMovimentos > 1 && (
@@ -255,81 +178,150 @@ export function ProcessDetails({
             </div>
           </div>
         )}
-        
-        {/* Progress indicator for imports */}
-        {isImport && importProgress > 0 && (
-          <div className="mt-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Importando processo...</span>
-              <span>{Math.round(importProgress)}%</span>
+
+        {/* Grid de informações */}
+        <div className="grid grid-cols-2 gap-8 mt-8">
+          {/* Coluna da esquerda */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold mb-2">Dados do Processo</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Número do Processo:</span>
+                  <p>{formatProcessNumber(currentProcess.numeroProcesso)}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Classe:</span>
+                  <p>{currentProcess.classe?.nome || "Não informado"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Data de Ajuizamento:</span>
+                  <p>{formatDate(currentProcess.dataAjuizamento)}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Tribunal:</span>
+                  <p>{currentProcess.tribunal || "Não informado"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Grau:</span>
+                  <p>{currentProcess.grau || "Não informado"}</p>
+                </div>
+              </div>
             </div>
-            <Progress value={importProgress} className="h-2" />
+
+            <div>
+              <h3 className="font-semibold mb-2">Assuntos</h3>
+              {currentProcess.assuntos && currentProcess.assuntos.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {currentProcess.assuntos.map((assunto, index) => (
+                    <li key={index}>
+                      {assunto.nome} (Código: {assunto.codigo})
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">Nenhum assunto encontrado</p>
+              )}
+            </div>
           </div>
-        )}
-        
-        {/* Overview section sempre visível */}
-        <div className="mt-4">
-          <ProcessOverview />
+
+          {/* Coluna da direita */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold mb-2">Órgão Julgador</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Nome:</span>
+                  <p>{currentProcess.orgaoJulgador?.nome || "Não informado"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Código:</span>
+                  <p>{currentProcess.orgaoJulgador?.codigo || "Não informado"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-2">Sistema</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Nome:</span>
+                  <p>{currentProcess.sistema?.nome || "Não informado"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Formato:</span>
+                  <p>{currentProcess.formato?.nome || "Não informado"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Seção retrátil com os eventos */}
+        <div className="mt-8 border-t pt-4">
+          <Button
+            variant="ghost"
+            onClick={() => setIsTabsExpanded(!isTabsExpanded)}
+            className="w-full flex justify-between items-center py-2 hover:bg-gray-100"
+          >
+            <span className="font-semibold">Informações dos Eventos</span>
+            {isTabsExpanded ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </Button>
+          
+          {isTabsExpanded && (
+            <div className="mt-4">
+              <div className="space-y-4">
+                {currentPageMovimentos.map((movimento, index) => (
+                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-semibold">
+                          #{totalEventos - startIndex - index} {movimento.nome}
+                          {movimento.codigo && 
+                            <span className="ml-2 text-sm text-gray-500">
+                              (Código: {movimento.codigo})
+                            </span>
+                          }
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {formatDate(movimento.dataHora)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Paginação */}
+                <div className="flex justify-between items-center mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Anterior
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próximo
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
-
-      {/* Abas para navegar entre diferentes seções de informações */}
-      <Card className="p-6">
-        <Tabs defaultValue="events" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="events">Movimentação</TabsTrigger>
-            <TabsTrigger value="intimation">Intimação</TabsTrigger>
-            <TabsTrigger value="documents">Documentos</TabsTrigger>
-            <TabsTrigger value="decisions">Decisão</TabsTrigger>
-            <TabsTrigger value="parties">Partes</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="events">
-            <MovementsList />
-          </TabsContent>
-          
-          <TabsContent value="intimation">
-            <div className="text-center py-8 text-gray-500">
-              <p>Nenhuma intimação disponível</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="documents">
-            <div className="text-center py-8 text-gray-500">
-              <p>Nenhum documento disponível</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="decisions">
-            <div className="text-center py-8 text-gray-500">
-              <p>Nenhuma decisão disponível</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="parties">
-            <PartiesList />
-          </TabsContent>
-        </Tabs>
-      </Card>
-
-      {/* Barra de ações */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onCancel}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        
-        {isImport && (
-          <Button 
-            onClick={onSave} 
-            className="bg-primary text-white"
-            disabled={importProgress > 0 && importProgress < 100}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Importar Processo
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

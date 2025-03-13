@@ -35,29 +35,78 @@ const exampleProcesses = [
       ],
       movimentos: [
         {
-          codigo: "11383",
-          nome: "Ato ordinatório",
-          dataHora: "2023-05-09T16:24:00"
+          id: "1",
+          data: "2023-05-09T16:24:00",
+          descricao: "Ato ordinatório praticado"
         },
         {
-          codigo: "123",
-          nome: "Remessa",
-          dataHora: "2023-05-05T16:14:00"
+          id: "2",
+          data: "2023-05-05T16:14:00",
+          descricao: "Remessa dos autos"
         },
         {
-          codigo: "11010",
-          nome: "Mero expediente",
-          dataHora: "2023-05-05T14:43:00"
+          id: "3",
+          data: "2023-05-05T14:43:00",
+          descricao: "Mero expediente processual"
+        }
+      ],
+      intimacoes: [
+        {
+          id: "1",
+          data: "2023-05-09T16:24:00",
+          descricao: "Intimação para manifestação"
         },
         {
-          codigo: "118",
-          nome: "Protocolo de Petição",
-          dataHora: "2022-06-07T13:08:00"
+          id: "2",
+          data: "2023-05-05T16:14:00",
+          descricao: "Intimação para pagamento de custas"
+        }
+      ],
+      documentos: [
+        {
+          id: "1",
+          data: "2023-05-09T16:24:00",
+          descricao: "Petição inicial",
+          tipo: "Petição"
         },
         {
-          codigo: "12266",
-          nome: "Confirmada",
-          dataHora: "2022-05-16T23:59:00"
+          id: "2",
+          data: "2023-05-05T16:14:00",
+          descricao: "Procuração",
+          tipo: "Documento"
+        }
+      ],
+      decisoes: [
+        {
+          id: "1",
+          data: "2023-05-09T16:24:00",
+          descricao: "Decisão de deferimento da liminar"
+        }
+      ],
+      partes: [
+        {
+          papel: "Autor",
+          nome: "João da Silva",
+          tipoPessoa: "Física",
+          documento: "123.456.789-00",
+          advogados: [
+            {
+              nome: "Dr. Carlos Advogado",
+              inscricao: "OAB/TO 1234"
+            }
+          ]
+        },
+        {
+          papel: "Réu",
+          nome: "Estado do Tocantins",
+          tipoPessoa: "Jurídica",
+          documento: "12.345.678/0001-00",
+          advogados: [
+            {
+              nome: "Dra. Maria Procuradora",
+              inscricao: "OAB/TO 5678"
+            }
+          ]
         }
       ]
     }
@@ -91,14 +140,57 @@ const exampleProcesses = [
       ],
       movimentos: [
         {
-          codigo: "11022",
-          nome: "Decisão",
-          dataHora: "2023-01-15T11:20:00"
+          id: "1",
+          data: "2023-01-15T11:20:00",
+          descricao: "Decisão proferida"
         },
         {
-          codigo: "51",
-          nome: "Certidão Emitida",
-          dataHora: "2022-11-23T14:30:00"
+          id: "2",
+          data: "2022-11-23T14:30:00",
+          descricao: "Certidão emitida"
+        }
+      ],
+      intimacoes: [
+        {
+          id: "1",
+          data: "2023-01-15T11:20:00",
+          descricao: "Intimação da decisão"
+        }
+      ],
+      documentos: [
+        {
+          id: "1",
+          data: "2022-01-10T09:30:00",
+          descricao: "Petição inicial",
+          tipo: "Petição"
+        }
+      ],
+      decisoes: [
+        {
+          id: "1",
+          data: "2023-01-15T11:20:00",
+          descricao: "Decisão de mérito"
+        }
+      ],
+      partes: [
+        {
+          papel: "Autor",
+          nome: "Ministério Público",
+          tipoPessoa: "Jurídica",
+          documento: "00.000.000/0001-00",
+          advogados: []
+        },
+        {
+          papel: "Réu",
+          nome: "Empresa XYZ Ltda",
+          tipoPessoa: "Jurídica",
+          documento: "98.765.432/0001-00",
+          advogados: [
+            {
+              nome: "Dr. Pedro Advogado",
+              inscricao: "OAB/TO 9876"
+            }
+          ]
         }
       ]
     }
@@ -142,6 +234,7 @@ export default function ProcessCardExample() {
             process={process}
             onDelete={handleDelete}
             onView={handleView}
+            relatedHits={process.id === "1" ? [processes[1]] : []}
           />
         ))}
         
