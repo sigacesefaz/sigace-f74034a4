@@ -129,9 +129,6 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
   try {
     console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
     
-    // Endpoint deve ser lowercase conforme o formato correto da API
-    const endpoint = courtEndpoint.toLowerCase(); 
-    
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
     const requestBody = {
@@ -186,9 +183,6 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
 export async function searchProcesses(courtEndpoint: string, processNumber: string): Promise<DatajudMovimentoProcessual[]> {
   try {
     console.log(`Buscando processos com número ${processNumber} no tribunal ${courtEndpoint}`);
-    
-    // Endpoint deve ser lowercase conforme o formato correto da API
-    const endpoint = courtEndpoint.toLowerCase();
     
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
