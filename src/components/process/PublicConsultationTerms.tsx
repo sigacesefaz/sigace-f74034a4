@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/components/ui/use-toast";
 
 interface PublicConsultationTermsProps {
   open: boolean;
@@ -23,12 +24,29 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
 
   const handleAccept = () => {
     if (accepted) {
-      // First close the dialog, then navigate
-      onOpenChange(false);
-      // Use a slight delay to ensure dialog closes properly before navigation
-      setTimeout(() => {
-        navigate("/public/search");
-      }, 100);
+      try {
+        // Primeiro, feche o diálogo
+        onOpenChange(false);
+        
+        // Notifique o usuário
+        toast({
+          title: "Termos aceitos",
+          description: "Redirecionando para a consulta pública...",
+        });
+        
+        // Use um timeout para garantir que o diálogo feche completamente antes da navegação
+        setTimeout(() => {
+          // Navegue para a página de pesquisa pública
+          navigate("/public/search", { replace: true });
+        }, 300);
+      } catch (error) {
+        console.error("Erro ao navegar:", error);
+        toast({
+          title: "Erro de navegação",
+          description: "Não foi possível acessar a página de consulta pública.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
