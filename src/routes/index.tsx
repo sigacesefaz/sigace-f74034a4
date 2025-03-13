@@ -23,6 +23,7 @@ import ReportList from "@/pages/reports/ReportList";
 import PublicSearch from "@/pages/public/PublicSearch";
 import EmailVerification from "@/pages/public/EmailVerification";
 import ProcessView from "@/pages/public/ProcessView";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export const AppRoutes = () => {
   return (
