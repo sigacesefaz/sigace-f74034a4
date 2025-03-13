@@ -1,6 +1,34 @@
 
 import { supabase } from "@/lib/supabase";
 import { PartyType } from "@/types/process";
+import { DatajudProcess } from "@/types/datajud";
+
+// Function to save the parties of a process
+export async function saveProcessParties(processId: string | number, parties: any[]) {
+  if (!parties || parties.length === 0) return;
+  
+  try {
+    const partiesData = parties.map(party => ({
+      process_id: processId,
+      nome: party.nome || "",
+      papel: party.papel || "",
+      tipo_pessoa: party.tipoPessoa || "",
+      documento: party.documento || "",
+      advogados: party.advogados || [],
+      json_completo: party
+    }));
+    
+    const { error } = await supabase
+      .from("process_parties")
+      .insert(partiesData);
+      
+    if (error) {
+      console.error("Error inserting parties:", error);
+    }
+  } catch (error) {
+    console.error("Error inserting process parties:", error);
+  }
+}
 
 export async function getPartiesByProcessId(processId: string) {
   const { data, error } = await supabase
