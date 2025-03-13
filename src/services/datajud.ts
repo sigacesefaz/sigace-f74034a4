@@ -128,14 +128,14 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
   try {
     console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
     
-    const endpoint = courtEndpoint.toLowerCase();
+    const endpoint = courtEndpoint.toUpperCase(); // API espera endpoints em maiúsculo
     
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
     const requestBody = {
-      endpoint: endpoint,
+      endpoint: courtEndpoint,
       query: {
-        match: {
+        term: {
           "numeroProcesso": formattedNumber
         }
       },
@@ -185,15 +185,15 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
   try {
     console.log(`Buscando processos com número ${processNumber} no tribunal ${courtEndpoint}`);
     
-    const endpoint = courtEndpoint.toLowerCase();
+    const endpoint = courtEndpoint.toUpperCase(); // API espera endpoints em maiúsculo
     
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
     const requestBody = {
-      endpoint: endpoint,
+      endpoint: courtEndpoint,
       query: {
         term: {
-          "numeroProcesso.keyword": formattedNumber
+          "numeroProcesso": formattedNumber
         }
       },
       size: 10

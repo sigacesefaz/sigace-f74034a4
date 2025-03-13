@@ -39,9 +39,9 @@ serve(async (req) => {
     // Remove endpoint from the request body before sending to API
     const { endpoint: _, ...requestData } = body;
     
-    // Correct URL format for DataJud API
-    // The issue was in the API URL format
-    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica/${endpoint.toLowerCase()}`;
+    // Correct URL format for DataJud API based on API documentation
+    // The API endpoint should be: https://api-publica.datajud.cnj.jus.br/api_publica_[TRIBUNAL]/_search
+    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica_${endpoint.toUpperCase()}/_search`;
     
     console.log(`Proxying request to: ${apiUrl}`);
     console.log(`Request body: ${JSON.stringify(requestData)}`);
