@@ -152,7 +152,7 @@ export function LoginDropdown() {
         align="end" 
         alignOffset={0}
         sideOffset={0}
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        // Removido o onOpenAutoFocus que não existe neste componente
       >
         <Card className="border rounded shadow-none">
           <div className="p-8 space-y-6">
