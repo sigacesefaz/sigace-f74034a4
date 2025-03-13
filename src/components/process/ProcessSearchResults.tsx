@@ -62,7 +62,7 @@ export function ProcessSearchResults({
 
   const handleCardClick = (process: DatajudProcess) => {
     console.log("Process card clicked:", process.numeroProcesso);
-    // Ensure we call onSelectProcess properly
+    // Call onSelectProcess with the selected process
     onSelectProcess(process);
   };
 
@@ -84,10 +84,6 @@ export function ProcessSearchResults({
               if (e.key === 'Enter' || e.key === ' ') {
                 handleCardClick(process);
               }
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault(); // Prevent any default behavior
-              handleCardClick(process);
             }}
           >
             <div className="flex flex-col gap-2">
