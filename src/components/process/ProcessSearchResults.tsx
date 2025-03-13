@@ -82,6 +82,7 @@ export function ProcessSearchResults({
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                  // Handle keyboard navigation separately - don't pass the event
                   handleCardClick(process);
                 }
               }}
