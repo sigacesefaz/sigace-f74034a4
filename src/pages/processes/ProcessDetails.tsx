@@ -9,15 +9,23 @@ import { getMovementsByProcessId } from '@/services/process-movements';
 import { getPartiesByProcessId } from '@/services/process-parties';
 import { getSubjectsByProcessId } from '@/services/process-subjects';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DatajudProcess, DatajudMovimentoProcessual } from '@/types/datajud';
+import { ProcessHeader } from '@/components/process/ProcessHeader';
+import { ProcessPartiesList } from '@/components/process/ProcessPartiesList';
+import { ProcessNavigation } from '@/components/process/ProcessNavigation';
+import { toast } from '@/hooks/use-toast';
 
 export default function ProcessDetailsPage() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [process, setProcess] = useState<any>(null);
   const [details, setDetails] = useState<any>(null);
-  const [movements, setMovements] = useState<any[]>([]);
+  const [movements, setMovements] = useState<DatajudMovimentoProcessual[]>([]);
   const [parties, setParties] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
+  const [importProgress, setImportProgress] = useState(0);
+  const [isImporting, setIsImporting] = useState(false);
   
   useEffect(() => {
     const fetchProcessData = async () => {
@@ -48,93 +56,119 @@ export default function ProcessDetailsPage() {
     
     fetchProcessData();
   }, [id]);
+
+  const handlePrevMovimento = () => {
+    if (currentMovimentoIndex > 0) {
+      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
+    }
+  };
+
+  const handleNextMovimento = () => {
+    if (currentMovimentoIndex < movements.length - 1) {
+      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
+    }
+  };
+
+  const handleImportProcess = async () => {
+    setIsImporting(true);
+    try {
+      // Simulate import process with progress
+      for (let i = 0; i <= 100; i += 10) {
+        setImportProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      toast({
+        title: "Processo importado com sucesso",
+        description: "O processo foi importado para o sistema.",
+      });
+    } catch (error) {
+      console.error("Error importing process:", error);
+      toast({
+        title: "Erro ao importar processo",
+        description: "Não foi possível importar o processo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+      setImportProgress(0);
+    }
+  };
   
   return (
-    <MainLayout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">Detalhes do Processo</h1>
-        
-        {loading ? (
-          <Card className="p-6">
-            <Skeleton className="h-6 w-3/4 mb-4" />
-            <Skeleton className="h-4 w-1/2 mb-2" />
-            <Skeleton className="h-4 w-2/3 mb-2" />
-            <Skeleton className="h-4 w-1/3" />
-          </Card>
-        ) : process ? (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-2">{process.title}</h2>
-            <p className="text-gray-600 mb-4">Número: {process.number}</p>
-            
-            {details && (
-              <div className="mb-4">
-                <h3 className="text-lg font-medium mb-2">Informações do Processo</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p><span className="font-medium">Tribunal:</span> {details.tribunal}</p>
-                    <p><span className="font-medium">Órgão Julgador:</span> {details.orgao_julgador?.nome}</p>
-                    <p><span className="font-medium">Data de Ajuizamento:</span> {new Date(details.data_ajuizamento).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p><span className="font-medium">Grau:</span> {details.grau}</p>
-                    <p><span className="font-medium">Sistema:</span> {details.sistema?.nome}</p>
-                    <p><span className="font-medium">Classe:</span> {details.classe?.nome}</p>
-                  </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Detalhes do Processo</h1>
+      
+      {loading ? (
+        <Card className="p-6">
+          <Skeleton className="h-6 w-3/4 mb-4" />
+          <Skeleton className="h-4 w-1/2 mb-2" />
+          <Skeleton className="h-4 w-2/3 mb-2" />
+          <Skeleton className="h-4 w-1/3" />
+        </Card>
+      ) : process ? (
+        <Card className="p-6 space-y-6">
+          {details && (
+            <ProcessHeader 
+              currentProcess={details}
+              importProgress={importProgress}
+              isImporting={isImporting}
+              handleImportProcess={handleImportProcess}
+            />
+          )}
+          
+          {/* Navigation between movimentos */}
+          {movements && movements.length > 0 && (
+            <ProcessNavigation
+              currentMovimentoIndex={currentMovimentoIndex}
+              totalMovimentos={movements.length}
+              handlePrevMovimento={handlePrevMovimento}
+              handleNextMovimento={handleNextMovimento}
+            />
+          )}
+          
+          {/* Process details content */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left column */}
+            <div className="space-y-6">
+              {subjects && subjects.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Assuntos</h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {subjects.map((subject, index) => (
+                      <li key={index}>{subject.nome}</li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-            )}
-            
-            {subjects && subjects.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-lg font-medium mb-2">Assuntos</h3>
-                <ul className="list-disc pl-5">
-                  {subjects.map((subject, index) => (
-                    <li key={index}>{subject.nome}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {parties && parties.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-lg font-medium mb-2">Partes</h3>
-                <div className="space-y-3">
-                  {parties.map((party, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded">
-                      <p><span className="font-medium">{party.papel}:</span> {party.nome}</p>
-                      {party.documento && <p><span className="font-medium">Documento:</span> {party.documento}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {movements && movements.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-2">Movimentações</h3>
-                <div className="space-y-3">
-                  {movements.slice(0, 5).map((movement, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded">
-                      <p className="font-medium">{movement.nome}</p>
-                      <p className="text-sm text-gray-600">{new Date(movement.data_hora).toLocaleDateString()}</p>
-                      {movement.complemento && <p className="text-sm mt-1">{movement.complemento}</p>}
-                    </div>
-                  ))}
-                  {movements.length > 5 && (
-                    <p className="text-center text-blue-600 hover:text-blue-800 cursor-pointer">
-                      Ver mais movimentações ({movements.length - 5})
+              )}
+              
+              {movements && movements.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Movimentação atual</h3>
+                  <div className="p-4 bg-gray-50 rounded-md">
+                    <p className="font-medium">{movements[currentMovimentoIndex]?.nome}</p>
+                    <p className="text-sm text-gray-600">
+                      {movements[currentMovimentoIndex]?.data_hora && 
+                        new Date(movements[currentMovimentoIndex].data_hora).toLocaleDateString()}
                     </p>
-                  )}
+                    {movements[currentMovimentoIndex]?.complemento && (
+                      <p className="mt-2 text-sm">{movements[currentMovimentoIndex].complemento}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </Card>
-        ) : (
-          <Card className="p-6">
-            <p>Processo não encontrado</p>
-          </Card>
-        )}
-      </div>
-    </MainLayout>
+              )}
+            </div>
+            
+            {/* Right column */}
+            <div>
+              <ProcessPartiesList parties={parties} />
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-6">
+          <p>Processo não encontrado</p>
+        </Card>
+      )}
+    </div>
   );
 }
