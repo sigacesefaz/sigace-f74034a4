@@ -137,7 +137,7 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
     const requestBody = {
       endpoint: courtEndpoint,
       query: {
-        term: {
+        match: {
           "numeroProcesso": formattedNumber
         }
       },
@@ -195,7 +195,7 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
     const requestBody = {
       endpoint: courtEndpoint,
       query: {
-        term: {
+        match: {
           "numeroProcesso": formattedNumber
         }
       },
