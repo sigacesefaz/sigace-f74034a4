@@ -132,17 +132,28 @@ export function ProcessSearchPanel({
           <h3 className="font-medium text-lg mb-2">Resultados da busca:</h3>
           <div className="space-y-2">
             {foundProcesses.map((movimento, index) => (
-              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card 
+                key={index} 
+                className="cursor-pointer hover:shadow-md transition-shadow" 
+                onClick={() => handleProcessSelectClick([movimento])}
+              >
                 <CardContent 
                   className="p-4 flex justify-between items-center"
-                  onClick={() => handleProcessSelectClick([movimento])}
                 >
                   <div>
                     <p className="font-semibold">{formatProcessNumber(movimento.process.numeroProcesso)}</p>
                     <p className="text-sm text-gray-600">{movimento.process.classe?.nome || "Não informado"}</p>
                     <p className="text-xs text-gray-500">Tribunal: {movimento.process.tribunal}</p>
                   </div>
-                  <Button size="sm">Selecionar</Button>
+                  <Button 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent the card's onClick from firing
+                      handleProcessSelectClick([movimento]);
+                    }}
+                  >
+                    Selecionar
+                  </Button>
                 </CardContent>
               </Card>
             ))}

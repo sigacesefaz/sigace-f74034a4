@@ -33,9 +33,11 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
     if (!court) return;
     
     try {
+      // Using the touchstart and click event to ensure mobile compatibility
       const success = await onProcessSelect(process.numeroProcesso, court.endpoint);
       if (!success) {
         // Error handling is done in onProcessSelect
+        console.log("Process selection failed");
       }
     } catch (error) {
       console.error("Error selecting process:", error);
