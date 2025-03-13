@@ -47,9 +47,9 @@ export const AppRoutes = () => {
           <Route path="/reports" element={<ProtectedRoute><ReportList /></ProtectedRoute>} />
           
           {/* Public consultation routes */}
-          <Route path="public/search" element={<PublicSearch />} />
-          <Route path="public/verify" element={<EmailVerification />} />
-          <Route path="public/process-view" element={<ProcessView />} />
+          <Route path="/public/search" element={<PublicSearch />} />
+          <Route path="/public/verify" element={<EmailVerification />} />
+          <Route path="/public/process-view" element={<ProcessView />} />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
