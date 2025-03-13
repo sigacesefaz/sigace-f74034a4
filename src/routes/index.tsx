@@ -46,10 +46,10 @@ export const AppRoutes = () => {
           <Route path="/notifications" element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><ReportList /></ProtectedRoute>} />
           
-          {/* Public consultation routes - definidas diretamente dentro do Routes */}
-          <Route path="/public/search" element={<PublicSearch />} />
-          <Route path="/public/verify" element={<EmailVerification />} />
-          <Route path="/public/process-view" element={<ProcessView />} />
+          {/* Public consultation routes */}
+          <Route path="public/search" element={<PublicSearch />} />
+          <Route path="public/verify" element={<EmailVerification />} />
+          <Route path="public/process-view" element={<ProcessView />} />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
