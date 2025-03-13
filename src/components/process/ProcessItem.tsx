@@ -165,7 +165,7 @@ export function ProcessItem({
             <AccordionItem value="parties">
               <AccordionTrigger>Partes do Processo</AccordionTrigger>
               <AccordionContent>
-                <ProcessParties processId={process.id} parties={expandedDetails?.parties} />
+                <ProcessParties processId={process.id} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

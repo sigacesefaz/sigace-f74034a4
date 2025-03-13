@@ -136,7 +136,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
         </Button>
       </div>
 
-      {/* Componente de movimentação processual */}
       {showMovements && process.metadata?.movimentos && (
         <div className="col-span-2">
           <ProcessMovements movimentos={process.metadata.movimentos} />
@@ -147,7 +146,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
 
   return (
     <Card className="p-6">
-      {/* Processo Principal */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">PROCESSO PRINCIPAL</span>
@@ -185,10 +183,8 @@ export function ProcessCard({ process }: ProcessCardProps) {
 
       {isExpanded && (
         <>
-          {/* Informações do Processo Principal */}
           {renderProcessInfo(process)}
 
-          {/* Hits do Processo */}
           {process.hits && process.hits.length > 0 && (
             <div className="mt-8 space-y-6">
               <h3 className="text-lg font-medium">Processos Relacionados</h3>
@@ -209,7 +205,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
             </div>
           )}
 
-          {/* Abas */}
           <Tabs defaultValue="movimentacao" className="w-full">
             <TabsList className="w-full bg-transparent border-b">
               <TabsTrigger 
@@ -299,14 +294,7 @@ export function ProcessCard({ process }: ProcessCardProps) {
             </TabsContent>
 
             <TabsContent value="partes">
-              <ProcessParties 
-                processId={process.id}
-                parties={process.metadata?.partes || []}
-                onPartiesChange={(updatedParties) => {
-                  // Aqui você pode implementar a lógica de atualização das partes se necessário
-                  console.log('Partes atualizadas:', updatedParties);
-                }}
-              />
+              <ProcessParties processId={process.id} />
             </TabsContent>
           </Tabs>
         </>

@@ -14,7 +14,7 @@ interface ProcessPartiesProps {
   processId: string;
 }
 
-export default function ProcessParties({ processId }: ProcessPartiesProps) {
+export function ProcessParties({ processId }: ProcessPartiesProps) {
   const [parties, setParties] = useState<PartyType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -337,3 +337,5 @@ export default function ProcessParties({ processId }: ProcessPartiesProps) {
     </div>
   );
 }
+
+export default ProcessParties;
