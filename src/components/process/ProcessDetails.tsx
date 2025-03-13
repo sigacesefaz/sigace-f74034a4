@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { ArrowLeft, ArrowRight, Save, ChevronDown, ChevronUp, Download } from "l
 import { formatDate } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
@@ -30,6 +32,7 @@ export function ProcessDetails({
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isTabsExpanded, setIsTabsExpanded] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const itemsPerPage = 10;
 
   // Se não existirem movimentos processuais múltiplos, utilizar o principal
@@ -47,6 +50,30 @@ export function ProcessDetails({
   const handlePrevMovimento = () => {
     if (currentMovimentoIndex > 0) {
       setCurrentMovimentoIndex(currentMovimentoIndex - 1);
+    }
+  };
+
+  const handleImportProcess = async () => {
+    if (!handleProcessSelect) {
+      console.error("handleProcessSelect function is not provided");
+      toast("Erro ao importar processo", "Função de importação não disponível", { variant: "destructive" });
+      return;
+    }
+    
+    setIsImporting(true);
+    try {
+      const success = await handleProcessSelect(currentProcess.numeroProcesso, currentProcess.tribunal);
+      if (!success) {
+        toast("Erro ao importar processo", "Não foi possível importar o processo", { variant: "destructive" });
+      } else {
+        toast("Processo importado com sucesso", "", { variant: "default" });
+        onSave();
+      }
+    } catch (error) {
+      console.error("Erro ao importar processo:", error);
+      toast("Erro ao importar processo", "", { variant: "destructive" });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -128,12 +155,12 @@ export function ProcessDetails({
           <Button 
             variant="outline"
             size="sm"
-            onClick={() => handleProcessSelect && handleProcessSelect(currentProcess.numeroProcesso, currentProcess.tribunal)}
+            onClick={handleImportProcess}
             className="flex items-center gap-2"
-            disabled={importProgress > 0 && importProgress < 100}
+            disabled={(importProgress > 0 && importProgress < 100) || isImporting}
           >
             <Download className="h-4 w-4" />
-            Importar Processo
+            {isImporting ? "Importando..." : "Importar Processo"}
           </Button>
         </div>
 
