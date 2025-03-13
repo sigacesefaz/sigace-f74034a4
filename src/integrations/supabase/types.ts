@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      entity_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       intimations: {
         Row: {
           attachments: Json
@@ -149,19 +173,25 @@ export type Database = {
       }
       party_types: {
         Row: {
+          created_at: string | null
           description: string | null
           id: number
           name: string
+          updated_at: string | null
         }
         Insert: {
+          created_at?: string | null
           description?: string | null
           id?: number
           name: string
+          updated_at?: string | null
         }
         Update: {
+          created_at?: string | null
           description?: string | null
           id?: number
           name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -346,8 +376,8 @@ export type Database = {
           address: Json | null
           contact_info: Json | null
           created_at: string | null
-          document_number: string | null
-          entity_type: string
+          document_number: string
+          entity_type_id: number
           id: number
           name: string
           party_type_id: number
@@ -360,8 +390,8 @@ export type Database = {
           address?: Json | null
           contact_info?: Json | null
           created_at?: string | null
-          document_number?: string | null
-          entity_type: string
+          document_number: string
+          entity_type_id: number
           id?: number
           name: string
           party_type_id: number
@@ -374,8 +404,8 @@ export type Database = {
           address?: Json | null
           contact_info?: Json | null
           created_at?: string | null
-          document_number?: string | null
-          entity_type?: string
+          document_number?: string
+          entity_type_id?: number
           id?: number
           name?: string
           party_type_id?: number
@@ -384,6 +414,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "process_parties_entity_type_id_fkey"
+            columns: ["entity_type_id"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "process_parties_party_type_id_fkey"
             columns: ["party_type_id"]
@@ -440,8 +477,10 @@ export type Database = {
           court: string | null
           created_at: string | null
           description: string | null
+          hits: Json | null
           id: number
           is_parent: boolean | null
+          metadata: Json | null
           number: string
           parent_id: number | null
           plaintiff: string | null
@@ -455,8 +494,10 @@ export type Database = {
           court?: string | null
           created_at?: string | null
           description?: string | null
+          hits?: Json | null
           id?: number
           is_parent?: boolean | null
+          metadata?: Json | null
           number: string
           parent_id?: number | null
           plaintiff?: string | null
@@ -470,8 +511,10 @@ export type Database = {
           court?: string | null
           created_at?: string | null
           description?: string | null
+          hits?: Json | null
           id?: number
           is_parent?: boolean | null
+          metadata?: Json | null
           number?: string
           parent_id?: number | null
           plaintiff?: string | null
