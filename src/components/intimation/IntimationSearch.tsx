@@ -1,6 +1,6 @@
 
 import { ProcessSearchPanel } from "@/components/shared/ProcessSearchPanel";
-import { DatajudProcess } from "@/types/datajud";
+import { DatajudMovimentoProcessual } from "@/types/datajud";
 
 export interface IntimationSearchProps {
   onSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
@@ -9,10 +9,10 @@ export interface IntimationSearchProps {
 }
 
 export function IntimationSearch({ onSelect, onManual, isLoading }: IntimationSearchProps) {
-  const handleProcessSelect = (processes: DatajudProcess[], courtEndpoint: string) => {
+  const handleProcessSelect = (movimentos: DatajudMovimentoProcessual[], courtEndpoint: string) => {
     // Take the first process from the array since we only need one
-    if (processes && processes.length > 0) {
-      return onSelect(processes[0].numeroProcesso, courtEndpoint);
+    if (movimentos && movimentos.length > 0) {
+      return onSelect(movimentos[0].process.numeroProcesso, courtEndpoint);
     }
     return Promise.resolve(false);
   };

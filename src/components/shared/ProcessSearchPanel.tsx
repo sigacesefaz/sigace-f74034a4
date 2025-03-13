@@ -1,5 +1,5 @@
 
-import { useState, useEffect, SetStateAction } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,12 +10,20 @@ import { formatProcessNumber } from '@/lib/utils';
 import { DatajudMovimentoProcessual } from '@/types/datajud';
 
 interface ProcessSearchPanelProps {
-  onProcessSelect: (processes: DatajudMovimentoProcessual[]) => void;
+  onProcessSelect: (processes: DatajudMovimentoProcessual[], courtEndpoint: string) => void;
+  onManualEntry?: () => void;
+  buttonLabel?: string;
   isLoading?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function ProcessSearchPanel({ onProcessSelect, isLoading = false, size = 'md' }: ProcessSearchPanelProps) {
+export function ProcessSearchPanel({ 
+  onProcessSelect, 
+  onManualEntry, 
+  buttonLabel = "Buscar Processo", 
+  isLoading = false, 
+  size = 'md' 
+}: ProcessSearchPanelProps) {
   const [processNumber, setProcessNumber] = useState('');
   const [selectedCourt, setSelectedCourt] = useState('');
   const [searchingProcess, setSearchingProcess] = useState(false);
@@ -57,7 +65,7 @@ export function ProcessSearchPanel({ onProcessSelect, isLoading = false, size = 
   };
 
   const handleProcessSelectClick = (processos: DatajudMovimentoProcessual[]) => {
-    onProcessSelect(processos);
+    onProcessSelect(processos, selectedCourt);
     setFoundProcesses([]);
     setSearched(false);
   };
@@ -107,7 +115,7 @@ export function ProcessSearchPanel({ onProcessSelect, isLoading = false, size = 
                 <Spinner size="sm" className="mr-2" /> Buscando...
               </>
             ) : (
-              'Buscar Processo'
+              buttonLabel
             )}
           </Button>
         </div>
@@ -139,6 +147,15 @@ export function ProcessSearchPanel({ onProcessSelect, isLoading = false, size = 
               </Card>
             ))}
           </div>
+        </div>
+      )}
+      
+      {onManualEntry && searched && foundProcesses.length === 0 && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg text-center">
+          <p className="mb-2">Nenhum processo encontrado.</p>
+          <Button variant="outline" onClick={onManualEntry}>
+            Cadastro Manual
+          </Button>
         </div>
       )}
     </div>
