@@ -30,9 +30,12 @@ export const AppRoutes = () => {
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
+          {/* Main routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/processes" element={<ProtectedRoute><ProcessListPage /></ProtectedRoute>} />
           <Route path="/processes/new" element={<ProtectedRoute><NewProcess /></ProtectedRoute>} />
@@ -43,11 +46,12 @@ export const AppRoutes = () => {
           <Route path="/notifications" element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><ReportList /></ProtectedRoute>} />
           
-          {/* Public consultation routes */}
+          {/* Public consultation routes - making sure these are correctly defined and accessible */}
           <Route path="/public/search" element={<PublicSearch />} />
           <Route path="/public/verify" element={<EmailVerification />} />
           <Route path="/public/process-view" element={<ProcessView />} />
           
+          {/* 404 route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

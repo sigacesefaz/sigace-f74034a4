@@ -23,8 +23,12 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
 
   const handleAccept = () => {
     if (accepted) {
-      navigate("/public/search");
+      // First close the dialog, then navigate
       onOpenChange(false);
+      // Use a slight delay to ensure dialog closes properly before navigation
+      setTimeout(() => {
+        navigate("/public/search");
+      }, 100);
     }
   };
 
