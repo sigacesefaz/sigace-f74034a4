@@ -39,7 +39,8 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
       console.log("Process selected:", process.numeroProcesso, court.endpoint);
       
       // Call the parent's onProcessSelect function with the correct parameters
-      await onProcessSelect(process.numeroProcesso, court.endpoint);
+      const result = await onProcessSelect(process.numeroProcesso, court.endpoint);
+      console.log("Process selection result:", result);
     } catch (error) {
       console.error("Error selecting process:", error);
     }

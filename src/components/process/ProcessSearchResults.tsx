@@ -3,6 +3,7 @@ import { DatajudProcess } from "@/types/datajud";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCallback, useEffect } from "react";
 
 interface ProcessSearchResultsProps {
   results: DatajudProcess[];
@@ -60,9 +61,14 @@ export function ProcessSearchResults({
     );
   }
 
-  const handleCardClick = (process: DatajudProcess) => {
+  const handleCardClick = (process: DatajudProcess, e?: React.MouseEvent | React.TouchEvent) => {
+    // If event exists, prevent default and stop propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     console.log("Process card clicked:", process.numeroProcesso);
-    // Call onSelectProcess with the selected process
     onSelectProcess(process);
   };
 
@@ -77,14 +83,16 @@ export function ProcessSearchResults({
           <Card 
             key={index} 
             className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-            onClick={() => handleCardClick(process)}
+            onClick={(e) => handleCardClick(process, e)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                handleCardClick(process);
+                handleCardClick(process, e);
               }
             }}
+            // Add explicit touch handlers for mobile devices
+            onTouchEnd={(e) => handleCardClick(process, e)}
           >
             <div className="flex flex-col gap-2">
               <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
@@ -97,7 +105,7 @@ export function ProcessSearchResults({
                   <Button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent card click event from firing
-                      handleCardClick(process);
+                      handleCardClick(process, e);
                     }}
                     className="w-full"
                     size="sm"
