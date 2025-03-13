@@ -30,12 +30,17 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
   const isLoading = searchLoading || externalLoading;
 
   const handleSelectProcess = async (process: DatajudProcess) => {
-    if (!court) return;
+    if (!court) {
+      console.error("No court selected");
+      return;
+    }
     
     try {
       console.log("Process selected:", process.numeroProcesso, court.endpoint);
-      // Force click event to be handled both on desktop and mobile
+      
+      // Chamar diretamente o callback com os parâmetros corretos
       const success = await onProcessSelect(process.numeroProcesso, court.endpoint);
+      
       if (!success) {
         console.error("Process selection failed");
       }

@@ -31,7 +31,10 @@ export default function NewProcess() {
   };
 
   const handleSaveProcess = async () => {
-    if (!processMovimentos || !selectedCourt) return;
+    if (!processMovimentos || !selectedCourt) {
+      console.error("Missing process data or court for saving");
+      return;
+    }
     
     const success = await saveProcess(processMovimentos, selectedCourt, setImportProgress);
     if (success) {

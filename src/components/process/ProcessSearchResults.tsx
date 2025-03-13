@@ -68,7 +68,10 @@ export function ProcessSearchResults({
           <Card 
             key={index} 
             className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-            onClick={() => onSelectProcess(process)}
+            onClick={() => {
+              console.log("Card clicked, calling onSelectProcess");
+              onSelectProcess(process);
+            }}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -77,8 +80,10 @@ export function ProcessSearchResults({
               }
             }}
             onTouchStart={(e) => {
-              // Add touch event to ensure mobile compatibility
-              e.currentTarget.click();
+              // Prevent default behavior and force click
+              e.preventDefault();
+              console.log("Touch detected on process card");
+              onSelectProcess(process);
             }}
           >
             <div className="flex flex-col gap-2">
