@@ -51,7 +51,8 @@ export default function EmailVerification() {
       });
       
       if (!response.ok) {
-        throw new Error("Erro ao enviar código de verificação");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao enviar código de verificação");
       }
       
       const result = await response.json();
@@ -69,7 +70,7 @@ export default function EmailVerification() {
       console.error("Error sending verification code:", error);
       toast({
         title: "Erro ao enviar código",
-        description: "Não foi possível enviar o código de verificação. Tente novamente.",
+        description: error.message || "Não foi possível enviar o código de verificação. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -93,6 +94,10 @@ export default function EmailVerification() {
       // Verify the OTP code
       const token = sessionStorage.getItem('verificationToken');
       
+      if (!token) {
+        throw new Error("Token de verificação não encontrado. Solicite um novo código.");
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-code`, {
         method: 'POST',
         headers: {
@@ -107,7 +112,8 @@ export default function EmailVerification() {
       });
       
       if (!response.ok) {
-        throw new Error("Código inválido ou expirado");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Código inválido ou expirado");
       }
       
       // Navigate to process view with email in query param for additional verification
@@ -117,7 +123,7 @@ export default function EmailVerification() {
       console.error("Error verifying code:", error);
       toast({
         title: "Erro na verificação",
-        description: "Código inválido ou expirado. Tente novamente.",
+        description: error.message || "Código inválido ou expirado. Tente novamente.",
         variant: "destructive",
       });
     } finally {
