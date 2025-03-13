@@ -76,6 +76,10 @@ export function ProcessSearchResults({
                 onSelectProcess(process);
               }
             }}
+            onTouchStart={(e) => {
+              // Add touch event to ensure mobile compatibility
+              e.currentTarget.click();
+            }}
           >
             <div className="flex flex-col gap-2">
               <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
