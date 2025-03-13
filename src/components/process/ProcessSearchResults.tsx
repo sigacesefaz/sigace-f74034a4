@@ -2,6 +2,7 @@
 import { DatajudProcess } from "@/types/datajud";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProcessSearchResultsProps {
   results: DatajudProcess[];
@@ -18,6 +19,8 @@ export function ProcessSearchResults({
   onSelectProcess, 
   onManual 
 }: ProcessSearchResultsProps) {
+  const isMobile = useIsMobile();
+
   if (isLoading) {
     return null; // Loading state is handled in the parent component
   }
@@ -91,6 +94,22 @@ export function ProcessSearchResults({
               <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
               <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
               <div className="text-xs text-gray-500">{process.tribunal}</div>
+              
+              {/* Botão para seleção em dispositivos móveis */}
+              {isMobile && (
+                <div className="mt-3">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click event from firing
+                      handleCardClick(process);
+                    }}
+                    className="w-full"
+                    size="sm"
+                  >
+                    Selecionar Processo
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         ))}
