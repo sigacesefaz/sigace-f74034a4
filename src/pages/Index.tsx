@@ -215,7 +215,7 @@ export default function Index() {
               opacity: 1,
               y: 0
             }} transition={{
-              duration: a0.5,
+              duration: 0.5,
               delay: 0.1
             }} whileHover={{
               y: -10
