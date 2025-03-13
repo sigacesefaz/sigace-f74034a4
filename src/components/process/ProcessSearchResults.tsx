@@ -1,9 +1,7 @@
 
 import { DatajudProcess } from "@/types/datajud";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useCallback, useEffect } from "react";
 
 interface ProcessSearchResultsProps {
   results: DatajudProcess[];
@@ -48,26 +46,19 @@ export function ProcessSearchResults({
             <p className="text-sm text-gray-500 mb-4">
               Não foi possível encontrar o processo. Deseja cadastrar manualmente?
             </p>
-            <Button 
-              variant="outline" 
+            <button 
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-bold text-white ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-[#3f3f98] bg-[#3f3f98] text-white hover:bg-[#343480] h-10 px-4 py-2"
               onClick={onManual}
-              className="text-white"
             >
               Cadastro Manual
-            </Button>
+            </button>
           </div>
         )}
       </div>
     );
   }
 
-  const handleCardClick = (process: DatajudProcess, e?: React.MouseEvent | React.TouchEvent) => {
-    // If event exists, prevent default and stop propagation
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
+  const handleCardClick = (process: DatajudProcess) => {
     console.log("Process card clicked:", process.numeroProcesso);
     onSelectProcess(process);
   };
@@ -80,42 +71,28 @@ export function ProcessSearchResults({
 
       <div className="space-y-3">
         {results.map((process, index) => (
-          <Card 
-            key={index} 
-            className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-            onClick={(e) => handleCardClick(process, e)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleCardClick(process, e);
-              }
-            }}
-            // Add explicit touch handlers for mobile devices
-            onTouchEnd={(e) => handleCardClick(process, e)}
+          <div 
+            key={index}
+            onClick={() => handleCardClick(process)}
+            className="cursor-pointer"
           >
-            <div className="flex flex-col gap-2">
-              <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
-              <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
-              <div className="text-xs text-gray-500">{process.tribunal}</div>
-              
-              {/* Botão para seleção em dispositivos móveis */}
-              {isMobile && (
-                <div className="mt-3">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent card click event from firing
-                      handleCardClick(process, e);
-                    }}
-                    className="w-full"
-                    size="sm"
-                  >
-                    Selecionar Processo
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
+            <Card 
+              className="p-4 hover:shadow-md transition-shadow" 
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleCardClick(process);
+                }
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
+                <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
+                <div className="text-xs text-gray-500">{process.tribunal}</div>
+              </div>
+            </Card>
+          </div>
         ))}
       </div>
     </div>
