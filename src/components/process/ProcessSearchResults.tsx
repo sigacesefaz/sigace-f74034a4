@@ -57,6 +57,12 @@ export function ProcessSearchResults({
     );
   }
 
+  const handleCardClick = (process: DatajudProcess) => {
+    console.log("Process card clicked:", process.numeroProcesso);
+    // Ensure we call onSelectProcess properly
+    onSelectProcess(process);
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium">
@@ -68,22 +74,17 @@ export function ProcessSearchResults({
           <Card 
             key={index} 
             className="p-4 cursor-pointer hover:shadow-md transition-shadow" 
-            onClick={() => {
-              console.log("Card clicked, calling onSelectProcess");
-              onSelectProcess(process);
-            }}
+            onClick={() => handleCardClick(process)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                onSelectProcess(process);
+                handleCardClick(process);
               }
             }}
             onTouchStart={(e) => {
-              // Prevent default behavior and force click
-              e.preventDefault();
-              console.log("Touch detected on process card");
-              onSelectProcess(process);
+              e.preventDefault(); // Prevent any default behavior
+              handleCardClick(process);
             }}
           >
             <div className="flex flex-col gap-2">

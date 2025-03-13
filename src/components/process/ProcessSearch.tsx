@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,12 +37,8 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
     try {
       console.log("Process selected:", process.numeroProcesso, court.endpoint);
       
-      // Chamar diretamente o callback com os parâmetros corretos
-      const success = await onProcessSelect(process.numeroProcesso, court.endpoint);
-      
-      if (!success) {
-        console.error("Process selection failed");
-      }
+      // Make sure we're passing the correct parameters to the callback
+      await onProcessSelect(process.numeroProcesso, court.endpoint);
     } catch (error) {
       console.error("Error selecting process:", error);
     }
