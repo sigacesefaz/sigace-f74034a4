@@ -1,3 +1,4 @@
+
 import { Court, CourtType, DatajudProcess, DatajudAPIResponse, DatajudProcessSource, DatajudIntimation, DatajudMovimentoProcessual } from "@/types/datajud";
 import { supabase } from "@/lib/supabase";
 
@@ -128,7 +129,8 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
   try {
     console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
     
-    const endpoint = courtEndpoint.toUpperCase(); // API espera endpoints em maiúsculo
+    // Endpoint deve ser lowercase conforme o formato correto da API
+    const endpoint = courtEndpoint.toLowerCase(); 
     
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
@@ -185,7 +187,8 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
   try {
     console.log(`Buscando processos com número ${processNumber} no tribunal ${courtEndpoint}`);
     
-    const endpoint = courtEndpoint.toUpperCase(); // API espera endpoints em maiúsculo
+    // Endpoint deve ser lowercase conforme o formato correto da API
+    const endpoint = courtEndpoint.toLowerCase();
     
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
