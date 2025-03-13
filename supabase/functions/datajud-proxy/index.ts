@@ -39,8 +39,9 @@ serve(async (req) => {
     // Remove endpoint from the request body before sending to API
     const { endpoint: _, ...requestData } = body;
     
-    // URL base para a API do DataJud - Corrigido para remover o prefixo api_publica_
-    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica/${endpoint}/_search`;
+    // URL correta para a API do DataJud
+    // O formato é https://api-publica.datajud.cnj.jus.br/api_publica/[TRIBUNAL]/_search
+    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica/${endpoint.toLowerCase()}/_search`;
     
     console.log(`Proxying request to: ${apiUrl}`);
     console.log(`Request body: ${JSON.stringify(requestData)}`);

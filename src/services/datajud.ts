@@ -1,4 +1,3 @@
-
 import { Court, CourtType, DatajudProcess, DatajudAPIResponse, DatajudProcessSource, DatajudIntimation, DatajudMovimentoProcessual } from "@/types/datajud";
 import { supabase } from "@/lib/supabase";
 
@@ -121,7 +120,6 @@ const mapHitToDatajudMovimentoProcessual = (hit: any): DatajudMovimentoProcessua
 
 // Helper para formatação do número do processo
 const formatProcessNumberForQuery = (processNumber: string): string => {
-  // Remove qualquer formatação existente (pontos, traços, espaços)
   const cleanNumber = processNumber.replace(/\D/g, '');
   return cleanNumber;
 };
@@ -130,23 +128,22 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
   try {
     console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
     
-    // Formatar o número do processo para a consulta
+    const endpoint = courtEndpoint.toLowerCase();
+    
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
-    // Construct a specific query for exact process number match using match
     const requestBody = {
-      endpoint: courtEndpoint,
+      endpoint: endpoint,
       query: {
         match: {
           "numeroProcesso": formattedNumber
         }
       },
-      size: 10 // Aumentar tamanho para buscar mais movimentos processuais relacionados
+      size: 10
     };
     
     console.log("Request body:", JSON.stringify(requestBody, null, 2));
     
-    // Usar a URL completa da função edge
     const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/datajud-proxy`;
     console.log("Usando a URL da função edge:", functionUrl);
     
@@ -173,7 +170,6 @@ export async function getProcessById(courtEndpoint: string, processNumber: strin
       return null;
     }
     
-    // Mapear todos os movimentos processuais encontrados
     const movimentosProcessuais = data.hits.hits.map(hit => mapHitToDatajudMovimentoProcessual(hit));
     
     console.log("Processed data:", movimentosProcessuais);
@@ -189,23 +185,22 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
   try {
     console.log(`Buscando processos com número ${processNumber} no tribunal ${courtEndpoint}`);
     
-    // Remover qualquer formatação do número do processo (pontos, traços, espaços)
+    const endpoint = courtEndpoint.toLowerCase();
+    
     const formattedNumber = formatProcessNumberForQuery(processNumber);
     
-    // Construct a query for exact match on the process number
     const requestBody = {
-      endpoint: courtEndpoint,
+      endpoint: endpoint,
       query: {
         term: {
           "numeroProcesso.keyword": formattedNumber
         }
       },
-      size: 10  // Aumentar tamanho para buscar mais movimentos processuais relacionados
+      size: 10
     };
     
     console.log("Search request body:", JSON.stringify(requestBody, null, 2));
     
-    // Usar a URL completa da função edge
     const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/datajud-proxy`;
     console.log("Usando a URL da função edge:", functionUrl);
     
@@ -232,7 +227,6 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
       return [];
     }
     
-    // Mapear todos os movimentos processuais encontrados
     const movimentosProcessuais = data.hits.hits.map(hit => mapHitToDatajudMovimentoProcessual(hit));
     
     console.log("Search results:", movimentosProcessuais);
@@ -244,12 +238,10 @@ export async function searchProcesses(courtEndpoint: string, processNumber: stri
   }
 }
 
-// The getIntimationById function remains unchanged
 export async function getIntimationById(courtEndpoint: string, intimationNumber: string): Promise<DatajudIntimation | null> {
   try {
     console.log(`Getting intimation with number ${intimationNumber} from court ${courtEndpoint}`);
     
-    // Mock response for testing
     return {
       id: crypto.randomUUID(),
       tribunal: "TJTO",
@@ -283,3 +275,4 @@ export async function getIntimationById(courtEndpoint: string, intimationNumber:
     return null;
   }
 }
+
