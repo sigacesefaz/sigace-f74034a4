@@ -145,13 +145,20 @@ export default function ProcessDetailsPage() {
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold mb-2">Movimentação atual</h3>
                   <div className="p-3 sm:p-4 bg-gray-50 rounded-md">
-                    <p className="font-medium">{movements[currentMovimentoIndex].movimento?.nome}</p>
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      {movements[currentMovimentoIndex].movimento?.data_hora && 
-                        new Date(movements[currentMovimentoIndex].movimento?.data_hora).toLocaleDateString()}
+                    <p className="font-medium">
+                      {movements[currentMovimentoIndex].process.movimentos && 
+                       movements[currentMovimentoIndex].process.movimentos[0]?.nome}
                     </p>
-                    {movements[currentMovimentoIndex].movimento?.complemento && (
-                      <p className="mt-2 text-xs sm:text-sm">{movements[currentMovimentoIndex].movimento?.complemento}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {movements[currentMovimentoIndex].process.movimentos && 
+                       movements[currentMovimentoIndex].process.movimentos[0]?.dataHora && 
+                       new Date(movements[currentMovimentoIndex].process.movimentos[0].dataHora).toLocaleDateString()}
+                    </p>
+                    {movements[currentMovimentoIndex].process.movimentos && 
+                     movements[currentMovimentoIndex].process.movimentos[0]?.complemento && (
+                      <p className="mt-2 text-xs sm:text-sm">
+                        {movements[currentMovimentoIndex].process.movimentos[0].complemento}
+                      </p>
                     )}
                   </div>
                 </div>
