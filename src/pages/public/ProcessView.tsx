@@ -66,6 +66,12 @@ export default function ProcessView() {
   const handleReturn = () => {
     navigate('/');
   };
+  
+  // Convert the handleReturn function to return a Promise to match the expected type
+  const handleSave = async (): Promise<void> => {
+    // This is a no-op function since we don't save in public view
+    return Promise.resolve();
+  };
 
   if (isLoading) {
     return (
@@ -94,7 +100,7 @@ export default function ProcessView() {
           <ProcessDetails
             processMovimentos={processMovimentos}
             mainProcess={processMovimentos[0].process}
-            onSave={() => {}} // No-op since we don't save in public view
+            onSave={handleSave}
             onCancel={handleReturn}
             isPublicView={true}
           />

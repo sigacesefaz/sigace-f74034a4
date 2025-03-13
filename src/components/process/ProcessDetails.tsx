@@ -9,6 +9,7 @@ import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessInformation } from "./ProcessInformation";
 import { ProcessEvents } from "./ProcessEvents";
 import { ProcessPartiesList } from "./ProcessPartiesList";
+import { Button } from "@/components/ui/button";
 
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
@@ -100,7 +101,7 @@ export function ProcessDetails({
         <ProcessEvents currentProcess={currentProcess} />
         
         {!isPublicView && (
-          <ProcessPartiesList currentProcess={currentProcess} />
+          <ProcessPartiesList parties={currentProcess.partes} />
         )}
         
         {isPublicView && (
