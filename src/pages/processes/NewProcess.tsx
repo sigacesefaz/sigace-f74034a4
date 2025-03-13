@@ -525,33 +525,26 @@ export default function NewProcess() {
         {currentMode === "details" && processMovimentos && processMovimentos.length > 0 && (
           <ProcessDetails 
             processMovimentos={processMovimentos} 
-            mainProcess={processMovimentos[0].process} 
             onSave={handleSaveProcess} 
             onCancel={handleCancel}
-            importProgress={importProgress} 
+            isNewProcess={true}
           />
         )}
 
         {currentMode === "manual" && (
-          <>
-            <Button variant="ghost" className="mb-4" onClick={() => setCurrentMode("search")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para a Busca
-            </Button>
-            <Card className="p-6">
-              <ProcessForm onSubmit={handleCreateManualProcess} onCancel={handleCancel} />
-              
-              {importProgress > 0 && (
-                <div className="mt-6">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Importando processo...</span>
-                    <span>{Math.round(importProgress)}%</span>
-                  </div>
-                  <Progress value={importProgress} className="h-2" />
+          <Card className="p-6">
+            <ProcessForm onSubmit={handleCreateManualProcess} onCancel={() => setCurrentMode("search")} />
+            
+            {importProgress > 0 && (
+              <div className="mt-6">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Importando processo...</span>
+                  <span>{Math.round(importProgress)}%</span>
                 </div>
-              )}
-            </Card>
-          </>
+                <Progress value={importProgress} className="h-2" />
+              </div>
+            )}
+          </Card>
         )}
       </div>
     </div>

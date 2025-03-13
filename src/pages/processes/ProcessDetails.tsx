@@ -1,12 +1,14 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ProcessDetails as ProcessDetailsComponent } from "@/components/process/ProcessDetails";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, Import } from "lucide-react";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
+import { getProcessById } from "@/services/datajud";
+import { toast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 // Interface simplificada para o componente
 interface SimplifiedDatajudProcess {
@@ -30,6 +32,7 @@ export default function ProcessDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   const { data: processData, isLoading, error } = useQuery({
     queryKey: ['process', id],
@@ -162,6 +165,111 @@ export default function ProcessDetailsPage() {
     navigate('/processes');
   };
 
+  const handleImportProcess = async () => {
+    if (!processData?.number) {
+      toast("Número do processo não encontrado", "", { variant: "destructive" });
+      return;
+    }
+
+    setIsImporting(true);
+    setImportProgress(5);
+
+    try {
+      // Buscar processo no DataJud
+      const movimentos = await getProcessById("tjto", processData.number);
+      
+      if (!movimentos || movimentos.length === 0) {
+        toast("Processo não encontrado no tribunal", "", { variant: "destructive" });
+        setImportProgress(0);
+        setIsImporting(false);
+        return;
+      }
+
+      setImportProgress(30);
+
+      const mainProcess = movimentos[0].process;
+
+      // Atualizar detalhes do processo
+      const { error: updateError } = await supabase
+        .from("process_details")
+        .upsert({
+          process_id: id,
+          tribunal: mainProcess.tribunal,
+          data_ajuizamento: mainProcess.dataAjuizamento,
+          grau: mainProcess.grau,
+          nivele_sigilo: mainProcess.nivelSigilo,
+          formato: mainProcess.formato,
+          sistema: mainProcess.sistema,
+          classe: mainProcess.classe,
+          assuntos: mainProcess.assuntos,
+          orgao_julgador: mainProcess.orgaoJulgador,
+          movimentos: mainProcess.movimentos,
+          partes: mainProcess.partes,
+          data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
+          json_completo: mainProcess
+        });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setImportProgress(60);
+
+      // Atualizar movimentos
+      if (mainProcess.movimentos?.length > 0) {
+        const { error: movementsError } = await supabase
+          .from("process_movements")
+          .upsert(
+            mainProcess.movimentos.map(movement => ({
+              process_id: id,
+              codigo: movement.codigo,
+              nome: movement.nome || "",
+              data_hora: movement.dataHora,
+              tipo: movement.tipo || "",
+              complemento: Array.isArray(movement.complemento) ? movement.complemento.join(", ") : (movement.complemento || ""),
+              complementos_tabelados: movement.complementosTabelados || [],
+              orgao_julgador: movement.orgaoJulgador || {},
+              json_completo: movement
+            }))
+          );
+
+        if (movementsError) {
+          throw movementsError;
+        }
+      }
+
+      setImportProgress(90);
+
+      // Atualizar assuntos
+      if (mainProcess.assuntos?.length > 0) {
+        const { error: subjectsError } = await supabase
+          .from("process_subjects")
+          .upsert(
+            mainProcess.assuntos.map((subject, index) => ({
+              process_id: id,
+              codigo: subject.codigo,
+              nome: subject.nome || "",
+              principal: index === 0
+            }))
+          );
+
+        if (subjectsError) {
+          throw subjectsError;
+        }
+      }
+
+      setImportProgress(100);
+      toast("Processo atualizado com sucesso", "", { variant: "success" });
+      window.location.reload(); // Recarregar para mostrar os dados atualizados
+    } catch (error) {
+      console.error("Erro ao importar processo:", error);
+      toast("Erro ao importar processo", "", { variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+      setImportProgress(0);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
@@ -188,11 +296,13 @@ export default function ProcessDetailsPage() {
   }
 
   // Formatação do número do processo
-  const formatProcessNumber = (number: string): string => {
-    if (!number) return "";
-    const numericOnly = number.replace(/\D/g, '');
-    if (numericOnly.length !== 20) return number;
-    return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
+  const formatProcessNumber = (number?: string): string => {
+    if (!number) return "0000000-00.0000.0.00.0000";
+    const cleanNumber = number.replace(/\D/g, '');
+    if (cleanNumber.length === 20) {
+      return `${cleanNumber.slice(0, 7).padStart(7, '0')}-${cleanNumber.slice(7, 9).padStart(2, '0')}.${cleanNumber.slice(9, 13).padStart(4, '0')}.${cleanNumber.slice(13, 14)}.${cleanNumber.slice(14, 16).padStart(2, '0')}.${cleanNumber.slice(16).padStart(4, '0')}`;
+    }
+    return "0000000-00.0000.0.00.0000";
   };
 
   // Convertendo os dados do banco para o formato esperado pelo componente ProcessDetails
@@ -265,17 +375,33 @@ export default function ProcessDetailsPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex items-center mb-6">
+      <div className="flex justify-between items-center mb-6">
         <Button 
           variant="outline" 
           onClick={() => navigate('/processes')}
-          className="mr-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar
+          Voltar para lista de processos
         </Button>
-        <h1 className="text-2xl font-bold">Detalhes do Processo</h1>
+        <Button 
+          onClick={handleImportProcess} 
+          variant="default"
+          disabled={isImporting}
+        >
+          <Import className="mr-2 h-4 w-4" />
+          {isImporting ? "Importando..." : "Importar Processo"}
+        </Button>
       </div>
+
+      {importProgress > 0 && (
+        <div className="mb-6">
+          <div className="flex justify-between text-sm mb-1">
+            <span>Importando processo...</span>
+            <span>{Math.round(importProgress)}%</span>
+          </div>
+          <Progress value={importProgress} className="h-2" />
+        </div>
+      )}
 
       <ProcessDetailsComponent
         processMovimentos={processMovimentos}
