@@ -11,6 +11,7 @@ import { LoginDropdown } from "@/components/LoginDropdown";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GavelIcon, BarChart3Icon, Clock4Icon, ShieldCheckIcon, Users2Icon, ArrowRightIcon, CheckCircle2Icon, FileTextIcon, BuildingIcon, ScaleIcon } from "lucide-react";
+import { PublicConsultationTerms } from "@/components/process/PublicConsultationTerms";
 
 // Cores institucionais com tonalidades
 const colors = {
@@ -40,6 +41,8 @@ function LandingHeader() {
 }
 
 export default function Index() {
+  const [showTerms, setShowTerms] = useState(false);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <LandingHeader />
@@ -110,10 +113,13 @@ export default function Index() {
                     </span>
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-                  <button>
-                    Consulta Pública
-                  </button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  onClick={() => setShowTerms(true)}
+                >
+                  Consulta Pública
                 </Button>
               </motion.div>
             </div>
@@ -367,6 +373,12 @@ export default function Index() {
       </main>
 
       <Footer />
+      
+      {/* Public consultation terms dialog */}
+      <PublicConsultationTerms 
+        open={showTerms} 
+        onOpenChange={setShowTerms} 
+      />
     </div>
   );
 }

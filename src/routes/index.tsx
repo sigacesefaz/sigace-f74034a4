@@ -19,6 +19,11 @@ import NewIntimation from "@/pages/intimations/NewIntimation";
 import NotificationList from "@/pages/notifications/NotificationList";
 import ReportList from "@/pages/reports/ReportList";
 
+// Import public consultation pages
+import PublicSearch from "@/pages/public/PublicSearch";
+import EmailVerification from "@/pages/public/EmailVerification";
+import ProcessView from "@/pages/public/ProcessView";
+
 export const AppRoutes = () => {
   return (
     <BrowserRouter>
@@ -36,6 +41,12 @@ export const AppRoutes = () => {
           <Route path="/intimations/new" element={<ProtectedRoute><NewIntimation /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><ReportList /></ProtectedRoute>} />
+          
+          {/* Public consultation routes */}
+          <Route path="/public/search" element={<PublicSearch />} />
+          <Route path="/public/verify" element={<EmailVerification />} />
+          <Route path="/public/process-view" element={<ProcessView />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

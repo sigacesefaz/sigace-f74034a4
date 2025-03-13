@@ -17,6 +17,7 @@ interface ProcessDetailsProps {
   onCancel: () => void;
   isImport?: boolean;
   importProgress?: number;
+  isPublicView?: boolean;
   handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
 }
 
@@ -27,6 +28,7 @@ export function ProcessDetails({
   onSave,
   onCancel,
   importProgress = 0,
+  isPublicView = false,
   handleProcessSelect
 }: ProcessDetailsProps) {
   const navigate = useNavigate();
@@ -83,6 +85,7 @@ export function ProcessDetails({
           importProgress={importProgress}
           isImporting={isImporting}
           handleImportProcess={handleImportProcess}
+          isPublicView={isPublicView}
         />
         
         <ProcessNavigation
@@ -95,6 +98,25 @@ export function ProcessDetails({
         <ProcessInformation currentProcess={currentProcess} />
         
         <ProcessEvents currentProcess={currentProcess} />
+        
+        {!isPublicView && (
+          <ProcessPartiesList currentProcess={currentProcess} />
+        )}
+        
+        {isPublicView && (
+          <div className="mt-6 text-center">
+            <Button 
+              onClick={onCancel}
+              className="bg-gray-500 text-white hover:bg-gray-600"
+            >
+              Voltar
+            </Button>
+            <p className="mt-4 text-xs text-gray-500">
+              Esta consulta pública é fornecida apenas para fins informativos.
+              Os dados são provenientes da API DataJud e podem estar incompletos ou desatualizados.
+            </p>
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -13,9 +13,10 @@ interface ProcessSearchProps {
   onProcessSelect: (process: string, courtEndpoint: string) => Promise<boolean>;
   onManual?: () => void;
   isLoading?: boolean;
+  isPublic?: boolean;
 }
 
-export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLoading }: ProcessSearchProps) {
+export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLoading, isPublic = false }: ProcessSearchProps) {
   const {
     processNumber,
     setProcessNumber,
@@ -52,7 +53,7 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
         <div className="space-y-2">
           <h3 className="text-lg font-medium">Buscar Processo</h3>
           <p className="text-sm text-gray-500">
-            Informe o número do processo que deseja importar
+            Informe o número do processo que deseja {isPublic ? "consultar" : "importar"}
           </p>
         </div>
 
@@ -93,7 +94,7 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
           hasSearched={hasSearched}
           isLoading={isLoading}
           onSelectProcess={handleSelectProcess}
-          onManual={onManual}
+          onManual={!isPublic ? onManual : undefined}
         />
       )}
     </div>
