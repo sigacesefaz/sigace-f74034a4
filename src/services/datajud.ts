@@ -275,4 +275,3 @@ export async function getIntimationById(courtEndpoint: string, intimationNumber:
     return null;
   }
 }
-

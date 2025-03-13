@@ -39,16 +39,16 @@ serve(async (req) => {
     // Remove endpoint from the request body before sending to API
     const { endpoint: _, ...requestData } = body;
     
-    // URL correta para a API do DataJud
-    // O formato é https://api-publica.datajud.cnj.jus.br/api_publica/[TRIBUNAL]/_search
-    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica/${endpoint.toLowerCase()}/_search`;
+    // Correct URL format for DataJud API
+    // The issue was in the API URL format
+    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica/${endpoint.toLowerCase()}`;
     
     console.log(`Proxying request to: ${apiUrl}`);
     console.log(`Request body: ${JSON.stringify(requestData)}`);
     
-    // Aumentar o timeout para 120 segundos
+    // Increase timeout to 120 seconds
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos de timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds timeout
     
     try {
       const response = await fetch(apiUrl, {
@@ -65,7 +65,7 @@ serve(async (req) => {
       
       console.log(`Response status: ${response.status}`);
       
-      // Verificar se a resposta é OK
+      // Check if response is OK
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Error response from DataJud API: ${errorText}`);
