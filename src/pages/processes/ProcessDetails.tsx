@@ -95,18 +95,18 @@ export default function ProcessDetailsPage() {
   };
   
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Detalhes do Processo</h1>
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Detalhes do Processo</h1>
       
       {loading ? (
-        <Card className="p-6">
-          <Skeleton className="h-6 w-3/4 mb-4" />
+        <Card className="p-4 sm:p-6">
+          <Skeleton className="h-6 w-3/4 mb-2 sm:mb-4" />
           <Skeleton className="h-4 w-1/2 mb-2" />
           <Skeleton className="h-4 w-2/3 mb-2" />
           <Skeleton className="h-4 w-1/3" />
         </Card>
       ) : process ? (
-        <Card className="p-6 space-y-6">
+        <Card className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {details && (
             <ProcessHeader 
               currentProcess={details}
@@ -127,12 +127,12 @@ export default function ProcessDetailsPage() {
           )}
           
           {/* Process details content */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-4 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Left column */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {subjects && subjects.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Assuntos</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2">Assuntos</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     {subjects.map((subject, index) => (
                       <li key={index}>{subject.nome}</li>
@@ -141,17 +141,17 @@ export default function ProcessDetailsPage() {
                 </div>
               )}
               
-              {movements && movements.length > 0 && (
+              {movements && movements.length > 0 && movements[currentMovimentoIndex] && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Movimentação atual</h3>
-                  <div className="p-4 bg-gray-50 rounded-md">
-                    <p className="font-medium">{movements[currentMovimentoIndex]?.nome}</p>
-                    <p className="text-sm text-gray-600">
-                      {movements[currentMovimentoIndex]?.data_hora && 
-                        new Date(movements[currentMovimentoIndex].data_hora).toLocaleDateString()}
+                  <h3 className="text-base sm:text-lg font-semibold mb-2">Movimentação atual</h3>
+                  <div className="p-3 sm:p-4 bg-gray-50 rounded-md">
+                    <p className="font-medium">{movements[currentMovimentoIndex].movimento?.nome}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {movements[currentMovimentoIndex].movimento?.data_hora && 
+                        new Date(movements[currentMovimentoIndex].movimento?.data_hora).toLocaleDateString()}
                     </p>
-                    {movements[currentMovimentoIndex]?.complemento && (
-                      <p className="mt-2 text-sm">{movements[currentMovimentoIndex].complemento}</p>
+                    {movements[currentMovimentoIndex].movimento?.complemento && (
+                      <p className="mt-2 text-xs sm:text-sm">{movements[currentMovimentoIndex].movimento?.complemento}</p>
                     )}
                   </div>
                 </div>
@@ -165,7 +165,7 @@ export default function ProcessDetailsPage() {
           </div>
         </Card>
       ) : (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <p>Processo não encontrado</p>
         </Card>
       )}
