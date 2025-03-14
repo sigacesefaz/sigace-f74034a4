@@ -15,6 +15,7 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
+  importComplete?: boolean; // Added importComplete as an optional property
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
@@ -29,6 +30,7 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
+  importComplete = false, // Set a default value of false
   isLoading,
   handleProcessSelect,
   handleManualEntry,
@@ -66,6 +68,7 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
+          importComplete={importComplete} // Pass the importComplete prop
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
