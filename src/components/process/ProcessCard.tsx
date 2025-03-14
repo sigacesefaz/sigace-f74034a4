@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight } from "lucide-react";
+import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight, Printer, RefreshCw, Trash } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -65,7 +65,7 @@ export function ProcessCard({ process }: ProcessCardProps) {
   };
 
   const handleNextHit = () => {
-    if (currentHitIndex < totalHits) {
+    if (currentHitIndex < totalHits - 1) {
       setCurrentHitIndex(currentHitIndex + 1);
     }
   };
@@ -150,12 +150,61 @@ export function ProcessCard({ process }: ProcessCardProps) {
   return (
     <Card className="p-6">
       <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">PROCESSO PRINCIPAL</span>
-          <span className="text-xs text-muted-foreground">
-            Última atualização: {formatDate(process.updated_at)}
-          </span>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground">PROCESSO PRINCIPAL</span>
+            <span className="text-xs text-muted-foreground ml-2">
+              Última atualização: {formatDate(process.updated_at)}
+            </span>
+          </div>
+          
+          {/* Action and Navigation buttons moved to top right */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8">
+              <RefreshCw className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Atualizar</span>
+            </Button>
+            <Button variant="outline" size="sm" className="h-8">
+              <Printer className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Imprimir</span>
+            </Button>
+            <Button variant="outline" size="sm" className="h-8">
+              <Eye className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Visualizar</span>
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 text-red-600 hover:text-red-600">
+              <Trash className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Deletar</span>
+            </Button>
+            
+            {hits.length > 0 && (
+              <div className="flex items-center gap-1 ml-2 border-l pl-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handlePrevHit}
+                  disabled={currentHitIndex === 0}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs whitespace-nowrap">
+                  {currentHitIndex + 1} / {totalHits + 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleNextHit}
+                  disabled={currentHitIndex === totalHits - 1}
+                  className="h-8 w-8"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
+        
         <h2 className="text-xl font-medium">{safeStringValue(process.type)}</h2>
         <div className="flex items-center gap-2">
           <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
@@ -192,29 +241,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
             <div className="mt-8 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Movimentações Processuais</h3>
-                {hits.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrevHit}
-                      disabled={currentHitIndex === 0}
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm">
-                      {currentHitIndex + 1} / {hits.length}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNextHit}
-                      disabled={currentHitIndex === hits.length - 1}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
               {hits.map((hit, index) => (
                 <div key={hit.id} className={`border-t pt-6 ${index !== currentHitIndex ? "hidden" : ""}`}>
