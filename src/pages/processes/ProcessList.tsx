@@ -290,25 +290,26 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     <div className="space-y-2">
       {processes.length > 0 && (
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Checkbox 
               id="selectAll" 
               checked={selectedProcesses.length === Object.keys(groupedProcesses).length && Object.keys(groupedProcesses).length > 0}
               onCheckedChange={toggleAllProcesses}
+              className="mr-1"
             />
-            <label htmlFor="selectAll" className="text-sm font-medium">
+            <label htmlFor="selectAll" className="text-sm font-medium cursor-pointer">
               Selecionar todos
             </label>
           </div>
           
           {selectedProcesses.length > 0 && (
             <Button 
-              variant="destructive" 
+              variant="ghost" 
               size="sm"
               onClick={() => setBulkAlertOpen(true)}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 h-7 rounded text-xs font-medium"
             >
-              <Trash className="h-4 w-4" />
+              <Trash className="h-3.5 w-3.5 mr-1" />
               Excluir {selectedProcesses.length} selecionado(s)
             </Button>
           )}
@@ -338,6 +339,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <CardTitle className="text-lg font-medium text-gray-900">
                         {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
                       </CardTitle>
+                      
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-baseline gap-1">
                           <Badge variant={parentProcess.status === "Em andamento" ? "secondary" : "outline"}>
