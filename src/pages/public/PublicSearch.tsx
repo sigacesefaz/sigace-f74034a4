@@ -1,12 +1,10 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
 import { useNavigate } from "react-router-dom";
-import { PublicProcessDialog } from "@/components/process/PublicProcessDialog";
 
 export default function PublicSearch() {
   const navigate = useNavigate();
-  const [showDialog, setShowDialog] = useState(true);
 
   const handleProcessSelect = async (processNumber: string, courtEndpoint: string) => {
     // Store the selected process info in sessionStorage for the verification step
@@ -17,12 +15,6 @@ export default function PublicSearch() {
     navigate('/public/verify');
     return true;
   };
-
-  // If dialog is closed, navigate back to home
-  if (!showDialog) {
-    navigate('/');
-    return null;
-  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -41,11 +33,6 @@ export default function PublicSearch() {
           />
         </div>
       </div>
-
-      <PublicProcessDialog 
-        open={showDialog} 
-        onOpenChange={setShowDialog} 
-      />
     </div>
   );
 }

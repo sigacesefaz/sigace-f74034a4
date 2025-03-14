@@ -18,39 +18,33 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginDropdown() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
 
-  const handleSubmit = async (data: LoginFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoggingIn(true);
     
     try {
-      const { error } = await signInWithEmail(data.email, data.password);
+      const { data, error } = await signInWithEmail(email, password);
       if (error) {
         toast({
           title: "Erro ao fazer login",
@@ -75,73 +69,53 @@ export function LoginDropdown() {
   };
 
   const LoginForm = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <Label htmlFor="email">Email</Label>
-              <FormControl>
-                <Input
-                  type="email"
-                  id="email"
-                  placeholder="seuemail@email.com"
-                  disabled={isLoggingIn}
-                  className="border-primary/20 focus-visible:ring-primary"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <FormControl>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    placeholder="********"
-                    disabled={isLoggingIn}
-                    className="border-primary/20 focus-visible:ring-primary pr-10"
-                    {...field}
-                  />
-                </FormControl>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Button
-          type="submit"
-          className="w-full bg-primary hover:bg-primary-dark text-slate-50"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          type="email"
+          id="email"
+          placeholder="seuemail@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="border-primary/20 focus-visible:ring-primary"
           disabled={isLoggingIn}
-        >
-          {isLoggingIn ? "Entrando..." : "Entrar"}
-        </Button>
-      </form>
-    </Form>
+        />
+      </div>
+      <div>
+        <Label htmlFor="password">Senha</Label>
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            id="password"
+            placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="border-primary/20 focus-visible:ring-primary pr-10"
+            disabled={isLoggingIn}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+      <Button
+        type="submit"
+        className="w-full bg-primary hover:bg-primary-dark text-slate-50"
+        disabled={isLoggingIn}
+      >
+        {isLoggingIn ? "Entrando..." : "Entrar"}
+      </Button>
+    </form>
   );
 
   // Versão mobile usando Sheet
@@ -153,7 +127,7 @@ export function LoginDropdown() {
             Entrar
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-full p-6">
+        <SheetContent className="w-full p-6" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-center">Login</h2>
             <div className="p-0">
@@ -178,6 +152,7 @@ export function LoginDropdown() {
         align="end" 
         alignOffset={0}
         sideOffset={0}
+        // Removido o onOpenAutoFocus que não existe neste componente
       >
         <Card className="border rounded shadow-none">
           <div className="p-8 space-y-6">
