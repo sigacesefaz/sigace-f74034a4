@@ -129,7 +129,7 @@ export default function Index() {
                 delay: 0.6
               }} className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-secondary text-gray-900 hover:bg-secondary/90 shadow-lg">
-                  <Link to="/login">
+                  <Link to="/register">
                     <span className="flex items-center gap-2">
                       Acessar Sistema
                       <ArrowRightIcon className="h-5 w-5" />

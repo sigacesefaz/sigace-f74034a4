@@ -52,7 +52,10 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-[600px] max-h-[600px] overflow-y-auto" 
+        style={{ width: '600px', height: '600px' }}
+      >
         <DialogHeader>
           <DialogTitle>Consulta Pública</DialogTitle>
           <DialogDescription>
