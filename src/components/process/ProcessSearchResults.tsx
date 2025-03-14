@@ -58,6 +58,11 @@ export function ProcessSearchResults({
     );
   }
 
+  const handleProcessSelect = (process: DatajudProcess) => {
+    console.log("Selecionando processo:", process.numeroProcesso);
+    onSelectProcess(process);
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium">
@@ -66,26 +71,24 @@ export function ProcessSearchResults({
 
       <div className="space-y-3">
         {results.map((process, index) => (
-          <div 
+          <Card 
             key={index}
-            className="cursor-pointer"
-            onClick={() => onSelectProcess(process)}
+            className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleProcessSelect(process)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                onSelectProcess(process);
+                handleProcessSelect(process);
               }
             }}
           >
-            <Card className="p-4 hover:shadow-md transition-shadow">
-              <div className="flex flex-col gap-2">
-                <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
-                <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
-                <div className="text-xs text-gray-500">{process.tribunal}</div>
-              </div>
-            </Card>
-          </div>
+            <div className="flex flex-col gap-2">
+              <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
+              <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
+              <div className="text-xs text-gray-500">{process.tribunal}</div>
+            </div>
+          </Card>
         ))}
       </div>
     </div>
