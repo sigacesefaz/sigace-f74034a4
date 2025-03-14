@@ -214,22 +214,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     setCurrentMovementIndex((prev) => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
-      
-      if (!process || !process.movimentacoes?.length) {
-        return prev;
-      }
-      
-      const movimentos = process.movimentacoes;
-      const maxIndex = movimentos.length - 1;
-      
-      const newIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
-      
+      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
       return {
         ...prev,
-        [processId]: newIndex
+        [processId]: currentIndex > 0 ? currentIndex - 1 : maxIndex
       };
     });
-    
     setShowTabsId(processId);
     setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
@@ -238,22 +228,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     setCurrentMovementIndex((prev) => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
-      
-      if (!process || !process.movimentacoes?.length) {
-        return prev;
-      }
-      
-      const movimentos = process.movimentacoes;
-      const maxIndex = movimentos.length - 1;
-      
-      const newIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
-      
+      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
       return {
         ...prev,
-        [processId]: newIndex
+        [processId]: currentIndex < maxIndex ? currentIndex + 1 : 0
       };
     });
-    
     setShowTabsId(processId);
     setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
@@ -290,26 +270,25 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     <div className="space-y-2">
       {processes.length > 0 && (
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Checkbox 
               id="selectAll" 
               checked={selectedProcesses.length === Object.keys(groupedProcesses).length && Object.keys(groupedProcesses).length > 0}
               onCheckedChange={toggleAllProcesses}
-              className="mr-1"
             />
-            <label htmlFor="selectAll" className="text-sm font-medium cursor-pointer">
+            <label htmlFor="selectAll" className="text-sm font-medium">
               Selecionar todos
             </label>
           </div>
           
           {selectedProcesses.length > 0 && (
             <Button 
-              variant="ghost" 
+              variant="destructive" 
               size="sm"
               onClick={() => setBulkAlertOpen(true)}
-              className="flex items-center gap-1 text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 h-7 rounded text-xs font-medium"
+              className="flex items-center gap-1"
             >
-              <Trash className="h-3.5 w-3.5 mr-1" />
+              <Trash className="h-4 w-4" />
               Excluir {selectedProcesses.length} selecionado(s)
             </Button>
           )}
@@ -319,10 +298,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       {paginatedGroups.map(([parentId, group]) => {
         const parentProcess = group.parent;
         if (!parentProcess) return null;
-        
-        const currentIndex = currentMovementIndex[parentProcess.id] || 0;
-        const movimentos = parentProcess.movimentacoes || [];
-        const totalMovimentos = movimentos.length;
         
         return (
           <div key={parentId} className="space-y-1">
@@ -339,7 +314,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <CardTitle className="text-lg font-medium text-gray-900">
                         {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
                       </CardTitle>
-                      
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-baseline gap-1">
                           <Badge variant={parentProcess.status === "Em andamento" ? "secondary" : "outline"}>
@@ -456,7 +430,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       size="sm"
                       variant="default"
                       onClick={() => handlePreviousMovement(parentProcess.id)}
-                      disabled={!movimentos.length}
+                      disabled={!parentProcess.movimentacoes?.length}
                       className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
                       title="Movimentação anterior"
                     >
@@ -466,7 +440,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       size="sm"
                       variant="default"
                       onClick={() => handleNextMovement(parentProcess.id)}
-                      disabled={!movimentos.length}
+                      disabled={!parentProcess.movimentacoes?.length}
                       className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
                       title="Próxima movimentação"
                     >
@@ -670,6 +644,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Diálogo do Relatório */}
       {selectedProcess && (
         <ProcessReportDialog
           process={selectedProcess}
