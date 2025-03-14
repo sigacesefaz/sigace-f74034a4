@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
@@ -111,9 +111,16 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     }
   };
 
+  useEffect(() => {
+    paginatedGroups.forEach(([parentId, group]) => {
+      if (group.parent) {
+        loadProcessMovements(group.parent.id);
+      }
+    });
+  }, [paginatedGroups]);
+
   const handlePreviousMovement = (processId: string) => {
     if (!processMovements[processId]) {
-      loadProcessMovements(processId);
       return;
     }
     
@@ -132,7 +139,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
   const handleNextMovement = (processId: string) => {
     if (!processMovements[processId]) {
-      loadProcessMovements(processId);
       return;
     }
     
@@ -341,10 +347,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       {paginatedGroups.map(([parentId, group]) => {
         const parentProcess = group.parent;
         if (!parentProcess) return null;
-        
-        if (!processMovements[parentProcess.id]) {
-          loadProcessMovements(parentProcess.id);
-        }
         
         const movements = processMovements[parentProcess.id] || [];
         const isLoadingMovements = loadingMovements[parentProcess.id] || false;
