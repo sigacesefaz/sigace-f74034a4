@@ -343,11 +343,51 @@ export async function getCurrentUser() {
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    return { data, error };
+  } catch (error) {
+    console.error("Error during sign in:", error);
+    return { data: null, error };
+  }
+}
+
+export async function sendVerificationCode(email: string, processNumber: string) {
+  try {
+    const response = await supabase.functions.invoke('send-verification-code', {
+      body: { email, processNumber }
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error sending verification code:", error);
+    throw error;
+  }
+}
+
+export async function verifyCode(token: string, code: string) {
+  try {
+    const response = await supabase.functions.invoke('verify-code', {
+      body: { token, code }
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error verifying code:", error);
+    throw error;
+  }
 }
 
 export async function signOut() {
