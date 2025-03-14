@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight, Printer, RefreshCw, Trash } from "lucide-react";
+import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -34,14 +33,12 @@ interface ProcessCardProps {
 export function ProcessCard({ process }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showMovements, setShowMovements] = useState(false);
-  const [currentHitIndex, setCurrentHitIndex] = useState(0);
+  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [isTabsExpanded, setIsTabsExpanded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const movimentos = process.metadata?.movimentos || [];
-  const hits = process.hits || [];
-  const totalHits = hits.length;
   const totalMovimentos = movimentos.length;
   const totalPages = Math.ceil(totalMovimentos / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -58,15 +55,15 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
-  const handlePrevHit = () => {
-    if (currentHitIndex > 0) {
-      setCurrentHitIndex(currentHitIndex - 1);
+  const handlePrevMovimento = () => {
+    if (currentMovimentoIndex > 0) {
+      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
     }
   };
 
-  const handleNextHit = () => {
-    if (currentHitIndex < totalHits - 1) {
-      setCurrentHitIndex(currentHitIndex + 1);
+  const handleNextMovimento = () => {
+    if (currentMovimentoIndex < totalMovimentos - 1) {
+      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
     }
   };
 
@@ -150,61 +147,12 @@ export function ProcessCard({ process }: ProcessCardProps) {
   return (
     <Card className="p-6">
       <div className="space-y-2 mb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground">PROCESSO PRINCIPAL</span>
-            <span className="text-xs text-muted-foreground ml-2">
-              Última atualização: {formatDate(process.updated_at)}
-            </span>
-          </div>
-          
-          {/* Action and Navigation buttons moved to top right */}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8">
-              <RefreshCw className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Atualizar</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-8">
-              <Printer className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Imprimir</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-8">
-              <Eye className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Visualizar</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 text-red-600 hover:text-red-600">
-              <Trash className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Deletar</span>
-            </Button>
-            
-            {hits.length > 0 && (
-              <div className="flex items-center gap-1 ml-2 border-l pl-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handlePrevHit}
-                  disabled={currentHitIndex === 0}
-                  className="h-8 w-8"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs whitespace-nowrap">
-                  {currentHitIndex + 1} / {totalHits + 1}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleNextHit}
-                  disabled={currentHitIndex === totalHits - 1}
-                  className="h-8 w-8"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">PROCESSO PRINCIPAL</span>
+          <span className="text-xs text-muted-foreground">
+            Última atualização: {formatDate(process.updated_at)}
+          </span>
         </div>
-        
         <h2 className="text-xl font-medium">{safeStringValue(process.type)}</h2>
         <div className="flex items-center gap-2">
           <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
@@ -237,13 +185,11 @@ export function ProcessCard({ process }: ProcessCardProps) {
         <>
           {renderProcessInfo(process)}
 
-          {hits && hits.length > 0 && (
+          {process.hits && process.hits.length > 0 && (
             <div className="mt-8 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Movimentações Processuais</h3>
-              </div>
-              {hits.map((hit, index) => (
-                <div key={hit.id} className={`border-t pt-6 ${index !== currentHitIndex ? "hidden" : ""}`}>
+              <h3 className="text-lg font-medium">Processos Relacionados</h3>
+              {process.hits.map((hit) => (
+                <div key={hit.id} className="border-t pt-6">
                   <div className="space-y-2 mb-4">
                     <h4 className="text-md font-medium">{safeStringValue(hit.type)}</h4>
                     <div className="flex items-center gap-2">
