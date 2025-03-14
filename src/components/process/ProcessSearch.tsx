@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchIcon } from "lucide-react";
-import { courts } from "@/services/courts";
+import { courts } from "@/services/datajud";
 
 interface ProcessSearchProps {
   onProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
@@ -23,9 +23,7 @@ export function ProcessSearch({
   isLoading = false 
 }: ProcessSearchProps) {
   const [processNumber, setProcessNumber] = useState("");
-  // Flatten the courts object into a single array for easier use
-  const allCourts = Object.values(courts).flat();
-  const [selectedCourt, setSelectedCourt] = useState(allCourts[0]);
+  const [selectedCourt, setSelectedCourt] = useState(courts[0]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = useCallback(async () => {
@@ -62,11 +60,11 @@ export function ProcessSearch({
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={selectedCourt.name}
               onChange={(e) => {
-                const selected = allCourts.find(court => court.name === e.target.value);
+                const selected = courts.find(court => court.name === e.target.value);
                 if (selected) setSelectedCourt(selected);
               }}
             >
-              {allCourts.map((court) => (
+              {courts.map((court) => (
                 <option key={court.endpoint} value={court.name}>
                   {court.name}
                 </option>

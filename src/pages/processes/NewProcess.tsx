@@ -475,19 +475,12 @@ export default function NewProcess() {
 
         {currentMode === "details" && processMovimentos && (
           <ProcessModeSelector
-            currentMode={currentMode}
-            setCurrentMode={setCurrentMode}
             processMovimentos={processMovimentos}
-            showManualEntry={showManualEntry}
             importProgress={importProgress}
             importComplete={importComplete}
-            isLoading={isLoading}
+            onSave={handleSaveProcess}
+            onCancel={handleCancel}
             handleProcessSelect={handleProcessSelect}
-            handleManualEntry={handleManualEntry}
-            handleSaveProcess={handleSaveProcess}
-            handleCreateManualProcess={handleCreateManualProcess}
-            handleCancel={handleCancel}
-            onImportAnother={handleImportAnother}
           />
         )}
 

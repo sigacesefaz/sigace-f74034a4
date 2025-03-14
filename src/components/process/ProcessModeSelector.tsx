@@ -22,7 +22,6 @@ interface ProcessModeSelectorProps {
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
-  onImportAnother?: () => void;
 }
 
 export function ProcessModeSelector({
@@ -37,8 +36,7 @@ export function ProcessModeSelector({
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
-  handleCancel,
-  onImportAnother
+  handleCancel
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -74,7 +72,7 @@ export function ProcessModeSelector({
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
-          onImportAnother={onImportAnother || (() => setCurrentMode("search"))}
+          onImportAnother={() => setCurrentMode("search")}
         />
       )}
 
