@@ -215,11 +215,11 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
       
-      if (!process || !process.metadata?.movimentos?.length) {
+      if (!process || !process.movimentacoes?.length) {
         return prev;
       }
       
-      const movimentos = process.metadata.movimentos;
+      const movimentos = process.movimentacoes;
       const maxIndex = movimentos.length - 1;
       
       const newIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
@@ -239,11 +239,11 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
       
-      if (!process || !process.metadata?.movimentos?.length) {
+      if (!process || !process.movimentacoes?.length) {
         return prev;
       }
       
-      const movimentos = process.metadata.movimentos;
+      const movimentos = process.movimentacoes;
       const maxIndex = movimentos.length - 1;
       
       const newIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
@@ -320,7 +320,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         if (!parentProcess) return null;
         
         const currentIndex = currentMovementIndex[parentProcess.id] || 0;
-        const movimentos = parentProcess.metadata?.movimentos || [];
+        const movimentos = parentProcess.movimentacoes || [];
         const totalMovimentos = movimentos.length;
         
         return (
