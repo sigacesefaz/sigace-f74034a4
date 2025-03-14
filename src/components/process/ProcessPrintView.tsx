@@ -8,7 +8,7 @@ interface ProcessPrintViewProps {
 }
 
 export function ProcessPrintView({ process }: ProcessPrintViewProps) {
-  const metadata = process.metadata || {};
+  const metadata = process?.metadata || {};
   const movements = metadata.movements || [];
   const subjects = metadata.subjects || [];
   const parties = metadata.parties || [];
@@ -45,14 +45,14 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
         <h3 className="text-lg font-semibold mb-4 bg-gray-100 p-2">Informações do Processo</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p><strong>Número:</strong> {process.number || "Não informado"}</p>
-            <p><strong>Status:</strong> {process.status || "Não informado"}</p>
-            <p><strong>Data de Criação:</strong> {formatDate(process.created_at)}</p>
+            <p><strong>Número:</strong> {process?.number || "Não informado"}</p>
+            <p><strong>Status:</strong> {process?.status || "Não informado"}</p>
+            <p><strong>Data de Criação:</strong> {formatDate(process?.created_at)}</p>
           </div>
           <div>
-            <p><strong>Tipo:</strong> {process.type || "Não informado"}</p>
-            <p><strong>Prioridade:</strong> {process.priority || "Não informado"}</p>
-            <p><strong>Última Atualização:</strong> {formatDate(process.updated_at)}</p>
+            <p><strong>Tipo:</strong> {process?.type || "Não informado"}</p>
+            <p><strong>Prioridade:</strong> {process?.priority || "Não informado"}</p>
+            <p><strong>Última Atualização:</strong> {formatDate(process?.updated_at)}</p>
           </div>
         </div>
       </section>

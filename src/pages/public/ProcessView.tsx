@@ -79,8 +79,7 @@ export default function ProcessView() {
 
   const handlePrint = () => {
     const printContent = document.getElementById('printable-process');
-    const originalContents = document.body.innerHTML;
-
+    
     if (printContent) {
       const printWindow = window.open('', '_blank');
       
@@ -93,29 +92,32 @@ export default function ProcessView() {
               <style>
                 @media print {
                   body { font-family: Arial, sans-serif; }
+                  .page-break { page-break-after: always; }
                 }
+                body { margin: 0; padding: 0; }
               </style>
             </head>
             <body>
               ${printContent.innerHTML}
+              <script>
+                window.onload = function() {
+                  setTimeout(function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                  }, 300);
+                };
+              </script>
             </body>
           </html>
         `);
         
         printWindow.document.close();
-        printWindow.focus();
-        
-        // Add a small delay to ensure styles are loaded
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 250);
       } else {
         // Fallback if popup is blocked
-        document.body.innerHTML = printContent.innerHTML;
-        window.print();
-        document.body.innerHTML = originalContents;
+        alert("Por favor, permita a abertura de popups para imprimir o processo.");
       }
+    } else {
+      console.error("Elemento de impressão não encontrado");
     }
   };
 
@@ -136,6 +138,9 @@ export default function ProcessView() {
   const hasValidProcessData = processMovimentos && 
                              processMovimentos.length > 0 && 
                              processMovimentos[0].process;
+
+  // Prepare process data for print view
+  const processData = hasValidProcessData ? processMovimentos[0].process : null;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -168,9 +173,9 @@ export default function ProcessView() {
               isPublicView={true}
             />
             
-            {/* Hidden div for printing */}
+            {/* Hidden div for printing - Make sure this is properly populated with all required data */}
             <div id="printable-process" className="hidden">
-              <ProcessPrintView process={processMovimentos[0].process} />
+              {processData && <ProcessPrintView process={processData} />}
             </div>
           </>
         )}
