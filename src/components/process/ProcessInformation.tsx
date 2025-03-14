@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
-import { DatajudProcess } from "@/types/datajud";
+import { DatajudProcess, DatajudMovement } from "@/types/datajud";
+import { Movement } from "@/types/process";
 import { formatDate, formatProcessNumber } from "@/lib/utils";
 import { ProcessMovements } from "./ProcessMovements";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,28 @@ export function ProcessInformation({ currentProcess }: ProcessInformationProps) 
   const [showMovements, setShowMovements] = useState(false);
   const [activeTab, setActiveTab] = useState("informacoes");
 
+  // Convert DatajudMovement[] to Movement[] for ProcessMovements component
+  const convertToMovements = (datajudMovements: DatajudMovement[]): Movement[] => {
+    return datajudMovements.map((mov, index) => ({
+      id: `movement-${index}`,
+      data: mov.dataHora,
+      descricao: mov.nome,
+      tipo: mov.tipo,
+      complemento: Array.isArray(mov.complemento) 
+        ? mov.complemento.join(", ") 
+        : mov.complemento,
+      index: index.toString(),
+      score: 1
+    }));
+  };
+
   return (
     <div className="space-y-4 mt-8">
       {/* Dados básicos do processo */}
       <Collapsible defaultOpen className="border rounded-lg bg-white shadow-sm">
         <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-left">
           <h3 className="text-lg font-semibold">Informações do Processo</h3>
-          {({ open }: { open: boolean }) => (
-            open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />
-          )}
+          <ChevronDown className="h-5 w-5 transition-transform ui-open:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -156,7 +170,7 @@ export function ProcessInformation({ currentProcess }: ProcessInformationProps) 
 
           <TabsContent value="movimentos" className="p-4">
             {currentProcess.movimentos && currentProcess.movimentos.length > 0 ? (
-              <ProcessMovements movimentos={currentProcess.movimentos} />
+              <ProcessMovements movimentos={convertToMovements(currentProcess.movimentos)} />
             ) : (
               <div className="text-center py-8 text-gray-500">
                 Nenhum movimento processual encontrado para este processo.
