@@ -214,12 +214,22 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     setCurrentMovementIndex((prev) => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
-      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
+      
+      if (!process || !process.metadata?.movimentos?.length) {
+        return prev;
+      }
+      
+      const movimentos = process.metadata.movimentos;
+      const maxIndex = movimentos.length - 1;
+      
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
+      
       return {
         ...prev,
-        [processId]: currentIndex > 0 ? currentIndex - 1 : maxIndex
+        [processId]: newIndex
       };
     });
+    
     setShowTabsId(processId);
     setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
@@ -228,12 +238,22 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     setCurrentMovementIndex((prev) => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
-      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
+      
+      if (!process || !process.metadata?.movimentos?.length) {
+        return prev;
+      }
+      
+      const movimentos = process.metadata.movimentos;
+      const maxIndex = movimentos.length - 1;
+      
+      const newIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
+      
       return {
         ...prev,
-        [processId]: currentIndex < maxIndex ? currentIndex + 1 : 0
+        [processId]: newIndex
       };
     });
+    
     setShowTabsId(processId);
     setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
@@ -298,6 +318,10 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       {paginatedGroups.map(([parentId, group]) => {
         const parentProcess = group.parent;
         if (!parentProcess) return null;
+        
+        const currentIndex = currentMovementIndex[parentProcess.id] || 0;
+        const movimentos = parentProcess.metadata?.movimentos || [];
+        const totalMovimentos = movimentos.length;
         
         return (
           <div key={parentId} className="space-y-1">
@@ -430,7 +454,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       size="sm"
                       variant="default"
                       onClick={() => handlePreviousMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
+                      disabled={!movimentos.length}
                       className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
                       title="Movimentação anterior"
                     >
@@ -440,7 +464,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       size="sm"
                       variant="default"
                       onClick={() => handleNextMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
+                      disabled={!movimentos.length}
                       className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
                       title="Próxima movimentação"
                     >
@@ -644,7 +668,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo do Relatório */}
       {selectedProcess && (
         <ProcessReportDialog
           process={selectedProcess}
