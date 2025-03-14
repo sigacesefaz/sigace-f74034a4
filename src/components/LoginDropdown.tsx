@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInWithEmail } from "@/lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,38 +19,33 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginDropdown() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [isOpen, setIsOpen] = useState(false);
   
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  const handleSubmit = async (data: LoginFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoggingIn(true);
     
     try {
-      const { error } = await signInWithEmail(data.email, data.password);
+      const { data, error } = await signInWithEmail(email, password);
+      
       if (error) {
         toast({
           title: "Erro ao fazer login",
@@ -62,6 +57,7 @@ export function LoginDropdown() {
           title: "Login realizado com sucesso!",
         });
         navigate("/dashboard"); // Redireciona para o dashboard após login
+        setIsOpen(false);
       }
     } catch (error) {
       toast({
@@ -75,79 +71,72 @@ export function LoginDropdown() {
   };
 
   const LoginForm = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <Label htmlFor="email">Email</Label>
-              <FormControl>
-                <Input
-                  type="email"
-                  id="email"
-                  placeholder="seuemail@email.com"
-                  disabled={isLoggingIn}
-                  className="border-primary/20 focus-visible:ring-primary"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <FormControl>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    placeholder="********"
-                    disabled={isLoggingIn}
-                    className="border-primary/20 focus-visible:ring-primary pr-10"
-                    {...field}
-                  />
-                </FormControl>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Button
-          type="submit"
-          className="w-full bg-primary hover:bg-primary-dark text-slate-50"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          type="email"
+          id="email"
+          placeholder="seuemail@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           disabled={isLoggingIn}
+          className="border-primary/20 focus-visible:ring-primary"
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="password">Senha</Label>
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            id="password"
+            placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoggingIn}
+            className="border-primary/20 focus-visible:ring-primary pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+      
+      <Button
+        type="submit"
+        className="w-full bg-primary hover:bg-primary-dark text-slate-50"
+        disabled={isLoggingIn}
+      >
+        {isLoggingIn ? "Entrando..." : "Entrar"}
+      </Button>
+      
+      <div className="text-center text-sm">
+        Ainda não tem uma conta?{" "}
+        <Link 
+          to="/register" 
+          className="text-primary hover:underline"
+          onClick={() => setIsOpen(false)}
         >
-          {isLoggingIn ? "Entrando..." : "Entrar"}
-        </Button>
-      </form>
-    </Form>
+          Registre-se
+        </Link>
+      </div>
+    </form>
   );
 
   // Versão mobile usando Sheet
   if (isMobile) {
     return (
-      <Sheet>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold">
             Entrar
@@ -167,7 +156,7 @@ export function LoginDropdown() {
 
   // Versão desktop mantendo o dropdown original
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold">
           Entrar
