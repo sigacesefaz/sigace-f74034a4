@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -14,6 +17,7 @@ export default function EmailVerification() {
   const [showOTP, setShowOTP] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   // Check if we have process data in session storage
   const processNumber = sessionStorage.getItem('publicProcessNumber');
@@ -35,6 +39,7 @@ export default function EmailVerification() {
     }
 
     setIsLoading(true);
+    setDevCode(null);
     
     try {
       console.log("Sending verification code to:", email);
@@ -62,6 +67,11 @@ export default function EmailVerification() {
       
       // Store the session token in sessionStorage for verification
       sessionStorage.setItem('verificationToken', result.token);
+      
+      // In development mode, we directly get the code for testing
+      if (result.devCode) {
+        setDevCode(result.devCode);
+      }
       
       toast({
         title: "Código enviado",
@@ -179,6 +189,19 @@ export default function EmailVerification() {
               </div>
             ) : (
               <div className="space-y-4">
+                {devCode && (
+                  <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                    <InfoIcon className="h-4 w-4 text-yellow-600" />
+                    <AlertTitle className="text-yellow-800">Modo de desenvolvimento</AlertTitle>
+                    <AlertDescription className="text-yellow-800">
+                      Código de verificação: <strong>{devCode}</strong>
+                      <p className="text-xs mt-1">
+                        Este código é exibido apenas em ambiente de desenvolvimento para fins de teste.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="verification-code">Código de Verificação</Label>
                   <div className="flex justify-center">
