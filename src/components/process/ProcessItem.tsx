@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/table"
 import { cn, formatProcessNumber } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import ProcessParties from "./ProcessParties";
+import { ProcessPartiesTab } from "./ProcessPartiesTab";
 import { ProcessMovements } from "./ProcessMovements";
+import { ProcessDecisions } from "./ProcessDecisions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ProcessItemProps {
@@ -115,6 +116,12 @@ export function ProcessItem({
                       Movimentos
                     </TabsTrigger>
                     <TabsTrigger 
+                      value="decisoes"
+                      className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent border-b-2 border-transparent"
+                    >
+                      Decisões
+                    </TabsTrigger>
+                    <TabsTrigger 
                       value="partes"
                       className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent border-b-2 border-transparent"
                     >
@@ -184,8 +191,15 @@ export function ProcessItem({
                     )}
                   </TabsContent>
 
+                  <TabsContent value="decisoes" className="p-2">
+                    <ProcessDecisions decisions={process.metadata?.decisoes || []} />
+                  </TabsContent>
+
                   <TabsContent value="partes" className="p-2">
-                    <ProcessParties processId={process.id} />
+                    <ProcessPartiesTab 
+                      processId={process.id}
+                      parties={process.metadata?.partes} 
+                    />
                   </TabsContent>
                 </Tabs>
               </div>

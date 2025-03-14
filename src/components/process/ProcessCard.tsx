@@ -9,8 +9,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { safeStringValue, getSafeNestedValue, formatProcessNumber } from "@/lib/utils";
 import { ProcessTimeline } from "./ProcessTimeline";
-import ProcessParties from "./ProcessParties";
+import { ProcessPartiesTab } from "./ProcessPartiesTab";
 import { ProcessMovements } from "./ProcessMovements";
+import { ProcessDecisions } from "./ProcessDecisions";
 
 interface ProcessCardProps {
   process: {
@@ -283,19 +284,14 @@ export function ProcessCard({ process }: ProcessCardProps) {
             </TabsContent>
 
             <TabsContent value="decisao">
-              <ProcessTimeline 
-                events={process.metadata?.decisoes?.map((dec: any) => ({
-                  id: dec.id || String(Math.random()),
-                  date: dec.data,
-                  title: dec.descricao,
-                  type: "decision"
-                })) || []}
-                maxItems={5}
-              />
+              <ProcessDecisions decisions={process.metadata?.decisoes || []} />
             </TabsContent>
 
             <TabsContent value="partes">
-              <ProcessParties processId={process.id} />
+              <ProcessPartiesTab 
+                processId={process.id}
+                parties={process.metadata?.partes} 
+              />
             </TabsContent>
           </Tabs>
         </>
