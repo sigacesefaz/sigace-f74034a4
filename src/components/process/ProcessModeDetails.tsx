@@ -11,6 +11,7 @@ interface ProcessModeDetailsProps {
   onSave: () => Promise<void>;
   onCancel: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  importProcess: () => Promise<boolean>;
 }
 
 export function ProcessModeDetails({
@@ -18,7 +19,8 @@ export function ProcessModeDetails({
   importProgress,
   onSave,
   onCancel,
-  handleProcessSelect
+  handleProcessSelect,
+  importProcess
 }: ProcessModeDetailsProps) {
   const navigate = useNavigate();
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -50,6 +52,7 @@ export function ProcessModeDetails({
         onSave={onSave}
         onCancel={onCancel}
         handleProcessSelect={handleProcessSelect}
+        importProcess={importProcess}
       />
       
       {showConfirmation && (

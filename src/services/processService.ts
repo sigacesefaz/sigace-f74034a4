@@ -62,7 +62,8 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
       is_parent: true,
       parent_id: null,
-      metadata: JSON.stringify(mainProcess)
+      metadata: JSON.stringify(mainProcess),
+      hits: JSON.stringify(processMovimentos)
     });
 
     const { data: newProcess, error: insertError } = await supabase
@@ -80,7 +81,8 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
         plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
         is_parent: true,
         parent_id: null,
-        metadata: JSON.stringify(mainProcess)
+        metadata: JSON.stringify(mainProcess),
+        hits: JSON.stringify(processMovimentos)
       })
       .select('id')
       .single();

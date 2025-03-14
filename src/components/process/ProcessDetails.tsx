@@ -20,6 +20,7 @@ interface ProcessDetailsProps {
   importProgress?: number;
   isPublicView?: boolean;
   handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  importProcess?: () => Promise<boolean>;
 }
 
 export function ProcessDetails({
@@ -30,7 +31,8 @@ export function ProcessDetails({
   onCancel,
   importProgress = 0,
   isPublicView = false,
-  handleProcessSelect
+  handleProcessSelect,
+  importProcess
 }: ProcessDetailsProps) {
   const navigate = useNavigate();
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
@@ -55,15 +57,15 @@ export function ProcessDetails({
   };
 
   const handleImportProcess = async () => {
-    if (!handleProcessSelect) {
-      console.error("handleProcessSelect function is not provided");
+    if (!importProcess) {
+      console.error("importProcess function is not provided");
       toast("Erro ao importar processo", "Função de importação não disponível", { variant: "destructive" });
       return;
     }
     
     setIsImporting(true);
     try {
-      const success = await handleProcessSelect(currentProcess.numeroProcesso, currentProcess.tribunal);
+      const success = await importProcess();
       if (!success) {
         toast("Erro ao importar processo", "Não foi possível importar o processo", { variant: "destructive" });
       } else {

@@ -4,6 +4,7 @@ import { getProcessById } from "@/services/datajud";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
+import { saveProcess } from "@/services/processService";
 
 export function useProcessImport() {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +50,40 @@ export function useProcessImport() {
     }
   };
 
+  const importProcess = async () => {
+    if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
+      toast("Dados do processo incompletos", "", { variant: "destructive" });
+      return false;
+    }
+    
+    setIsLoading(true);
+    setImportProgress(5); // Iniciar a barra de progresso
+    
+    try {
+      const success = await saveProcess(processMovimentos, selectedCourt, setImportProgress);
+      if (success) {
+        toast("Processo importado com sucesso", "", { variant: "success" });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error("Erro ao importar processo:", error);
+      
+      // Exibir mensagem de erro mais detalhada
+      if (error instanceof Error) {
+        toast("Erro ao importar processo", error.message, { variant: "destructive" });
+      } else {
+        toast("Erro ao importar processo", "", { variant: "destructive" });
+      }
+      
+      setImportProgress(0);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     processMovimentos,
@@ -58,6 +93,7 @@ export function useProcessImport() {
     setImportProgress,
     setShowManualEntry,
     setProcessMovimentos,
-    handleProcessSelect
+    handleProcessSelect,
+    importProcess
   };
 }
