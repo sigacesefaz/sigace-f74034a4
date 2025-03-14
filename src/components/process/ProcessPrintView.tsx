@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,6 +13,22 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
   const subjects = metadata.subjects || [];
   const parties = metadata.parties || [];
 
+  // Safe date formatting function to handle invalid dates
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "Não informado";
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Data não disponível";
+      }
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
+    } catch (error) {
+      console.error("Error formatting date:", error, dateString);
+      return "Data não disponível";
+    }
+  };
+
   return (
     <div className="min-h-[297mm] w-[210mm] mx-auto bg-white p-8 print:p-4 print:shadow-none">
       {/* Cabeçalho */}
@@ -19,7 +36,7 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
         <div className="text-center">
           <h1 className="text-2xl font-bold">Sistema de Gestão e Acompanhamento de Causas e Eventos</h1>
           <h2 className="text-xl mt-2">Relatório do Processo</h2>
-          <p className="text-sm text-gray-500 mt-1">Data de Impressão: {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+          <p className="text-sm text-gray-500 mt-1">Data de Impressão: {formatDate(new Date().toISOString())}</p>
         </div>
       </header>
 
@@ -28,14 +45,14 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
         <h3 className="text-lg font-semibold mb-4 bg-gray-100 p-2">Informações do Processo</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p><strong>Número:</strong> {process.number}</p>
-            <p><strong>Status:</strong> {process.status}</p>
-            <p><strong>Data de Criação:</strong> {format(new Date(process.created_at), "dd/MM/yyyy", { locale: ptBR })}</p>
+            <p><strong>Número:</strong> {process.number || "Não informado"}</p>
+            <p><strong>Status:</strong> {process.status || "Não informado"}</p>
+            <p><strong>Data de Criação:</strong> {formatDate(process.created_at)}</p>
           </div>
           <div>
-            <p><strong>Tipo:</strong> {process.type}</p>
-            <p><strong>Prioridade:</strong> {process.priority}</p>
-            <p><strong>Última Atualização:</strong> {format(new Date(process.updated_at), "dd/MM/yyyy", { locale: ptBR })}</p>
+            <p><strong>Tipo:</strong> {process.type || "Não informado"}</p>
+            <p><strong>Prioridade:</strong> {process.priority || "Não informado"}</p>
+            <p><strong>Última Atualização:</strong> {formatDate(process.updated_at)}</p>
           </div>
         </div>
       </section>
@@ -44,9 +61,9 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
       <section className="mb-8">
         <h3 className="text-lg font-semibold mb-4 bg-gray-100 p-2">Assuntos</h3>
         <ul className="list-disc pl-6">
-          {subjects.map((subject: any, index: number) => (
-            <li key={index}>{subject.name}</li>
-          ))}
+          {subjects && subjects.length > 0 ? subjects.map((subject: any, index: number) => (
+            <li key={index}>{subject.name || "Não informado"}</li>
+          )) : <li>Nenhum assunto cadastrado</li>}
         </ul>
       </section>
 
@@ -54,13 +71,13 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
       <section className="mb-8">
         <h3 className="text-lg font-semibold mb-4 bg-gray-100 p-2">Partes do Processo</h3>
         <div className="grid grid-cols-1 gap-4">
-          {parties.map((party: any, index: number) => (
+          {parties && parties.length > 0 ? parties.map((party: any, index: number) => (
             <div key={index} className="border-b pb-2">
-              <p><strong>Nome:</strong> {party.name}</p>
-              <p><strong>Tipo:</strong> {party.type}</p>
-              <p><strong>Representação:</strong> {party.representation}</p>
+              <p><strong>Nome:</strong> {party.name || "Não informado"}</p>
+              <p><strong>Tipo:</strong> {party.type || "Não informado"}</p>
+              <p><strong>Representação:</strong> {party.representation || "Não informado"}</p>
             </div>
-          ))}
+          )) : <p>Nenhuma parte cadastrada</p>}
         </div>
       </section>
 
@@ -68,17 +85,17 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
       <section className="mb-8">
         <h3 className="text-lg font-semibold mb-4 bg-gray-100 p-2">Movimentações</h3>
         <div className="grid grid-cols-1 gap-4">
-          {movements.map((movement: any, index: number) => (
+          {movements && movements.length > 0 ? movements.map((movement: any, index: number) => (
             <div key={index} className="border-b pb-2">
               <div className="flex justify-between">
-                <p className="font-semibold">{movement.type}</p>
+                <p className="font-semibold">{movement.type || "Não informado"}</p>
                 <p className="text-sm text-gray-500">
-                  {format(new Date(movement.date), "dd/MM/yyyy", { locale: ptBR })}
+                  {formatDate(movement.date)}
                 </p>
               </div>
-              <p className="mt-1">{movement.description}</p>
+              <p className="mt-1">{movement.description || "Sem descrição"}</p>
             </div>
-          ))}
+          )) : <p>Nenhuma movimentação cadastrada</p>}
         </div>
       </section>
 

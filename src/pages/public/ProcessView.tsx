@@ -132,26 +132,33 @@ export default function ProcessView() {
     );
   }
 
+  // Ensure we have valid process data before rendering
+  const hasValidProcessData = processMovimentos && 
+                             processMovimentos.length > 0 && 
+                             processMovimentos[0].process;
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold mb-2">Consulta Pública de Processos</h2>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handlePrint}
-            title="Imprimir processo"
-            className="ml-2"
-          >
-            <Printer className="h-5 w-5" />
-          </Button>
+          {hasValidProcessData && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handlePrint}
+              title="Imprimir processo"
+              className="ml-2"
+            >
+              <Printer className="h-5 w-5" />
+            </Button>
+          )}
         </div>
         <p className="text-gray-600 mb-4">
           Visualização dos dados do processo consultado.
         </p>
         
-        {processMovimentos && processMovimentos.length > 0 && (
+        {hasValidProcessData && (
           <>
             <ProcessDetails
               processMovimentos={processMovimentos}
