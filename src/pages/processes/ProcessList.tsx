@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
@@ -83,6 +84,22 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
+
+  // Modificando para usar useEffect para carregamento dos movimentos
+  useEffect(() => {
+    // Função para carregar processos movimentos para o primeiro lote visível
+    const loadInitialMovements = async () => {
+      if (paginatedGroups.length > 0) {
+        for (const [parentId, group] of paginatedGroups) {
+          if (group.parent && !processMovements[group.parent.id]) {
+            await loadProcessMovements(group.parent.id);
+          }
+        }
+      }
+    };
+    
+    loadInitialMovements();
+  }, [paginatedGroups, processMovements]);
 
   const loadProcessMovements = async (processId: string) => {
     if (processMovements[processId] && processMovements[processId].length > 0) {
@@ -217,13 +234,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   };
 
   const handleShare = async (process: Process) => {
-    const formatProcessNumber = (number: string) => {
-      if (!number) return "";
-      const numericOnly = number.replace(/\D/g, '');
-      if (numericOnly.length !== 20) return number;
-      return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
-    };
-
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     
     try {
@@ -333,10 +343,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       {paginatedGroups.map(([parentId, group]) => {
         const parentProcess = group.parent;
         if (!parentProcess) return null;
-        
-        if (!processMovements[parentProcess.id]) {
-          loadProcessMovements(parentProcess.id);
-        }
         
         const movements = processMovements[parentProcess.id] || [];
         const isLoadingMovements = loadingMovements[parentProcess.id] || false;
@@ -505,7 +511,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <div className="bg-white rounded-lg p-2 space-y-1">
                         <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
-                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {parentProcess.number || "Não informado"}</p>
+                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number) || "Não informado"}</p>
                           <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
                           <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
                           <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
@@ -691,4 +697,3 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     </div>
   );
 }
-
