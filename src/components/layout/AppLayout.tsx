@@ -9,7 +9,7 @@ export function AppLayout({
 }: AppLayoutProps) {
   return <div className="min-h-screen bg-white">
       <DashboardHeader />
-      <main className="flex-1 min-h-[calc(100vh-8rem)] pt-16 py-0 bg-slate-50">
+      <main className="flex-1 min-h-[calc(100vh-8rem)] pt-16 py-0 bg-neutral-50">
         {children}
       </main>
       <DashboardFooter />
