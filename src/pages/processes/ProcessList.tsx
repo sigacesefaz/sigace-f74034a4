@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
@@ -26,10 +25,6 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
-import { ProcessParties } from "@/components/process/ProcessParties";
-import { getMovementsByProcessId } from "@/services/process-movements";
-import { ProcessNavigation } from "@/components/process/ProcessNavigation";
-import { formatProcessNumber } from "@/lib/utils";
 
 interface ProcessListProps {
   processes: Process[];
@@ -53,8 +48,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
-  const [processMovements, setProcessMovements] = useState<Record<string, any[]>>({});
-  const [loadingMovements, setLoadingMovements] = useState<Record<string, boolean>>({});
   const itemsPerPage = 5;
 
   const groupedProcesses = processes.reduce((acc, process) => {
@@ -84,88 +77,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
-
-  // Modificando para usar useEffect para carregamento dos movimentos
-  useEffect(() => {
-    // Função para carregar processos movimentos para o primeiro lote visível
-    const loadInitialMovements = async () => {
-      if (paginatedGroups.length > 0) {
-        for (const [parentId, group] of paginatedGroups) {
-          if (group.parent && !processMovements[group.parent.id]) {
-            await loadProcessMovements(group.parent.id);
-          }
-        }
-      }
-    };
-    
-    loadInitialMovements();
-  }, [paginatedGroups, processMovements]);
-
-  const loadProcessMovements = async (processId: string) => {
-    if (processMovements[processId] && processMovements[processId].length > 0) {
-      return;
-    }
-    
-    setLoadingMovements(prev => ({ ...prev, [processId]: true }));
-    
-    try {
-      const movements = await getMovementsByProcessId(processId);
-      setProcessMovements(prev => ({
-        ...prev,
-        [processId]: movements || []
-      }));
-      
-      if (currentMovementIndex[processId] === undefined) {
-        setCurrentMovementIndex(prev => ({
-          ...prev,
-          [processId]: 0
-        }));
-      }
-    } catch (error) {
-      console.error("Error loading process movements:", error);
-      toast.error("Erro ao carregar movimentações do processo");
-    } finally {
-      setLoadingMovements(prev => ({ ...prev, [processId]: false }));
-    }
-  };
-
-  const handlePreviousMovement = (processId: string) => {
-    if (!processMovements[processId]) {
-      loadProcessMovements(processId);
-      return;
-    }
-    
-    setCurrentMovementIndex((prev) => {
-      const currentIndex = prev[processId] || 0;
-      const maxIndex = (processMovements[processId]?.length || 1) - 1;
-      return {
-        ...prev,
-        [processId]: currentIndex > 0 ? currentIndex - 1 : maxIndex
-      };
-    });
-    
-    setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
-  };
-
-  const handleNextMovement = (processId: string) => {
-    if (!processMovements[processId]) {
-      loadProcessMovements(processId);
-      return;
-    }
-    
-    setCurrentMovementIndex((prev) => {
-      const currentIndex = prev[processId] || 0;
-      const maxIndex = (processMovements[processId]?.length || 1) - 1;
-      return {
-        ...prev,
-        [processId]: currentIndex < maxIndex ? currentIndex + 1 : 0
-      };
-    });
-    
-    setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
-  };
 
   const handleDelete = async (id: string) => {
     if (onDelete) {
@@ -234,6 +145,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   };
 
   const handleShare = async (process: Process) => {
+    const formatProcessNumber = (number: string) => {
+      if (!number) return "";
+      const numericOnly = number.replace(/\D/g, '');
+      if (numericOnly.length !== 20) return number;
+      return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
+    };
+
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     
     try {
@@ -263,6 +181,15 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     }
   };
 
+  const formatProcessNumber = (number?: string) => {
+    if (!number) return "Número não informado";
+    const cleanNumber = number.replace(/\D/g, '');
+    if (cleanNumber.length === 20) {
+      return `${cleanNumber.slice(0, 7)}-${cleanNumber.slice(7, 9)}.${cleanNumber.slice(9, 13)}.${cleanNumber.slice(13, 14)}.${cleanNumber.slice(14, 16)}.${cleanNumber.slice(16)}`;
+    }
+    return number;
+  };
+
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => 
       prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]
@@ -281,6 +208,34 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({ ...prev, [processId]: value }));
+  };
+
+  const handlePreviousMovement = (processId: string) => {
+    setCurrentMovementIndex((prev) => {
+      const currentIndex = prev[processId] || 0;
+      const process = processes.find(p => p.id === processId);
+      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
+      return {
+        ...prev,
+        [processId]: currentIndex > 0 ? currentIndex - 1 : maxIndex
+      };
+    });
+    setShowTabsId(processId);
+    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
+  };
+
+  const handleNextMovement = (processId: string) => {
+    setCurrentMovementIndex((prev) => {
+      const currentIndex = prev[processId] || 0;
+      const process = processes.find(p => p.id === processId);
+      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
+      return {
+        ...prev,
+        [processId]: currentIndex < maxIndex ? currentIndex + 1 : 0
+      };
+    });
+    setShowTabsId(processId);
+    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
 
   if (isLoading) {
@@ -343,11 +298,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       {paginatedGroups.map(([parentId, group]) => {
         const parentProcess = group.parent;
         if (!parentProcess) return null;
-        
-        const movements = processMovements[parentProcess.id] || [];
-        const isLoadingMovements = loadingMovements[parentProcess.id] || false;
-        const movementIndex = currentMovementIndex[parentProcess.id] || 0;
-        const currentMovement = movements.length > 0 ? movements[movementIndex] : null;
         
         return (
           <div key={parentId} className="space-y-1">
@@ -476,12 +426,26 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <Trash className="h-4 w-4" />
                     </Button>
                     <div className="h-4 w-px bg-gray-200 mx-1" />
-                    <ProcessNavigation 
-                      currentMovimentoIndex={movementIndex}
-                      totalMovimentos={movements.length}
-                      handlePrevMovimento={() => handlePreviousMovement(parentProcess.id)}
-                      handleNextMovimento={() => handleNextMovement(parentProcess.id)}
-                    />
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => handlePreviousMovement(parentProcess.id)}
+                      disabled={!parentProcess.movimentacoes?.length}
+                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
+                      title="Movimentação anterior"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => handleNextMovement(parentProcess.id)}
+                      disabled={!parentProcess.movimentacoes?.length}
+                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
+                      title="Próxima movimentação"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -511,7 +475,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <div className="bg-white rounded-lg p-2 space-y-1">
                         <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
-                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number) || "Não informado"}</p>
+                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {parentProcess.number || "Não informado"}</p>
                           <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
                           <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
                           <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
@@ -583,21 +547,10 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       </TabsList>
 
                       <TabsContent value="eventos" className="space-y-1">
-                        {isLoadingMovements ? (
-                          <div className="bg-white rounded-lg p-4 text-center">
-                            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-                            <p className="mt-2 text-sm text-gray-500">Carregando movimentações...</p>
-                          </div>
-                        ) : movements.length > 0 ? (
-                          <ProcessMovements 
-                            movimentos={movements} 
-                            currentIndex={movementIndex}
-                          />
-                        ) : (
-                          <div className="bg-white rounded-lg p-4 text-center">
-                            <p className="text-sm text-gray-500">Nenhuma movimentação encontrada</p>
-                          </div>
-                        )}
+                        <ProcessMovements 
+                          movimentos={parentProcess.movimentacoes || []} 
+                          currentIndex={currentMovementIndex[parentProcess.id] || 0}
+                        />
                       </TabsContent>
 
                       <TabsContent value="intimacao">
@@ -624,8 +577,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="partes" className="space-y-1">
-                        <ProcessParties processId={parentProcess.id} />
+                      <TabsContent value="partes">
+                        <div className="bg-white rounded-lg p-2">
+                          <div className="text-sm text-gray-600">
+                            <p>Partes envolvidas no processo</p>
+                          </div>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </div>
@@ -687,11 +644,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {reportDialogOpen && selectedProcess && (
-        <ProcessReportDialog 
-          process={selectedProcess} 
-          open={reportDialogOpen} 
-          onOpenChange={setReportDialogOpen} 
+      {/* Diálogo do Relatório */}
+      {selectedProcess && (
+        <ProcessReportDialog
+          process={selectedProcess}
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
         />
       )}
     </div>
