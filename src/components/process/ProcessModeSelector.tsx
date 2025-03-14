@@ -69,6 +69,7 @@ export function ProcessModeSelector({
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
+          onImportAnother={() => setCurrentMode("search")}
         />
       )}
 
