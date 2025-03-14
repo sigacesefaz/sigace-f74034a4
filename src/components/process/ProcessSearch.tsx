@@ -1,8 +1,16 @@
+
 import React, { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Listbox } from "@/components/ui/listbox";
+import { Button } from "@/components/ui/button";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { courts } from "@/services/datajud";
 import { SearchIcon } from "lucide-react";
 
@@ -10,11 +18,22 @@ interface ProcessSearchProps {
   onProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   isPublic?: boolean;
   showCourtSelector?: boolean;
+  onManual?: () => void;
 }
 
-export function ProcessSearch({ onProcessSelect, isPublic = false, showCourtSelector = false }: ProcessSearchProps) {
+export function ProcessSearch({ 
+  onProcessSelect, 
+  isPublic = false, 
+  showCourtSelector = false,
+  onManual
+}: ProcessSearchProps) {
   const [processNumber, setProcessNumber] = useState("");
-  const [selectedCourt, setSelectedCourt] = useState(courts[0]);
+  
+  // Get all courts by flattening the courts object which is organized by categories
+  const allCourts = Object.values(courts).flat();
+  
+  // Set the first court as the default selected court
+  const [selectedCourt, setSelectedCourt] = useState(allCourts[0]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = useCallback(async () => {
@@ -46,7 +65,24 @@ export function ProcessSearch({ onProcessSelect, isPublic = false, showCourtSele
         {showCourtSelector && (
           <div className="grid gap-2">
             <Label htmlFor="court">Tribunal</Label>
-            <Listbox items={courts} selectedItem={selectedCourt} setSelectedItem={setSelectedCourt} />
+            <Select 
+              value={selectedCourt?.id} 
+              onValueChange={(value) => {
+                const court = allCourts.find(c => c.id === value);
+                if (court) setSelectedCourt(court);
+              }}
+            >
+              <SelectTrigger id="court">
+                <SelectValue placeholder="Selecione o tribunal" />
+              </SelectTrigger>
+              <SelectContent>
+                {allCourts.map((court) => (
+                  <SelectItem key={court.id} value={court.id}>
+                    {court.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
