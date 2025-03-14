@@ -1,15 +1,15 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [showOTP, setShowOTP] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +37,9 @@ export default function EmailVerification() {
     setIsLoading(true);
     
     try {
+      console.log("Sending verification code to:", email);
+      console.log("Process Number:", processNumber);
+      
       // Call the edge function to send verification email
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification-code`, {
         method: 'POST',
@@ -50,12 +53,12 @@ export default function EmailVerification() {
         })
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao enviar código de verificação");
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        console.error("Error response from server:", result);
+        throw new Error(result.error || result.details || "Erro ao enviar código de verificação");
+      }
       
       // Store the session token in sessionStorage for verification
       sessionStorage.setItem('verificationToken', result.token);
@@ -111,9 +114,11 @@ export default function EmailVerification() {
         })
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Código inválido ou expirado");
+        console.error("Error response from verification server:", result);
+        throw new Error(result.error || "Código inválido ou expirado");
       }
       
       // Navigate to process view with email in query param for additional verification

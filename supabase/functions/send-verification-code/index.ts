@@ -8,8 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
-// Use a chave API definida pelo usuário
-const RESEND_API_KEY = "re_9MQLmpwh_CpZWoLjKWb5RsC6i2PPLKzWz";
+// Use the environment variable for the Resend API key
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "re_9MQLmpwh_CpZWoLjKWb5RsC6i2PPLKzWz";
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "super-secret-jwt-token-for-verification";
 
 serve(async (req) => {
@@ -59,6 +59,10 @@ serve(async (req) => {
       .setExpirationTime('15m') // Code expires in 15 minutes
       .sign(new TextEncoder().encode(JWT_SECRET));
     
+    console.log("Sending verification email to:", email);
+    console.log("Process Number:", processNumber);
+    console.log("Verification Code:", verificationCode);
+    
     // Send the verification email
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -88,18 +92,20 @@ serve(async (req) => {
       })
     });
     
-    const resendResult = await resendResponse.json();
-    
     if (!resendResponse.ok) {
-      console.error("Error sending email:", resendResult);
+      const resendError = await resendResponse.text();
+      console.error("Error from Resend API:", resendError);
       return new Response(
-        JSON.stringify({ error: "Failed to send verification email" }),
+        JSON.stringify({ error: "Failed to send verification email", details: resendError }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+    
+    const resendResult = await resendResponse.json();
+    console.log("Email sent successfully:", resendResult);
     
     return new Response(
       JSON.stringify({ 
