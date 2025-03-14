@@ -15,13 +15,16 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
-  importComplete?: boolean; // Added importComplete as an optional property
+  importComplete?: boolean;
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
+  onSave?: () => Promise<void>; // Optional prop for custom save function
+  onCancel?: () => void; // Add the missing onCancel prop
+  onImportAnother?: () => void; // Optional prop for custom import another function
 }
 
 export function ProcessModeSelector({
@@ -30,13 +33,16 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
-  importComplete = false, // Set a default value of false
+  importComplete = false,
   isLoading,
   handleProcessSelect,
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
-  handleCancel
+  handleCancel,
+  onSave, // Include the prop in the destructuring
+  onCancel, // Include the onCancel prop in the destructuring
+  onImportAnother
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -68,11 +74,11 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
-          importComplete={importComplete} // Pass the importComplete prop
-          onSave={handleSaveProcess}
-          onCancel={() => setCurrentMode("search")}
+          importComplete={importComplete}
+          onSave={onSave || handleSaveProcess} // Use onSave if provided, otherwise use handleSaveProcess
+          onCancel={onCancel || (() => setCurrentMode("search"))} // Use onCancel if provided, otherwise go back to search
           handleProcessSelect={handleProcessSelect}
-          onImportAnother={() => setCurrentMode("search")}
+          onImportAnother={onImportAnother || (() => setCurrentMode("search"))} // Use onImportAnother if provided
         />
       )}
 
