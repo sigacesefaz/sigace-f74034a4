@@ -8,7 +8,7 @@ interface ProcessPartiesListProps {
 
 export function ProcessPartiesList({ parties }: ProcessPartiesListProps) {
   if (!parties || parties.length === 0) {
-    return <p className="text-gray-500">Nenhuma parte encontrada</p>;
+    return null; // Don't show anything if no parties found
   }
 
   return (
