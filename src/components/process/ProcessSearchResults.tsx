@@ -58,11 +58,6 @@ export function ProcessSearchResults({
     );
   }
 
-  const handleCardClick = (process: DatajudProcess) => {
-    console.log("Process card clicked:", process.numeroProcesso);
-    onSelectProcess(process);
-  };
-
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium">
@@ -73,20 +68,17 @@ export function ProcessSearchResults({
         {results.map((process, index) => (
           <div 
             key={index}
-            onClick={() => handleCardClick(process)}
             className="cursor-pointer"
+            onClick={() => onSelectProcess(process)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                onSelectProcess(process);
+              }
+            }}
           >
-            <Card 
-              className="p-4 hover:shadow-md transition-shadow" 
-              role="button"
-              tabIndex={0}
-              onClick={() => handleCardClick(process)}  // Added explicit onClick handler to Card itself
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleCardClick(process);
-                }
-              }}
-            >
+            <Card className="p-4 hover:shadow-md transition-shadow">
               <div className="flex flex-col gap-2">
                 <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
                 <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
