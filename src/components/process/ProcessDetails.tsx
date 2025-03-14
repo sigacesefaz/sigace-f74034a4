@@ -20,6 +20,10 @@ interface ProcessDetailsProps {
   importProgress?: number;
   isPublicView?: boolean;
   handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  currentMovimentoIndex?: number;
+  handlePrevMovimento?: () => void;
+  handleNextMovimento?: () => void;
+  totalMovimentos?: number;
 }
 
 export function ProcessDetails({
@@ -30,29 +34,18 @@ export function ProcessDetails({
   onCancel,
   importProgress = 0,
   isPublicView = false,
-  handleProcessSelect
+  handleProcessSelect,
+  currentMovimentoIndex = 0,
+  handlePrevMovimento,
+  handleNextMovimento,
+  totalMovimentos = 1
 }: ProcessDetailsProps) {
   const navigate = useNavigate();
-  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   
   // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
   const currentProcess = currentMovimento.process;
-  
-  const totalMovimentos = processMovimentos.length;
-  
-  const handleNextMovimento = () => {
-    if (currentMovimentoIndex < totalMovimentos - 1) {
-      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
-    }
-  };
-  
-  const handlePrevMovimento = () => {
-    if (currentMovimentoIndex > 0) {
-      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
-    }
-  };
 
   const handleImportProcess = async () => {
     if (!handleProcessSelect) {

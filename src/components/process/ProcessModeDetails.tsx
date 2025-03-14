@@ -22,6 +22,7 @@ export function ProcessModeDetails({
 }: ProcessModeDetailsProps) {
   const navigate = useNavigate();
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   
   // Show confirmation dialog when import is complete
   useEffect(() => {
@@ -40,16 +41,32 @@ export function ProcessModeDetails({
     navigate('/processes'); // Go to process list
   };
 
+  const handlePrevMovimento = () => {
+    if (currentMovimentoIndex > 0) {
+      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
+    }
+  };
+
+  const handleNextMovimento = () => {
+    if (currentMovimentoIndex < processMovimentos.length - 1) {
+      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
+    }
+  };
+
   return (
     <>
       <ProcessDetails
         processMovimentos={processMovimentos}
-        mainProcess={processMovimentos[0].process}
+        mainProcess={processMovimentos[currentMovimentoIndex].process}
         isImport={true}
         importProgress={importProgress}
         onSave={onSave}
         onCancel={onCancel}
         handleProcessSelect={handleProcessSelect}
+        currentMovimentoIndex={currentMovimentoIndex}
+        handlePrevMovimento={handlePrevMovimento}
+        handleNextMovimento={handleNextMovimento}
+        totalMovimentos={processMovimentos.length}
       />
       
       {showConfirmation && (
