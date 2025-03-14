@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
 import { ProcessDetails } from "@/components/process/ProcessDetails";
+import { ProcessModeDetails } from "@/components/process/ProcessModeDetails";
 import { ProcessForm } from "@/components/process/ProcessForm";
 import { getProcessById } from "@/services/datajud";
 import { supabase } from "@/lib/supabase";
@@ -77,13 +78,17 @@ export default function NewProcess() {
     }
   };
 
+  const importProcess = async () => {
+    return await handleSaveProcess();
+  };
+
   const handleSaveProcess = async () => {
     if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
       toast({
         title: "Dados do processo incompletos",
         variant: "destructive"
       });
-      return;
+      return false;
     }
     
     setIsLoading(true);
@@ -103,7 +108,7 @@ export default function NewProcess() {
         });
         setImportProgress(0);
         setIsLoading(false);
-        return;
+        return false;
       }
 
       // Obter o processo principal (primeiro movimento processual)
@@ -126,7 +131,7 @@ export default function NewProcess() {
         });
         setImportProgress(0);
         setIsLoading(false);
-        return;
+        return false;
       }
       
       setImportProgress(20);
@@ -183,7 +188,7 @@ export default function NewProcess() {
         });
         setImportProgress(0);
         setIsLoading(false);
-        return;
+        return false;
       }
 
       if (!newProcess?.id) {
@@ -193,7 +198,7 @@ export default function NewProcess() {
         });
         setImportProgress(0);
         setIsLoading(false);
-        return;
+        return false;
       }
 
       const mainProcessId = newProcess.id;
@@ -230,7 +235,7 @@ export default function NewProcess() {
           title: "Erro ao salvar detalhes do processo",
           variant: "destructive"
         });
-        return;
+        return false;
       }
       
       setImportProgress(70);
@@ -264,7 +269,7 @@ export default function NewProcess() {
           title: "Erro ao salvar movimentos do processo",
           variant: "destructive"
         });
-        return;
+        return false;
       }
       
       setImportProgress(90);
@@ -293,7 +298,7 @@ export default function NewProcess() {
           title: "Erro ao salvar assuntos do processo",
           variant: "destructive"
         });
-        return;
+        return false;
       }
 
       setImportProgress(100);
@@ -301,16 +306,17 @@ export default function NewProcess() {
         title: "Processo importado com sucesso!",
         variant: "success"
       });
-      navigate(`/processes/${mainProcessId}`);
+      navigate(`/processes`);
+      return true;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
       toast({
         title: "Erro ao importar processo",
         variant: "destructive"
       });
+      return false;
     } finally {
       setIsLoading(false);
-      setImportProgress(0);
     }
   };
 
@@ -338,14 +344,16 @@ export default function NewProcess() {
         )}
 
         {currentMode === "details" && processMovimentos && (
-          <ProcessDetails
+          <ProcessModeDetails
             processMovimentos={processMovimentos}
+            importProgress={importProgress}
             onSave={handleSaveProcess}
             onCancel={() => {
               setCurrentMode("search");
               setProcessMovimentos(null);
             }}
-            isNewProcess
+            handleProcessSelect={handleProcessSelect}
+            importProcess={importProcess}
           />
         )}
 
@@ -359,7 +367,7 @@ export default function NewProcess() {
           />
         )}
 
-        {importProgress > 0 && (
+        {importProgress > 0 && currentMode !== "details" && (
           <div className="mt-6">
             <div className="flex justify-between text-sm mb-1">
               <span>Importando processo...</span>

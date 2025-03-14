@@ -11,7 +11,7 @@ interface ProcessModeDetailsProps {
   onSave: () => Promise<void>;
   onCancel: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
-  importProcess: () => Promise<boolean>;
+  importProcess?: () => Promise<boolean>;
 }
 
 export function ProcessModeDetails({
@@ -47,12 +47,10 @@ export function ProcessModeDetails({
       <ProcessDetails
         processMovimentos={processMovimentos}
         mainProcess={processMovimentos[0].process}
-        isImport={true}
-        importProgress={importProgress}
         onSave={onSave}
         onCancel={onCancel}
-        handleProcessSelect={handleProcessSelect}
-        importProcess={importProcess}
+        isImport={true}
+        importProgress={importProgress}
       />
       
       {showConfirmation && (
