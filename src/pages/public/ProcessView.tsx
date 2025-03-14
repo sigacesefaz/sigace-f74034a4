@@ -22,13 +22,25 @@ export default function ProcessView() {
   // Get process data from sessionStorage
   const processNumber = sessionStorage.getItem('publicProcessNumber');
   const courtEndpoint = sessionStorage.getItem('publicCourtEndpoint');
+  const storedEmail = sessionStorage.getItem('publicVerifiedEmail');
 
   useEffect(() => {
-    // Verify that we have all required data
-    if (!processNumber || !courtEndpoint || !verifiedEmail) {
+    // Verify that we have all required data and email matches
+    if (!processNumber || !courtEndpoint) {
       toast({
         title: "Acesso não autorizado",
-        description: "Informações de verificação ausentes ou inválidas.",
+        description: "Informações de processo ausentes ou inválidas.",
+        variant: "destructive",
+      });
+      navigate('/');
+      return;
+    }
+    
+    // Ensure we have an email verification
+    if (!storedEmail && !verifiedEmail) {
+      toast({
+        title: "Acesso não autorizado",
+        description: "Verificação de email necessária.",
         variant: "destructive",
       });
       navigate('/');
@@ -65,7 +77,7 @@ export default function ProcessView() {
     };
 
     fetchProcessData();
-  }, [processNumber, courtEndpoint, verifiedEmail, navigate]);
+  }, [processNumber, courtEndpoint, verifiedEmail, storedEmail, navigate]);
 
   const handleReturn = () => {
     navigate('/');
