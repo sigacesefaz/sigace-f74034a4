@@ -1,4 +1,3 @@
-
 import { ProcessItem } from "@/components/dashboard/ProcessItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,63 +49,6 @@ export default function ProcessItemExample() {
           codigo: "11007",
           nome: "Recebidos os autos",
           dataHora: new Date("2023-10-25T16:40:00").toISOString()
-        }
-      ],
-      decisoes: [
-        {
-          id: "1",
-          title: "Sentença",
-          description: "Vistos e examinados os autos. Julgo procedente o pedido e condeno o réu ao pagamento da quantia de R$ 50.000,00.",
-          decision_type: "Procedência",
-          judge: "Dr. João da Silva",
-          decision_date: new Date("2023-12-10T14:30:00").toISOString(),
-          attachments: [
-            { name: "Sentença.pdf", url: "#", type: "application/pdf" }
-          ]
-        },
-        {
-          id: "2",
-          title: "Acórdão",
-          description: "A Turma, por unanimidade, negou provimento ao recurso, nos termos do voto do Relator.",
-          decision_type: "Negado Provimento",
-          judge: "Des. Maria Souza",
-          decision_date: new Date("2023-12-20T10:00:00").toISOString()
-        }
-      ],
-      partes: [
-        {
-          id: "101",
-          name: "Empresa ABC Ltda",
-          document: "12.345.678/0001-90",
-          type: "AUTHOR",
-          personType: "legal",
-          contacts: {
-            phone: "(21) 3333-4444",
-            email: "contato@empresaabc.com.br",
-            address: "Av. Rio Branco, 123, Centro, Rio de Janeiro/RJ"
-          },
-          lawyers: [
-            { name: "Dr. Paulo Advogado", oab: "RJ123456" }
-          ]
-        },
-        {
-          id: "102",
-          name: "João da Silva",
-          document: "123.456.789-00",
-          type: "DEFENDANT",
-          personType: "physical",
-          contacts: {
-            phone: "(21) 99999-8888",
-            email: "joao.silva@email.com"
-          }
-        },
-        {
-          id: "103",
-          name: "Ministério Público do Estado do Rio de Janeiro",
-          document: "",
-          type: "MP",
-          subtype: "MPE",
-          personType: "legal"
         }
       ]
     }

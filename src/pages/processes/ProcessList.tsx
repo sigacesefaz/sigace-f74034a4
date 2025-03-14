@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
+import { formatProcessNumber } from "@/lib/utils";
 
 interface ProcessListProps {
   processes: Process[];
@@ -145,13 +146,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   };
 
   const handleShare = async (process: Process) => {
-    const formatProcessNumber = (number: string) => {
-      if (!number) return "";
-      const numericOnly = number.replace(/\D/g, '');
-      if (numericOnly.length !== 20) return number;
-      return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
-    };
-
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     
     try {
@@ -179,15 +173,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     } catch {
       return "Data inválida";
     }
-  };
-
-  const formatProcessNumber = (number?: string) => {
-    if (!number) return "Número não informado";
-    const cleanNumber = number.replace(/\D/g, '');
-    if (cleanNumber.length === 20) {
-      return `${cleanNumber.slice(0, 7)}-${cleanNumber.slice(7, 9)}.${cleanNumber.slice(9, 13)}.${cleanNumber.slice(13, 14)}.${cleanNumber.slice(14, 16)}.${cleanNumber.slice(16)}`;
-    }
-    return number;
   };
 
   const toggleProcessSelection = (id: string) => {
