@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { NavMenu } from "@/components/navigation/NavMenu";
 
@@ -5,8 +6,8 @@ export function DashboardHeader() {
   return (
     <header className="fixed w-full top-0 z-50 border-b bg-white shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center h-16 relative">
-          <div className="absolute left-0 flex items-center space-x-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center space-x-4">
             <Link to="/dashboard">
               <img 
                 src="/images/logo_sefaz_estado.png" 
@@ -22,7 +23,7 @@ export function DashboardHeader() {
               <span className="text-gray-500 text-xs font-bold">Secretaria da Fazenda do Tocantins</span>
             </div>
           </div>
-          <div className="absolute right-0">
+          <div className="flex items-center">
             <NavMenu />
           </div>
         </div>

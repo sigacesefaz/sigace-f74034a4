@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,12 +34,14 @@ interface ProcessCardProps {
 export function ProcessCard({ process }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showMovements, setShowMovements] = useState(false);
-  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
+  const [currentHitIndex, setCurrentHitIndex] = useState(0);
   const [isTabsExpanded, setIsTabsExpanded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const movimentos = process.metadata?.movimentos || [];
+  const hits = process.hits || [];
+  const totalHits = hits.length;
   const totalMovimentos = movimentos.length;
   const totalPages = Math.ceil(totalMovimentos / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -55,15 +58,15 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
-  const handlePrevMovimento = () => {
-    if (currentMovimentoIndex > 0) {
-      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
+  const handlePrevHit = () => {
+    if (currentHitIndex > 0) {
+      setCurrentHitIndex(currentHitIndex - 1);
     }
   };
 
-  const handleNextMovimento = () => {
-    if (currentMovimentoIndex < totalMovimentos - 1) {
-      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
+  const handleNextHit = () => {
+    if (currentHitIndex < totalHits) {
+      setCurrentHitIndex(currentHitIndex + 1);
     }
   };
 
@@ -185,11 +188,36 @@ export function ProcessCard({ process }: ProcessCardProps) {
         <>
           {renderProcessInfo(process)}
 
-          {process.hits && process.hits.length > 0 && (
+          {hits && hits.length > 0 && (
             <div className="mt-8 space-y-6">
-              <h3 className="text-lg font-medium">Processos Relacionados</h3>
-              {process.hits.map((hit) => (
-                <div key={hit.id} className="border-t pt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Movimentações Processuais</h3>
+                {hits.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrevHit}
+                      disabled={currentHitIndex === 0}
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                      {currentHitIndex + 1} / {hits.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextHit}
+                      disabled={currentHitIndex === hits.length - 1}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {hits.map((hit, index) => (
+                <div key={hit.id} className={`border-t pt-6 ${index !== currentHitIndex ? "hidden" : ""}`}>
                   <div className="space-y-2 mb-4">
                     <h4 className="text-md font-medium">{safeStringValue(hit.type)}</h4>
                     <div className="flex items-center gap-2">
