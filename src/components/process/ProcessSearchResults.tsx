@@ -80,9 +80,9 @@ export function ProcessSearchResults({
               className="p-4 hover:shadow-md transition-shadow" 
               role="button"
               tabIndex={0}
+              onClick={() => handleCardClick(process)}  // Added explicit onClick handler to Card itself
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  // Handle keyboard navigation separately - don't pass the event
                   handleCardClick(process);
                 }
               }}
