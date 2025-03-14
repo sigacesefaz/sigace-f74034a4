@@ -1,6 +1,6 @@
 
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
@@ -41,7 +41,7 @@ const router = createBrowserRouter([
   // Rotas do dashboard
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: <DashboardLayout><Outlet /></DashboardLayout>,
     children: [
       {
         path: "/dashboard",
@@ -49,7 +49,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard/processes",
-        element: <ProcessList />,
+        element: <ProcessList processes={[]} isLoading={false} />,
       },
       {
         path: "/dashboard/processes/new",
