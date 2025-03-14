@@ -85,5 +85,4 @@ gcp_project_id = ""
 gcp_project_number = ""
 gcp_jwt_path = "supabase/gcloud.json"
 
-[experimental]
-orm_pks = false
+# Remove the experimental section with the invalid 'orm_pks' key
