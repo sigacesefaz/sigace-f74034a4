@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signInWithEmail } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sheet,
@@ -71,32 +71,27 @@ export function LoginDropdown() {
   const LoginForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
+        <Label htmlFor="email">Email</Label>
         <Input
           type="email"
           id="email"
           placeholder="seuemail@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 bg-gray-50"
+          className="border-primary/20 focus-visible:ring-primary"
           disabled={isLoggingIn}
         />
       </div>
       <div>
-        <div className="flex justify-between items-center">
-          <Label htmlFor="password" className="text-sm font-semibold">Senha</Label>
-          <a href="#" className="text-xs text-primary hover:underline">
-            Esqueceu a senha?
-          </a>
-        </div>
-        <div className="relative mt-1">
+        <Label htmlFor="password">Senha</Label>
+        <div className="relative">
           <Input
             type={showPassword ? "text" : "password"}
             id="password"
             placeholder="********"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pr-10 bg-gray-50"
+            className="border-primary/20 focus-visible:ring-primary pr-10"
             disabled={isLoggingIn}
           />
           <button
@@ -115,16 +110,11 @@ export function LoginDropdown() {
       </div>
       <Button
         type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-slate-50 flex items-center justify-center gap-2"
+        className="w-full bg-primary hover:bg-primary-dark text-slate-50"
         disabled={isLoggingIn}
       >
-        <LogIn className="h-4 w-4" />
         {isLoggingIn ? "Entrando..." : "Entrar"}
       </Button>
-      
-      <div className="text-center mt-4 text-sm text-gray-500">
-        <p>Não tem uma conta? <a href="#" className="text-primary hover:underline">Cadastre-se</a></p>
-      </div>
     </form>
   );
 
@@ -133,8 +123,7 @@ export function LoginDropdown() {
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold flex items-center gap-2">
-            <LogIn className="h-4 w-4" />
+          <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold">
             Entrar
           </Button>
         </SheetTrigger>
@@ -154,22 +143,19 @@ export function LoginDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold flex items-center gap-2">
-          <LogIn className="h-4 w-4" />
+        <Button className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold">
           Entrar
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        className="w-[320px] p-0 border-0 shadow-lg rounded-lg mt-[13px]" 
+        className="w-[32rem] p-0 border-0 shadow-md mt-[13px]" 
         align="end" 
         alignOffset={0}
         sideOffset={0}
+        // Removido o onOpenAutoFocus que não existe neste componente
       >
-        <Card className="border-0 rounded-lg shadow-none overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 border-b">
-            <h3 className="font-semibold text-lg text-center">Acesso ao Sistema</h3>
-          </div>
-          <div className="p-6 space-y-6">
+        <Card className="border rounded shadow-none">
+          <div className="p-8 space-y-6">
             <LoginForm />
           </div>
         </Card>

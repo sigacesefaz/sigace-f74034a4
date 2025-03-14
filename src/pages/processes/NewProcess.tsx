@@ -501,7 +501,7 @@ export default function NewProcess() {
         )}
 
         {currentMode === "details" && processMovimentos && (
-          <ProcessModeSelector
+          <ProcessModeDetails
             processMovimentos={processMovimentos}
             importProgress={importProgress}
             importComplete={importComplete}
