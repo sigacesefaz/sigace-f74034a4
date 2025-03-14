@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { DatajudMovimentoProcessual } from "@/types/datajud";
@@ -15,7 +14,6 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
-  importComplete?: boolean;
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
@@ -30,7 +28,6 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
-  importComplete = false,
   isLoading,
   handleProcessSelect,
   handleManualEntry,
@@ -68,7 +65,6 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
-          importComplete={importComplete}
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}

@@ -21,8 +21,7 @@ export function ProcessModeSearch({
     <Card className="p-6">
       <ProcessSearch 
         onProcessSelect={handleProcessSelect} 
-        onManual={handleManualEntry}
-        isLoading={isLoading}
+        onManual={handleManualEntry} 
       />
       {showManualEntry && (
         <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
