@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -5,28 +6,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Format process number to ensure it follows the pattern: 0000000-00.0000.0.00.0000
-export function formatProcessNumber(processNumber: string | undefined | null): string {
+// Format process number for display
+export function formatProcessNumber(processNumber: string): string {
   if (!processNumber) return "Não informado";
   
-  // If it already contains dashes and dots, check if it's in the correct format
+  // Check if it's already formatted
   if (processNumber.includes('-') && processNumber.includes('.')) {
-    const parts = processNumber.split(/[-.]/).join('');
-    if (parts.length === 20) {
-      return processNumber; // Already in correct format
-    }
-  }
-  
-  // Remove any non-numeric characters
-  const numericOnly = processNumber.replace(/\D/g, '');
-  
-  // If not 20 digits, return as is (can't format properly)
-  if (numericOnly.length !== 20) {
     return processNumber;
   }
   
-  // Format as 0000000-00.0000.0.00.0000
-  return `${numericOnly.substring(0, 7)}-${numericOnly.substring(7, 9)}.${numericOnly.substring(9, 13)}.${numericOnly.substring(13, 14)}.${numericOnly.substring(14, 16)}.${numericOnly.substring(16, 20)}`;
+  // Basic formatting for CNJ standard (0000000-00.0000.0.00.0000)
+  try {
+    // Remove any non-numeric characters first
+    const numericOnly = processNumber.replace(/\D/g, '');
+    
+    if (numericOnly.length !== 20) {
+      return processNumber; // Return original if not standard length
+    }
+    
+    // Apply CNJ format
+    return `${numericOnly.substring(0, 7)}-${numericOnly.substring(7, 9)}.${numericOnly.substring(9, 13)}.${numericOnly.substring(13, 14)}.${numericOnly.substring(14, 16)}.${numericOnly.substring(16, 20)}`;
+  } catch (error) {
+    console.error("Error formatting process number:", error);
+    return processNumber;
+  }
 }
 
 // Helper for safely accessing string values

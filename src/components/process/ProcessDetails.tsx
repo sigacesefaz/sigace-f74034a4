@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
@@ -13,13 +14,12 @@ import { Button } from "@/components/ui/button";
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   mainProcess: DatajudProcess;
-  onSave: () => Promise<boolean | void>;
+  onSave: () => Promise<void>;
   onCancel: () => void;
   isImport?: boolean;
   importProgress?: number;
   isPublicView?: boolean;
   handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
-  importProcess?: () => Promise<boolean>;
 }
 
 export function ProcessDetails({
@@ -30,13 +30,13 @@ export function ProcessDetails({
   onCancel,
   importProgress = 0,
   isPublicView = false,
-  handleProcessSelect,
-  importProcess
+  handleProcessSelect
 }: ProcessDetailsProps) {
   const navigate = useNavigate();
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   
+  // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
   const currentProcess = currentMovimento.process;
   
@@ -55,20 +55,20 @@ export function ProcessDetails({
   };
 
   const handleImportProcess = async () => {
-    if (!importProcess) {
-      console.error("importProcess function is not provided");
+    if (!handleProcessSelect) {
+      console.error("handleProcessSelect function is not provided");
       toast("Erro ao importar processo", "Função de importação não disponível", { variant: "destructive" });
       return;
     }
     
     setIsImporting(true);
     try {
-      const success = await importProcess();
+      const success = await handleProcessSelect(currentProcess.numeroProcesso, currentProcess.tribunal);
       if (!success) {
         toast("Erro ao importar processo", "Não foi possível importar o processo", { variant: "destructive" });
       } else {
         toast("Processo importado com sucesso", "", { variant: "default" });
-        await onSave();
+        onSave();
       }
     } catch (error) {
       console.error("Erro ao importar processo:", error);

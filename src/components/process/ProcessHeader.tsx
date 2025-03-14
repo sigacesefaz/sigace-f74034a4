@@ -1,9 +1,8 @@
 
 import React from "react";
-import { DatajudProcess } from "@/types/datajud";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { DatajudProcess } from "@/types/datajud";
 
 interface ProcessHeaderProps {
   currentProcess: DatajudProcess;
@@ -13,8 +12,8 @@ interface ProcessHeaderProps {
   isPublicView?: boolean;
 }
 
-export function ProcessHeader({
-  currentProcess,
+export function ProcessHeader({ 
+  currentProcess, 
   importProgress = 0,
   isImporting = false,
   handleImportProcess,
@@ -22,41 +21,39 @@ export function ProcessHeader({
 }: ProcessHeaderProps) {
   return (
     <div className="mb-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold">
-            {currentProcess.classe?.nome || "Processo"} - {currentProcess.numeroProcesso}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {currentProcess.tribunal} - Grau: {currentProcess.grau}
-          </p>
+          <h1 className="text-2xl font-bold">{currentProcess.classe?.nome || "Processo"}</h1>
+          <div className="font-mono text-gray-700 mt-1">{currentProcess.numeroProcesso}</div>
         </div>
         
-        {!isPublicView && handleImportProcess && importProgress === 0 && (
-          <Button 
-            onClick={handleImportProcess}
-            disabled={isImporting}
-            className="bg-primary text-white mt-2 sm:mt-0"
-          >
-            {isImporting ? "Importando..." : "Importar Processo"}
-          </Button>
+        {!isPublicView && handleImportProcess && (
+          <div className="flex-shrink-0">
+            <Button 
+              onClick={handleImportProcess}
+              disabled={isImporting}
+              className="bg-primary text-white"
+            >
+              {isImporting ? "Importando..." : "Importar Processo"}
+            </Button>
+          </div>
         )}
       </div>
       
       {importProgress > 0 && (
-        <div className="mt-2 mb-4">
-          <div className="flex justify-between text-xs mb-1">
-            <span>Importando processo...</span>
-            <span>{Math.round(importProgress)}%</span>
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span>Importando processo</span>
+            <span>{importProgress}%</span>
           </div>
-          <Progress value={importProgress} className="h-2" />
-          
-          {importProgress === 100 && (
-            <div className="flex items-center text-green-600 font-medium mt-2">
-              <CheckCircle2 className="h-5 w-5 mr-2" />
-              <span>Processo importado com sucesso!</span>
-            </div>
-          )}
+          <Progress value={importProgress} />
+        </div>
+      )}
+      
+      {isPublicView && (
+        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-sm mb-4">
+          <p className="font-semibold">Visualização pública</p>
+          <p>Você está consultando dados públicos do processo.</p>
         </div>
       )}
     </div>

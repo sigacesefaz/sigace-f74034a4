@@ -71,14 +71,6 @@ export function ProcessSearchResults({
             key={index}
             className="p-4 hover:shadow-md transition-shadow cursor-pointer" 
             onClick={() => onSelectProcess(process)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelectProcess(process);
-              }
-            }}
           >
             <div className="flex flex-col gap-2">
               <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
