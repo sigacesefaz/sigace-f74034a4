@@ -36,7 +36,7 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
         
         // Use um timeout para garantir que o diálogo feche completamente antes da navegação
         setTimeout(() => {
-          // Navegue para a página de pesquisa pública usando caminho absoluto com barra inicial
+          // Navegue para a primeira etapa do wizard (busca)
           navigate("/public/search");
         }, 300);
       } catch (error) {

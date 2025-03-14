@@ -9,6 +9,7 @@ interface ProcessModeDetailsProps {
   onSave: () => Promise<void>;
   onCancel: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  onImportAnother?: () => void;
 }
 
 export function ProcessModeDetails({
@@ -16,7 +17,8 @@ export function ProcessModeDetails({
   importProgress,
   onSave,
   onCancel,
-  handleProcessSelect
+  handleProcessSelect,
+  onImportAnother
 }: ProcessModeDetailsProps) {
   return (
     <ProcessDetails
@@ -27,6 +29,7 @@ export function ProcessModeDetails({
       onSave={onSave}
       onCancel={onCancel}
       handleProcessSelect={handleProcessSelect}
+      onImportAnother={onImportAnother}
     />
   );
 }

@@ -1,7 +1,9 @@
 
 import React from "react";
-import { ProcessSearch } from "@/components/process/ProcessSearch";
 import { useNavigate } from "react-router-dom";
+import { ProcessSearch } from "@/components/process/ProcessSearch";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export default function PublicSearch() {
   const navigate = useNavigate();
@@ -11,27 +13,32 @@ export default function PublicSearch() {
     sessionStorage.setItem('publicProcessNumber', processNumber);
     sessionStorage.setItem('publicCourtEndpoint', courtEndpoint);
     
-    // Navigate to email verification
+    // Navigate to email verification (next step in wizard)
     navigate('/public/verify');
     return true;
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">Consulta Pública de Processos</h2>
-          <p className="text-gray-600">
-            Utilize esta ferramenta para consultar informações públicas de processos judiciais.
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <ProcessSearch 
-            onProcessSelect={handleProcessSelect} 
-            isPublic={true}
-          />
-        </div>
+    <div className="space-y-6">
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-2">Busca de Processo</h2>
+        <p className="text-sm text-gray-600">
+          Informe o número do processo que deseja consultar
+        </p>
+      </div>
+      
+      <ProcessSearch 
+        onProcessSelect={handleProcessSelect} 
+        isPublic={true}
+      />
+      
+      <div className="text-xs text-gray-500 mt-8 bg-gray-50 p-4 rounded-md">
+        <p className="mb-2 font-medium">Informações importantes:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Utilize o número completo do processo no padrão CNJ</li>
+          <li>A consulta é realizada utilizando a API pública do DATAJUD</li>
+          <li>As informações têm caráter meramente informativo</li>
+        </ul>
       </div>
     </div>
   );
