@@ -15,16 +15,12 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
-  importComplete?: boolean;
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
-  onSave?: () => Promise<void>; // Optional prop for custom save function
-  onCancel?: () => void; // Add the missing onCancel prop
-  onImportAnother?: () => void; // Optional prop for custom import another function
 }
 
 export function ProcessModeSelector({
@@ -33,16 +29,12 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
-  importComplete = false,
   isLoading,
   handleProcessSelect,
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
-  handleCancel,
-  onSave, // Include the prop in the destructuring
-  onCancel, // Include the onCancel prop in the destructuring
-  onImportAnother
+  handleCancel
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -74,11 +66,9 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
-          importComplete={importComplete}
-          onSave={onSave || handleSaveProcess} // Use onSave if provided, otherwise use handleSaveProcess
-          onCancel={onCancel || (() => setCurrentMode("search"))} // Use onCancel if provided, otherwise go back to search
+          onSave={handleSaveProcess}
+          onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
-          onImportAnother={onImportAnother || (() => setCurrentMode("search"))} // Use onImportAnother if provided
         />
       )}
 
