@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { GavelIcon, BarChart3Icon, Clock4Icon, ShieldCheckIcon, Users2Icon, ArrowRightIcon, CheckCircle2Icon, FileTextIcon, BuildingIcon, ScaleIcon, Menu } from "lucide-react";
 import { PublicConsultationTerms } from "@/components/process/PublicConsultationTerms";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PublicProcessDialog } from "@/components/process/PublicProcessDialog";
 import {
   Sheet,
   SheetContent,
@@ -64,6 +65,7 @@ function LandingHeader() {
 
 export default function Index() {
   const [showTerms, setShowTerms] = useState(false);
+  const [showPublicConsultation, setShowPublicConsultation] = useState(false);
   const isMobile = useIsMobile();
 
   return (
@@ -129,7 +131,7 @@ export default function Index() {
                 delay: 0.6
               }} className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-secondary text-gray-900 hover:bg-secondary/90 shadow-lg">
-                  <Link to="/login">
+                  <Link to="/register">
                     <span className="flex items-center gap-2">
                       Acessar Sistema
                       <ArrowRightIcon className="h-5 w-5" />
@@ -140,7 +142,7 @@ export default function Index() {
                   variant="outline" 
                   size="lg" 
                   className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-                  onClick={() => setShowTerms(true)}
+                  onClick={() => setShowPublicConsultation(true)}
                 >
                   Consulta Pública
                 </Button>
@@ -399,7 +401,13 @@ export default function Index() {
 
       <Footer />
       
-      {/* Public consultation terms dialog */}
+      {/* Public consultation dialog */}
+      <PublicProcessDialog 
+        open={showPublicConsultation} 
+        onOpenChange={setShowPublicConsultation} 
+      />
+      
+      {/* Terms and conditions dialog (click on Consulta Pública button opens PublicProcessDialog directly now) */}
       <PublicConsultationTerms 
         open={showTerms} 
         onOpenChange={setShowTerms} 

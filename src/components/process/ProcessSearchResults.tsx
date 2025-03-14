@@ -2,6 +2,7 @@
 import { DatajudProcess } from "@/types/datajud";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 interface ProcessSearchResultsProps {
   results: DatajudProcess[];
@@ -58,11 +59,6 @@ export function ProcessSearchResults({
     );
   }
 
-  const handleCardClick = (process: DatajudProcess) => {
-    console.log("Process card clicked:", process.numeroProcesso);
-    onSelectProcess(process);
-  };
-
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium">
@@ -71,29 +67,28 @@ export function ProcessSearchResults({
 
       <div className="space-y-3">
         {results.map((process, index) => (
-          <div 
+          <Card 
             key={index}
-            onClick={() => handleCardClick(process)}
-            className="cursor-pointer"
+            className="p-4 hover:shadow-md transition-shadow cursor-pointer" 
+            onClick={() => onSelectProcess(process)}
           >
-            <Card 
-              className="p-4 hover:shadow-md transition-shadow" 
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  // Handle keyboard navigation separately - don't pass the event
-                  handleCardClick(process);
-                }
-              }}
-            >
-              <div className="flex flex-col gap-2">
-                <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
-                <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
-                <div className="text-xs text-gray-500">{process.tribunal}</div>
+            <div className="flex flex-col gap-2">
+              <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
+              <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
+              <div className="text-xs text-gray-500">{process.tribunal}</div>
+              <div className="flex justify-end mt-2">
+                <Button 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectProcess(process);
+                  }}
+                >
+                  Selecionar Processo
+                </Button>
               </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
         ))}
       </div>
     </div>
