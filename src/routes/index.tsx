@@ -1,10 +1,10 @@
+
 import React from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
 import PublicSearch from "@/pages/public/PublicSearch";
-import PublicVerify from "@/pages/public/PublicVerify";
 import ProcessList from "@/pages/processes/ProcessList";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
@@ -29,10 +29,7 @@ const router = createBrowserRouter([
         path: "/public/search",
         element: <PublicSearch />,
       },
-      {
-        path: "/public/verify",
-        element: <PublicVerify />,
-      },
+      // Removing the PublicVerify route as the component doesn't exist
     ],
   },
   {
