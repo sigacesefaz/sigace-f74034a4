@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ProcessSearch } from "@/components/process/ProcessSearch";
+import { ProcessDetails } from "@/components/process/ProcessDetails";
+import { ProcessForm } from "@/components/process/ProcessForm";
+import { getProcessById } from "@/services/datajud";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { ArrowLeft } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { ProcessSearch } from "@/components/process/ProcessSearch";
-import { ProcessForm } from "@/components/process/ProcessForm";
 import { ProcessModeSelector } from "@/components/process/ProcessModeSelector";
 import { useProcessImport } from "@/hooks/useProcessImport";
-import { supabase } from "@/lib/supabase";
-import { DatajudProcess } from "@/types/datajud";
 
 type FormMode = "search" | "details" | "manual";
 
@@ -221,10 +223,12 @@ export default function NewProcess() {
       
       setImportProgress(100);
       
-      // Set import as complete after reaching 100%
+      // Set import as complete only after reaching 100%
       setImportComplete(true);
       toast("Processo importado com sucesso", "", { variant: "success" });
       
+      // We no longer navigate away immediately - the dialog will handle this
+      // navigate("/processes");
     } catch (error) {
       console.error("Error importing process:", error);
       
@@ -469,22 +473,66 @@ export default function NewProcess() {
             {currentMode === "search" ? "Novo Processo" : currentMode === "details" ? "Detalhes do Processo" : "Cadastro Manual de Processo"}
           </h1>
         </div>
-        
-        <ProcessModeSelector
-          currentMode={currentMode}
-          setCurrentMode={setCurrentMode}
-          processMovimentos={processMovimentos}
-          showManualEntry={showManualEntry}
-          importProgress={importProgress}
-          importComplete={importComplete}
-          isLoading={isLoading}
-          handleProcessSelect={handleProcessSelect}
-          handleManualEntry={handleManualEntry}
-          handleSaveProcess={handleSaveProcess}
-          handleCreateManualProcess={handleCreateManualProcess}
-          handleCancel={handleCancel}
-          handleImportAnother={handleImportAnother}
-        />
+
+        {currentMode === "search" && (
+          <Card className="p-6">
+            <ProcessSearch 
+              onProcessSelect={handleProcessSelect} 
+              onManual={handleManualEntry} 
+            />
+            {showManualEntry && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg mb-2">Processo não encontrado</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Não foi possível encontrar o processo na base de dados do tribunal.
+                    Você pode cadastrar manualmente os dados do processo.
+                  </p>
+                  <Button 
+                    onClick={handleManualEntry}
+                    className="bg-primary text-white"
+                  >
+                    Cadastrar Processo Manualmente
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {currentMode === "details" && processMovimentos && (
+          <ProcessModeDetails
+            processMovimentos={processMovimentos}
+            importProgress={importProgress}
+            importComplete={importComplete}
+            onSave={handleSaveProcess}
+            onCancel={() => setCurrentMode("search")}
+            onImportAnother={handleImportAnother}
+            handleProcessSelect={handleProcessSelect}
+          />
+        )}
+
+        {currentMode === "manual" && (
+          <>
+            <Button variant="ghost" className="mb-4" onClick={() => setCurrentMode("search")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a Busca
+            </Button>
+            <Card className="p-6">
+              <ProcessForm onSubmit={handleCreateManualProcess} onCancel={handleCancel} />
+              
+              {importProgress > 0 && (
+                <div className="mt-6">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Importando processo...</span>
+                    <span>{Math.round(importProgress)}%</span>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                </div>
+              )}
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );

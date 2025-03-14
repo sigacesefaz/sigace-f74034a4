@@ -15,14 +15,12 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
-  importComplete?: boolean;
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
-  handleImportAnother: () => void;
 }
 
 export function ProcessModeSelector({
@@ -31,14 +29,12 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
-  importComplete = false,
   isLoading,
   handleProcessSelect,
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
-  handleCancel,
-  handleImportAnother
+  handleCancel
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -70,10 +66,8 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
-          importComplete={importComplete}
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
-          onImportAnother={handleImportAnother}
           handleProcessSelect={handleProcessSelect}
         />
       )}
