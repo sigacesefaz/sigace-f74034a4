@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { safeStringValue, getSafeNestedValue } from "@/utils/data";
+import { safeStringValue, getSafeNestedValue, formatProcessNumber } from "@/lib/utils";
 import { ProcessTimeline } from "./ProcessTimeline";
 import ProcessParties from "./ProcessParties";
 import { ProcessMovements } from "./ProcessMovements";
@@ -155,7 +156,7 @@ export function ProcessCard({ process }: ProcessCardProps) {
         </div>
         <h2 className="text-xl font-medium">{safeStringValue(process.type)}</h2>
         <div className="flex items-center gap-2">
-          <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
+          <div className="text-sm text-blue-600">{formatProcessNumber(safeStringValue(process.number))}</div>
           <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
             {safeStringValue(process.metadata?.formato, "Eletrônico")}
           </Badge>
@@ -193,7 +194,7 @@ export function ProcessCard({ process }: ProcessCardProps) {
                   <div className="space-y-2 mb-4">
                     <h4 className="text-md font-medium">{safeStringValue(hit.type)}</h4>
                     <div className="flex items-center gap-2">
-                      <div className="text-sm text-blue-600">{safeStringValue(hit.number)}</div>
+                      <div className="text-sm text-blue-600">{formatProcessNumber(safeStringValue(hit.number))}</div>
                       <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
                         {safeStringValue(hit.metadata?.formato, "Eletrônico")}
                       </Badge>

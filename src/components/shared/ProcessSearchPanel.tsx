@@ -148,7 +148,7 @@ export function ProcessSearchPanel({
                   <Button 
                     size="sm" 
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent the card's onClick from firing
+                      e.stopPropagation();
                       handleProcessSelectClick([movimento]);
                     }}
                   >

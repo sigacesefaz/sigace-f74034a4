@@ -1,3 +1,4 @@
+
 import { ProcessItem } from "@/components/dashboard/ProcessItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function ProcessItemExample() {
-  // Dados de processo de exemplo
+  // Dados de processo de exemplo - o número já está no formato correto, não precisamos alterar
   const mockProcess = {
     id: "123",
     number: "0123456-78.2023.8.19.0001",

@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { cn } from "@/lib/utils";
+import { cn, formatProcessNumber } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import ProcessParties from "./ProcessParties";
 
@@ -54,7 +54,7 @@ export function ProcessItem({
         <div className="flex justify-between items-start">
           <div>
             <div className="text-lg font-semibold">{process.title}</div>
-            <div className="text-sm text-gray-500">{process.number}</div>
+            <div className="text-sm text-gray-500">{formatProcessNumber(process.number)}</div>
             <div className="text-sm text-gray-500">
               {process.description}
             </div>
@@ -109,7 +109,7 @@ export function ProcessItem({
                     <TableBody>
                       <TableRow>
                         <TableCell className="font-medium">Número</TableCell>
-                        <TableCell>{process.number}</TableCell>
+                        <TableCell>{formatProcessNumber(process.number)}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">Classe</TableCell>

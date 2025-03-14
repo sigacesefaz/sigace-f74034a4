@@ -28,6 +28,7 @@ import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { getMovementsByProcessId } from "@/services/process-movements";
 import { ProcessNavigation } from "@/components/process/ProcessNavigation";
+import { formatProcessNumber } from "@/lib/utils";
 
 interface ProcessListProps {
   processes: Process[];
@@ -250,15 +251,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     } catch {
       return "Data inválida";
     }
-  };
-
-  const formatProcessNumber = (number?: string) => {
-    if (!number) return "Número não informado";
-    const cleanNumber = number.replace(/\D/g, '');
-    if (cleanNumber.length === 20) {
-      return `${cleanNumber.slice(0, 7)}-${cleanNumber.slice(7, 9)}.${cleanNumber.slice(9, 13)}.${cleanNumber.slice(13, 14)}.${cleanNumber.slice(14, 16)}.${cleanNumber.slice(16)}`;
-    }
-    return number;
   };
 
   const toggleProcessSelection = (id: string) => {
@@ -699,3 +691,4 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     </div>
   );
 }
+

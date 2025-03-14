@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DatajudProcess } from "@/types/datajud";
 import { formatDate, formatProcessNumber } from "@/lib/utils";
