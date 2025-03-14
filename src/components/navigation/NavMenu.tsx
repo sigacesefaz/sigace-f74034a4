@@ -82,12 +82,12 @@ export function NavMenu() {
       items: [
         {
           title: "Minhas Intimações",
-          href: "/intimations",
+          href: "/dashboard/intimations",
           description: "Gerencie suas intimações"
         },
         {
           title: "Nova Intimação",
-          href: "/intimations/new",
+          href: "/dashboard/intimations/new",
           description: "Criar nova intimação"
         }
       ]
