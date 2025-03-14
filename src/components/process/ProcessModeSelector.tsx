@@ -15,16 +15,15 @@ interface ProcessModeSelectorProps {
   processMovimentos: DatajudMovimentoProcessual[] | null;
   showManualEntry: boolean;
   importProgress: number;
+  importComplete?: boolean; // Added importComplete as an optional property
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
-  onSave?: () => Promise<void>;
-  onCancel?: () => void;
-  onImportAnother?: () => void;
-  importComplete?: boolean;
+  onImportAnother?: () => void; // Added onImportAnother as an optional property
+  onSave?: () => Promise<void>; // Added onSave as an optional property
 }
 
 export function ProcessModeSelector({
@@ -33,16 +32,15 @@ export function ProcessModeSelector({
   processMovimentos,
   showManualEntry,
   importProgress,
+  importComplete = false, // Set a default value of false
   isLoading,
   handleProcessSelect,
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
   handleCancel,
-  onSave,
-  onCancel,
-  onImportAnother,
-  importComplete = false
+  onImportAnother, // Include the new prop
+  onSave  // Include the new prop
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -53,12 +51,6 @@ export function ProcessModeSelector({
       setCurrentMode("search");
     }
   };
-
-  // Use the passed onSave or fall back to handleSaveProcess
-  const handleSave = onSave || handleSaveProcess;
-  
-  // Use the passed onCancel or fall back to the handleCancel function
-  const handleCancelAction = onCancel || (() => setCurrentMode("search"));
 
   return (
     <>
@@ -80,10 +72,11 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
-          onSave={handleSave}
-          onCancel={handleCancelAction}
+          importComplete={importComplete} // Pass the importComplete prop
+          onSave={onSave || handleSaveProcess} // Use onSave if provided, otherwise use handleSaveProcess
+          onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
-          onImportAnother={onImportAnother}
+          onImportAnother={onImportAnother || (() => setCurrentMode("search"))} // Use onImportAnother if provided, otherwise default behavior
         />
       )}
 

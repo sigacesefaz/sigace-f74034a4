@@ -31,7 +31,7 @@ export default function ProcessView() {
         description: "Informações de verificação ausentes ou inválidas.",
         variant: "destructive",
       });
-      navigate('/public/search');
+      navigate('/');
       return;
     }
 
@@ -123,16 +123,12 @@ export default function ProcessView() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">Carregando Processo</h2>
-          <p className="text-sm text-gray-600">
-            Aguarde enquanto buscamos as informações do processo...
-          </p>
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-3/4" />
-          <Skeleton className="h-64 w-full" />
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-64 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -147,59 +143,43 @@ export default function ProcessView() {
   const processData = hasValidProcessData ? processMovimentos[0].process : null;
 
   return (
-    <div className="space-y-6">
-      <div className="mb-4 flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Dados do Processo</h2>
-          <p className="text-sm text-gray-600">
-            Informações públicas do processo consultado
-          </p>
+    <div className="container mx-auto py-8 px-4">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-2xl font-bold mb-2">Consulta Pública de Processos</h2>
+          {hasValidProcessData && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handlePrint}
+              title="Imprimir processo"
+              className="ml-2"
+            >
+              <Printer className="h-5 w-5" />
+            </Button>
+          )}
         </div>
+        <p className="text-gray-600 mb-4">
+          Visualização dos dados do processo consultado.
+        </p>
+        
         {hasValidProcessData && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handlePrint}
-            title="Imprimir processo"
-            className="flex items-center"
-          >
-            <Printer className="h-4 w-4 mr-1" />
-            Imprimir
-          </Button>
+          <>
+            <ProcessDetails
+              processMovimentos={processMovimentos}
+              mainProcess={processMovimentos[0].process}
+              onSave={handleSave}
+              onCancel={handleReturn}
+              isPublicView={true}
+            />
+            
+            {/* Hidden div for printing - Make sure this is properly populated with all required data */}
+            <div id="printable-process" className="hidden">
+              {processData && <ProcessPrintView process={processData} />}
+            </div>
+          </>
         )}
       </div>
-      
-      {hasValidProcessData ? (
-        <>
-          <ProcessDetails
-            processMovimentos={processMovimentos}
-            mainProcess={processMovimentos[0].process}
-            onSave={handleSave}
-            onCancel={handleReturn}
-            isPublicView={true}
-          />
-          
-          {/* Hidden div for printing - Make sure this is properly populated with all required data */}
-          <div id="printable-process" className="hidden">
-            {processData && <ProcessPrintView process={processData} />}
-          </div>
-        </>
-      ) : (
-        <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p className="text-yellow-800 font-medium">Processo não encontrado ou sem dados disponíveis</p>
-          <p className="text-sm text-yellow-700 mt-2">
-            Não foi possível encontrar os dados do processo solicitado. Verifique o número e tente novamente.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/public/search')}
-            className="mt-4"
-          >
-            Voltar para a busca
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

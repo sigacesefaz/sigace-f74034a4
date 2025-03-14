@@ -1,62 +1,77 @@
 
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
-import ProcessList from "@/pages/processes/ProcessList";
+import PublicSearch from "@/pages/public/PublicSearch";
+import { ProcessList } from "@/pages/processes/ProcessList";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
-import { publicRoutes } from "@/routes/PublicRoutes";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/login" replace />
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/login",
-    element: <Login />
+    element: <Login />,
   },
-  // Public routes for process consultation
-  ...publicRoutes,
+  {
+    path: "/public",
+    children: [
+      {
+        path: "/public",
+        element: <Navigate to="/public/search" replace />,
+      },
+      {
+        path: "/public/search",
+        element: <PublicSearch />,
+      },
+      // Removed PublicVerify route since the component doesn't exist
+    ],
+  },
   {
     path: "/processes",
-    element: <Navigate to="/dashboard/processes" replace />
+    element: <Navigate to="/dashboard/processes" replace />,
   },
+  
   // Rotas do dashboard
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: <DashboardLayout><Outlet /></DashboardLayout>,
     children: [
       {
         path: "/dashboard",
-        element: <Navigate to="/dashboard/processes" replace />
+        element: <Navigate to="/dashboard/processes" replace />,
       },
       {
         path: "/dashboard/processes",
-        element: <ProcessList />
+        element: <ProcessList processes={[]} isLoading={false} />,
       },
       {
         path: "/dashboard/processes/new",
-        element: <NewProcess />
+        element: <NewProcess />,
       },
       {
         path: "/dashboard/processes/:id",
-        element: <ProcessDetails />
+        element: <ProcessDetails />,
       },
+      
       // Nova rota provisória para Intimações
       {
         path: "/dashboard/intimations",
-        element: <IntimationsDashboard />
-      }
-    ]
+        element: <IntimationsDashboard />,
+      },
+    ],
   },
+  
   // Rota redirecionando de /intimations para /dashboard/intimations
   {
     path: "/intimations",
     element: <Navigate to="/dashboard/intimations" replace />
-  }
+  },
 ]);
 
 export default router;

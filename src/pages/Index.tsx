@@ -12,7 +12,7 @@ import { LoginDropdown } from "@/components/LoginDropdown";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GavelIcon, BarChart3Icon, Clock4Icon, ShieldCheckIcon, Users2Icon, ArrowRightIcon, CheckCircle2Icon, FileTextIcon, BuildingIcon, ScaleIcon, Menu } from "lucide-react";
-import { PublicConsultationTerms } from "@/components/process/PublicConsultationTerms";
+import { PublicConsultationWizard } from "@/components/process/PublicConsultationWizard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sheet,
@@ -63,7 +63,7 @@ function LandingHeader() {
 }
 
 export default function Index() {
-  const [showTerms, setShowTerms] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const isMobile = useIsMobile();
 
   return (
@@ -140,7 +140,7 @@ export default function Index() {
                   variant="outline" 
                   size="lg" 
                   className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-                  onClick={() => setShowTerms(true)}
+                  onClick={() => setShowWizard(true)}
                 >
                   Consulta Pública
                 </Button>
@@ -399,10 +399,10 @@ export default function Index() {
 
       <Footer />
       
-      {/* Public consultation terms dialog */}
-      <PublicConsultationTerms 
-        open={showTerms} 
-        onOpenChange={setShowTerms} 
+      {/* Public consultation wizard dialog */}
+      <PublicConsultationWizard
+        open={showWizard} 
+        onOpenChange={setShowWizard} 
       />
     </div>
   );

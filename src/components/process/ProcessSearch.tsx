@@ -14,9 +14,16 @@ interface ProcessSearchProps {
   onManual?: () => void;
   isLoading?: boolean;
   isPublic?: boolean;
+  showCourtSelector?: boolean;
 }
 
-export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLoading, isPublic = false }: ProcessSearchProps) {
+export function ProcessSearch({ 
+  onProcessSelect, 
+  onManual, 
+  isLoading: externalLoading, 
+  isPublic = false,
+  showCourtSelector = true 
+}: ProcessSearchProps) {
   const {
     processNumber,
     setProcessNumber,
@@ -58,11 +65,13 @@ export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLo
         </div>
 
         <div className="grid gap-4">
-          <ProcessCourtSelector 
-            value={court} 
-            onChange={setCourt}
-            disabled={isLoading}
-          />
+          {showCourtSelector && (
+            <ProcessCourtSelector 
+              value={court} 
+              onChange={setCourt}
+              disabled={isLoading}
+            />
+          )}
 
           <ProcessSearchInput 
             value={processNumber} 
