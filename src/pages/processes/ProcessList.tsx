@@ -25,7 +25,6 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
-import { ProcessParties } from "@/components/process/ProcessParties";
 
 interface ProcessListProps {
   processes: Process[];
@@ -578,8 +577,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="partes" className="space-y-1">
-                        <ProcessParties processId={parentProcess.id} />
+                      <TabsContent value="partes">
+                        <div className="bg-white rounded-lg p-2">
+                          <div className="text-sm text-gray-600">
+                            <p>Partes envolvidas no processo</p>
+                          </div>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </div>
@@ -641,11 +644,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {reportDialogOpen && selectedProcess && (
-        <ProcessReportDialog 
-          process={selectedProcess} 
-          open={reportDialogOpen} 
-          onOpenChange={setReportDialogOpen} 
+      {/* Diálogo do Relatório */}
+      {selectedProcess && (
+        <ProcessReportDialog
+          process={selectedProcess}
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
         />
       )}
     </div>
