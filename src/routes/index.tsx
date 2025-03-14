@@ -1,10 +1,10 @@
 
 import React from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
-import ProcessList from "@/pages/processes/ProcessList";
+import { ProcessList } from "@/pages/processes/ProcessList";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
 import { publicRoutes } from "@/routes/PublicRoutes";
