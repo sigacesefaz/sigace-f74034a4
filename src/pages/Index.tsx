@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { LoginDropdown } from "@/components/LoginDropdown";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GavelIcon, BarChart3Icon, Clock4Icon, ShieldCheckIcon, Users2Icon, ArrowRightIcon, CheckCircle2Icon, FileTextIcon, BuildingIcon, ScaleIcon } from "lucide-react";
+import { PublicProcessDialog } from "@/components/process/PublicProcessDialog";
 
 // Cores institucionais com tonalidades
 const colors = {
@@ -40,6 +42,8 @@ function LandingHeader() {
 }
 
 export default function Index() {
+  const [showConsultationDialog, setShowConsultationDialog] = useState(false);
+  
   return (
     <div className="min-h-screen bg-slate-50">
       <LandingHeader />
@@ -103,17 +107,20 @@ export default function Index() {
                 delay: 0.6
               }} className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-secondary text-gray-900 hover:bg-secondary/90 shadow-lg">
-                  <Link to="/login">
+                  <Link to="/register">
                     <span className="flex items-center gap-2">
                       Acessar Sistema
                       <ArrowRightIcon className="h-5 w-5" />
                     </span>
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-                  <button>
-                    Consulta Pública
-                  </button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  onClick={() => setShowConsultationDialog(true)}
+                >
+                  Consulta Pública
                 </Button>
               </motion.div>
             </div>
@@ -367,6 +374,13 @@ export default function Index() {
       </main>
 
       <Footer />
+      
+      {/* Public consultation dialog */}
+      <PublicProcessDialog
+        open={showConsultationDialog}
+        onOpenChange={setShowConsultationDialog}
+      />
     </div>
   );
 }
+
