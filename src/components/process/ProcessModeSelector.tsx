@@ -21,6 +21,8 @@ interface ProcessModeSelectorProps {
   handleSaveProcess: () => Promise<void>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
+  handleImportAnother?: () => void;
+  importComplete?: boolean;
 }
 
 export function ProcessModeSelector({
@@ -34,7 +36,9 @@ export function ProcessModeSelector({
   handleManualEntry,
   handleSaveProcess,
   handleCreateManualProcess,
-  handleCancel
+  handleCancel,
+  handleImportAnother,
+  importComplete = false
 }: ProcessModeSelectorProps) {
   const navigate = useNavigate();
 
@@ -66,9 +70,11 @@ export function ProcessModeSelector({
         <ProcessModeDetails
           processMovimentos={processMovimentos}
           importProgress={importProgress}
+          importComplete={importComplete}
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
+          onImportAnother={handleImportAnother}
         />
       )}
 

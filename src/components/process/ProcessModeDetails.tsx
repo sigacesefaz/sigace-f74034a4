@@ -20,7 +20,7 @@ interface ProcessModeDetailsProps {
   importComplete?: boolean;
   onSave: () => Promise<void>;
   onCancel: () => void;
-  onImportAnother: () => void;
+  onImportAnother?: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
 }
 
@@ -45,7 +45,12 @@ export function ProcessModeDetails({
 
   const handleImportAnother = () => {
     setShowCompletionDialog(false);
-    onImportAnother();
+    if (onImportAnother) {
+      onImportAnother();
+    } else {
+      // Fallback if onImportAnother is not provided
+      onCancel();
+    }
   };
 
   const handleGoToProcessList = () => {
