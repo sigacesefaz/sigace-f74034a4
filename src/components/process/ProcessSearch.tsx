@@ -1,111 +1,102 @@
 
-import React, { useState, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { courts } from "@/services/datajud";
-import { SearchIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DatajudProcess } from "@/types/datajud";
+import { useProcessSearch } from "@/hooks/useProcessSearch";
+import { ProcessCourtSelector } from "./ProcessCourtSelector";
+import { ProcessSearchInput } from "./ProcessSearchInput";
+import { ProcessSearchResults } from "./ProcessSearchResults";
 
 interface ProcessSearchProps {
-  onProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
-  isPublic?: boolean;
-  showCourtSelector?: boolean;
+  onProcessSelect: (process: string, courtEndpoint: string) => Promise<boolean>;
   onManual?: () => void;
   isLoading?: boolean;
+  isPublic?: boolean;
 }
 
-export function ProcessSearch({ 
-  onProcessSelect, 
-  isPublic = false, 
-  showCourtSelector = false,
-  onManual,
-  isLoading: externalIsLoading
-}: ProcessSearchProps) {
-  const [processNumber, setProcessNumber] = useState("");
-  
-  // Get all courts by flattening the courts object which is organized by categories
-  const allCourts = Object.values(courts).flat();
-  
-  // Set the first court as the default selected court
-  const [selectedCourt, setSelectedCourt] = useState(allCourts[0]);
-  const [isSearching, setIsSearching] = useState(false);
+export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLoading, isPublic = false }: ProcessSearchProps) {
+  const {
+    processNumber,
+    setProcessNumber,
+    court,
+    setCourt,
+    searchResults,
+    hasSearched,
+    isLoading: searchLoading,
+    handleSearch
+  } = useProcessSearch();
 
-  const handleSearch = useCallback(async () => {
-    setIsSearching(true);
-    try {
-      if (processNumber && selectedCourt) {
-        await onProcessSelect(processNumber, selectedCourt.endpoint);
-      } else {
-        alert("Por favor, insira o número do processo e selecione o tribunal.");
-      }
-    } finally {
-      setIsSearching(false);
+  const isLoading = searchLoading || externalLoading;
+
+  const handleSelectProcess = async (process: DatajudProcess) => {
+    if (!court) {
+      console.error("No court selected");
+      return;
     }
-  }, [processNumber, selectedCourt, onProcessSelect]);
+    
+    try {
+      console.log("Process selected:", process.numeroProcesso, court.endpoint);
+      
+      // Call the parent's onProcessSelect function with the correct parameters
+      const result = await onProcessSelect(process.numeroProcesso, court.endpoint);
+      console.log("Process selection result:", result);
+    } catch (error) {
+      console.error("Error selecting process:", error);
+    }
+  };
 
   return (
-    <Card className="w-full">
-      <CardContent className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="process-number">Número do Processo</Label>
-          <Input
-            id="process-number"
-            placeholder="Ex: 0000000-00.0000.0.00.0000"
-            value={processNumber}
-            onChange={(e) => setProcessNumber(e.target.value)}
-          />
+    <div className="space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Buscar Processo</h3>
+          <p className="text-sm text-gray-500">
+            Informe o número do processo que deseja {isPublic ? "consultar" : "importar"}
+          </p>
         </div>
 
-        {showCourtSelector && (
-          <div className="grid gap-2">
-            <Label htmlFor="court">Tribunal</Label>
-            <Select 
-              value={selectedCourt?.id} 
-              onValueChange={(value) => {
-                const court = allCourts.find(c => c.id === value);
-                if (court) setSelectedCourt(court);
-              }}
-            >
-              <SelectTrigger id="court">
-                <SelectValue placeholder="Selecione o tribunal" />
-              </SelectTrigger>
-              <SelectContent>
-                {allCourts.map((court) => (
-                  <SelectItem key={court.id} value={court.id}>
-                    {court.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="grid gap-4">
+          <ProcessCourtSelector 
+            value={court} 
+            onChange={setCourt}
+            disabled={isLoading}
+          />
 
-        <Button
-          className="bg-primary text-white"
-          onClick={handleSearch}
-          disabled={externalIsLoading || isSearching || !processNumber}
-        >
-          {externalIsLoading || isSearching ? (
-            <>
-              <SearchIcon className="mr-2 h-4 w-4 animate-spin" />
-              Buscando...
-            </>
-          ) : (
-            <>
-              <SearchIcon className="mr-2 h-4 w-4" />
-              {isPublic ? "Consultar Processo" : "Importar Processo"}
-            </>
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+          <ProcessSearchInput 
+            value={processNumber} 
+            onChange={setProcessNumber}
+            disabled={isLoading}
+          />
+
+          <Button 
+            type="button" 
+            onClick={handleSearch} 
+            disabled={!processNumber || isLoading}
+            className="text-white"
+          >
+            Buscar Processo
+          </Button>
+        </div>
+      </div>
+
+      {isLoading && (
+        <div className="space-y-3">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      )}
+
+      {!isLoading && (
+        <ProcessSearchResults 
+          results={searchResults}
+          hasSearched={hasSearched}
+          isLoading={isLoading}
+          onSelectProcess={handleSelectProcess}
+          onManual={!isPublic ? onManual : undefined}
+        />
+      )}
+    </div>
   );
 }

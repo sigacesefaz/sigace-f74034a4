@@ -34,7 +34,9 @@ export default function NewProcess() {
     resetImportState
   } = useProcessImport();
   
+  // Function to fill the manual form with data from the searched process
   const handleManualEntry = () => {
+    // If we've searched for a process number, use it as default
     if (currentMode === "search") {
       setCurrentMode("manual");
     }
@@ -47,7 +49,7 @@ export default function NewProcess() {
     }
     
     setIsLoading(true);
-    setImportProgress(5);
+    setImportProgress(5); // Start progress bar
     
     try {
       const {
@@ -63,11 +65,13 @@ export default function NewProcess() {
         return;
       }
 
+      // Get the main process (first procedural movement)
       const mainMovimento = processMovimentos[0];
       const mainProcess = mainMovimento.process;
       
       setImportProgress(10);
 
+      // Check if the process already exists
       const { data: existingProcess } = await supabase
         .from("processes")
         .select("id")
@@ -96,7 +100,7 @@ export default function NewProcess() {
         plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
         is_parent: true,
         parent_id: null,
-        metadata: JSON.stringify(mainProcess)
+        metadata: JSON.stringify(mainProcess) // Converting the object to string
       });
 
       const { data: newProcess, error: insertError } = await supabase
@@ -114,7 +118,7 @@ export default function NewProcess() {
           plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
           is_parent: true,
           parent_id: null,
-          metadata: JSON.stringify(mainProcess)
+          metadata: JSON.stringify(mainProcess) // Converting the object to string
         })
         .select('id')
         .single();
@@ -148,6 +152,7 @@ export default function NewProcess() {
       
       setImportProgress(50);
 
+      // Store main process details
       try {
         const { error: detailsError } = await supabase
           .from("process_details")
@@ -165,7 +170,7 @@ export default function NewProcess() {
             movimentos: mainProcess.movimentos,
             partes: mainProcess.partes,
             data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
-            json_completo: mainProcess
+            json_completo: mainProcess // Store the complete JSON
           });
           
         setImportProgress(60);
@@ -177,30 +182,39 @@ export default function NewProcess() {
         console.error("Error inserting main process details:", error);
       }
 
+      // Process movements and subjects in parallel to optimize
       setImportProgress(65);
       
       const savePromises = [];
       
+      // Process the main process movements
       if (mainProcess.movimentos && mainProcess.movimentos.length > 0) {
         savePromises.push(saveProcessMovements(mainProcessId, mainProcess.movimentos));
       }
       
+      // Process the main process subjects
       if (mainProcess.assuntos && mainProcess.assuntos.length > 0) {
         savePromises.push(saveProcessSubjects(mainProcessId, mainProcess.assuntos));
       }
       
+      // Process the main process parties
       if (mainProcess.partes && mainProcess.partes.length > 0) {
         savePromises.push(saveProcessParties(mainProcessId, mainProcess.partes));
       }
       
+      // Wait for all parallel operations to complete
       await Promise.all(savePromises);
       setImportProgress(90);
       
+      // Process additional procedural movements (same process number, but different movements)
       if (processMovimentos.length > 1) {
+        // Here we attach all additional movements to the main process
+        // instead of creating separate processes
         for (let i = 1; i < processMovimentos.length; i++) {
           const additionalMovimento = processMovimentos[i];
           const additionalProcess = additionalMovimento.process;
           
+          // Check if there are additional movements and add them to the main process
           if (additionalProcess.movimentos && additionalProcess.movimentos.length > 0) {
             await saveProcessMovements(mainProcessId, additionalProcess.movimentos);
           }
@@ -209,13 +223,16 @@ export default function NewProcess() {
       
       setImportProgress(100);
       
+      // Set import as complete only after reaching 100%
       setImportComplete(true);
       toast("Processo importado com sucesso", "", { variant: "success" });
       
-      navigate("/processes");
+      // We no longer navigate away immediately - the dialog will handle this
+      // navigate("/processes");
     } catch (error) {
       console.error("Error importing process:", error);
       
+      // Display more detailed error message
       if (error instanceof Error) {
         toast("Erro ao importar processo", error.message, { variant: "destructive" });
       } else {
@@ -228,10 +245,12 @@ export default function NewProcess() {
     }
   };
 
+  // Function to save process movements
   const saveProcessMovements = async (processId: string | number, movements: DatajudProcess["movimentos"]) => {
     if (!movements || movements.length === 0) return;
     
     try {
+      // Preparar todos os movimentos para inserção em batch (lotes)
       const batchSize = 50;
       const batches = [];
       
@@ -252,6 +271,7 @@ export default function NewProcess() {
         batches.push(batch);
       }
       
+      // Inserir os lotes em paralelo
       await Promise.all(batches.map(async batch => {
         const { error } = await supabase
           .from("process_movements")
@@ -262,8 +282,11 @@ export default function NewProcess() {
         }
       }));
       
+      // Processar os complementos tabelados em uma segunda passagem
+      // Este é um exemplo simplificado, você precisaria rastrear IDs
       for (const movement of movements) {
         if (movement.complementosTabelados && Array.isArray(movement.complementosTabelados) && movement.complementosTabelados.length > 0) {
+          // Obter o ID do movimento principal
           const { data: insertedMovement } = await supabase
             .from("process_movements")
             .select("id")
@@ -294,6 +317,7 @@ export default function NewProcess() {
               complementoBatches.push(complementoBatch);
             }
             
+            // Inserir os lotes de complementos em paralelo
             await Promise.all(complementoBatches.map(async batch => {
               const { error } = await supabase
                 .from("process_movements")
@@ -311,6 +335,7 @@ export default function NewProcess() {
     }
   };
 
+  // Function to save process subjects
   const saveProcessSubjects = async (processId: string | number, subjects: DatajudProcess["assuntos"]) => {
     if (!subjects || subjects.length === 0) return;
     
@@ -319,7 +344,7 @@ export default function NewProcess() {
         process_id: processId,
         codigo: subject.codigo,
         nome: subject.nome || "",
-        principal: index === 0
+        principal: index === 0 // Considerar o primeiro como principal
       }));
       
       const { error } = await supabase
@@ -334,6 +359,7 @@ export default function NewProcess() {
     }
   };
   
+  // Function to save process parties
   const saveProcessParties = async (processId: string | number, parties: any[]) => {
     if (!parties || parties.length === 0) return;
     
@@ -377,6 +403,7 @@ export default function NewProcess() {
       
       setImportProgress(30);
 
+      // Verificar se o processo já existe
       const { data: existingProcess } = await supabase
         .from("processes")
         .select("id")
@@ -474,12 +501,13 @@ export default function NewProcess() {
         )}
 
         {currentMode === "details" && processMovimentos && (
-          <ProcessModeSelector
+          <ProcessModeDetails
             processMovimentos={processMovimentos}
             importProgress={importProgress}
             importComplete={importComplete}
             onSave={handleSaveProcess}
-            onCancel={handleCancel}
+            onCancel={() => setCurrentMode("search")}
+            onImportAnother={handleImportAnother}
             handleProcessSelect={handleProcessSelect}
           />
         )}
