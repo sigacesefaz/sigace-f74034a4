@@ -11,11 +11,9 @@ export function useProcessImport() {
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  const [importComplete, setImportComplete] = useState(false);
 
   const handleProcessSelect = async (processNumber: string, courtEndpoint: string) => {
     setIsLoading(true);
-    setImportComplete(false);
     try {
       console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
       
@@ -51,26 +49,15 @@ export function useProcessImport() {
     }
   };
 
-  const resetImportState = () => {
-    setImportProgress(0);
-    setImportComplete(false);
-    setProcessMovimentos(null);
-    setSelectedCourt(undefined);
-    setShowManualEntry(false);
-  };
-
   return {
     isLoading,
     processMovimentos,
     selectedCourt,
     showManualEntry,
     importProgress,
-    importComplete,
     setImportProgress,
-    setImportComplete,
     setShowManualEntry,
     setProcessMovimentos,
-    handleProcessSelect,
-    resetImportState
+    handleProcessSelect
   };
 }
