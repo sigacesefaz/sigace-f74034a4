@@ -70,9 +70,7 @@ export default function NewProcess() {
     }
   };
   
-  // Função para preencher o formulário manual com dados do processo pesquisado
   const handleManualEntry = () => {
-    // Se tivermos pesquisado um número de processo, usamos ele como default
     if (currentMode === "search") {
       setCurrentMode("manual");
     }
@@ -81,6 +79,10 @@ export default function NewProcess() {
   const importProcess = async () => {
     return await handleSaveProcess();
   };
+
+  const handleSaveProcessWrapper = async () => {
+    await handleSaveProcess();
+  }
 
   const handleSaveProcess = async () => {
     if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
@@ -111,13 +113,11 @@ export default function NewProcess() {
         return false;
       }
 
-      // Obter o processo principal (primeiro movimento processual)
       const mainMovimento = processMovimentos[0];
       const mainProcess = mainMovimento.process;
       
       setImportProgress(10);
 
-      // Verificar se o processo já existe
       const { data: existingProcess } = await supabase
         .from("processes")
         .select("id")
@@ -205,7 +205,6 @@ export default function NewProcess() {
       
       setImportProgress(50);
 
-      // Armazenar os detalhes do processo principal
       try {
         const { error: detailsError } = await supabase
           .from("process_details")
@@ -240,7 +239,6 @@ export default function NewProcess() {
       
       setImportProgress(70);
 
-      // Inserir movimentos do processo
       try {
         if (mainProcess.movimentos && mainProcess.movimentos.length > 0) {
           const { error: movementsError } = await supabase
@@ -274,7 +272,6 @@ export default function NewProcess() {
       
       setImportProgress(90);
 
-      // Inserir assuntos do processo
       try {
         if (mainProcess.assuntos && mainProcess.assuntos.length > 0) {
           const { error: subjectsError } = await supabase
@@ -347,7 +344,7 @@ export default function NewProcess() {
           <ProcessModeDetails
             processMovimentos={processMovimentos}
             importProgress={importProgress}
-            onSave={handleSaveProcess}
+            onSave={handleSaveProcessWrapper}
             onCancel={() => {
               setCurrentMode("search");
               setProcessMovimentos(null);
@@ -360,7 +357,6 @@ export default function NewProcess() {
         {currentMode === "manual" && (
           <ProcessForm
             onSubmit={async (data) => {
-              // TODO: Implementar o cadastro manual
               console.log("Dados do formulário:", data);
             }}
             onCancel={() => setCurrentMode("search")}

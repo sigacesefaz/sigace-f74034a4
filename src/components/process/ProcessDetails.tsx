@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
@@ -14,7 +13,7 @@ import { Button } from "@/components/ui/button";
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   mainProcess: DatajudProcess;
-  onSave: () => Promise<void>;
+  onSave: () => Promise<boolean | void>;
   onCancel: () => void;
   isImport?: boolean;
   importProgress?: number;
@@ -38,7 +37,6 @@ export function ProcessDetails({
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   
-  // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
   const currentProcess = currentMovimento.process;
   
@@ -70,7 +68,7 @@ export function ProcessDetails({
         toast("Erro ao importar processo", "Não foi possível importar o processo", { variant: "destructive" });
       } else {
         toast("Processo importado com sucesso", "", { variant: "default" });
-        onSave();
+        await onSave();
       }
     } catch (error) {
       console.error("Erro ao importar processo:", error);

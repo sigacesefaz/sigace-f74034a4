@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 interface ProcessModeDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   importProgress: number;
-  onSave: () => Promise<void>;
+  onSave: () => Promise<boolean | void>; // Update to accept either boolean or void return type
   onCancel: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   importProcess?: () => Promise<boolean>;
