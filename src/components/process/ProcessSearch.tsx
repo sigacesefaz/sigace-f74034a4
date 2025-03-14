@@ -19,13 +19,15 @@ interface ProcessSearchProps {
   isPublic?: boolean;
   showCourtSelector?: boolean;
   onManual?: () => void;
+  isLoading?: boolean;
 }
 
 export function ProcessSearch({ 
   onProcessSelect, 
   isPublic = false, 
   showCourtSelector = false,
-  onManual
+  onManual,
+  isLoading: externalIsLoading
 }: ProcessSearchProps) {
   const [processNumber, setProcessNumber] = useState("");
   
@@ -89,9 +91,9 @@ export function ProcessSearch({
         <Button
           className="bg-primary text-white"
           onClick={handleSearch}
-          disabled={isSearching || !processNumber}
+          disabled={externalIsLoading || isSearching || !processNumber}
         >
-          {isSearching ? (
+          {externalIsLoading || isSearching ? (
             <>
               <SearchIcon className="mr-2 h-4 w-4 animate-spin" />
               Buscando...
