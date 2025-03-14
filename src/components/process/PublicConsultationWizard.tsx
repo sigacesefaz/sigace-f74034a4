@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -19,7 +19,20 @@ import { toast } from "@/components/ui/use-toast";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2Icon, ChevronRightIcon, ChevronLeftIcon, XCircleIcon, InfoIcon } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ProcessDetails } from "@/components/process/ProcessDetails";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getProcessById } from "@/services/datajud";
+import { DatajudMovimentoProcessual } from "@/types/datajud";
+import { 
+  CheckCircle2Icon, 
+  ChevronRightIcon, 
+  ChevronLeftIcon, 
+  XCircleIcon, 
+  InfoIcon, 
+  Printer
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PublicConsultationWizardProps {
@@ -36,8 +49,14 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
   const [email, setEmail] = useState("");
   const [courtEndpoint, setCourtEndpoint] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
+  const [processMovimentos, setProcessMovimentos] = useState<DatajudMovimentoProcessual[] | null>(null);
+  const [isLoadingProcess, setIsLoadingProcess] = useState(false);
 
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   const resetWizard = () => {
     setStep(1);
@@ -45,6 +64,11 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
     setProcessNumber("");
     setCourtEndpoint("");
     setEmail("");
+    setVerificationCode("");
+    setVerificationToken("");
+    setDevCode(null);
+    setCodeSent(false);
+    setProcessMovimentos(null);
   };
 
   const handleClose = () => {
@@ -54,9 +78,14 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
 
   const handleContinue = () => {
     if (step < totalSteps) {
-      setStep(step + 1);
+      // Special handling for step 3 (verification)
+      if (step === 3) {
+        handleVerifyCode();
+      } else {
+        setStep(step + 1);
+      }
     } else {
-      completeConsultation();
+      handleClose();
     }
   };
 
@@ -72,38 +101,158 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
     return true;
   };
 
-  const completeConsultation = () => {
-    setIsLoading(true);
-    try {
-      // Store the selected process info in sessionStorage for the verification step
-      sessionStorage.setItem('publicProcessNumber', processNumber);
-      sessionStorage.setItem('publicCourtEndpoint', courtEndpoint);
-      sessionStorage.setItem('publicEmail', email);
-      
-      // Close dialog
-      onOpenChange(false);
-      
-      // Notify user
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleSendCode = async () => {
+    if (!validateEmail(email)) {
       toast({
-        title: "Consulta iniciada",
-        description: "Redirecionando para a visualização do processo...",
+        title: "Email inválido",
+        description: "Por favor, informe um email válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setDevCode(null);
+    
+    try {
+      console.log("Sending verification code to:", email);
+      console.log("Process Number:", processNumber);
+      
+      // Call the edge function to send verification email
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ 
+          email,
+          processNumber 
+        })
       });
       
-      // Navigate to process view
-      setTimeout(() => {
-        navigate("/public/verify");
-        resetWizard();
-      }, 300);
-    } catch (error) {
-      console.error("Error initiating consultation:", error);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error("Error response from server:", result);
+        throw new Error(result.error || result.details || "Erro ao enviar código de verificação");
+      }
+      
+      // Store the session token for verification
+      setVerificationToken(result.token);
+      
+      // In development mode, we directly get the code for testing
+      if (result.devCode) {
+        setDevCode(result.devCode);
+      }
+      
       toast({
-        title: "Erro",
-        description: "Não foi possível iniciar a consulta pública.",
+        title: "Código enviado",
+        description: "Verifique seu email e informe o código recebido",
+      });
+      
+      setCodeSent(true);
+    } catch (error) {
+      console.error("Error sending verification code:", error);
+      toast({
+        title: "Erro ao enviar código",
+        description: error.message || "Não foi possível enviar o código de verificação. Tente novamente.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 6) {
+      toast({
+        title: "Código incompleto",
+        description: "O código de verificação deve conter 6 dígitos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Verify the OTP code
+      if (!verificationToken) {
+        throw new Error("Token de verificação não encontrado. Solicite um novo código.");
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ 
+          token: verificationToken,
+          code: verificationCode
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error("Error response from verification server:", result);
+        throw new Error(result.error || "Código inválido ou expirado");
+      }
+      
+      toast({
+        title: "Verificação concluída",
+        description: "Código verificado com sucesso",
+      });
+      
+      // Now that verification is complete, load the process data
+      setIsLoadingProcess(true);
+      try {
+        const data = await getProcessById(courtEndpoint, processNumber);
+        
+        if (!data || data.length === 0) {
+          toast({
+            title: "Processo não encontrado",
+            description: "Não foi possível carregar os dados do processo.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setProcessMovimentos(data);
+        setStep(4); // Move to process view step
+      } catch (processError) {
+        console.error("Error fetching process data:", processError);
+        toast({
+          title: "Erro ao carregar processo",
+          description: "Não foi possível carregar os dados do processo.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingProcess(false);
+      }
+      
+    } catch (error) {
+      console.error("Error verifying code:", error);
+      toast({
+        title: "Erro na verificação",
+        description: error.message || "Código inválido ou expirado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Convert functions to return a Promise to match the expected type
+  const handleSave = async (): Promise<void> => {
+    // This is a no-op function since we don't save in public view
+    return Promise.resolve();
   };
 
   const content = (
@@ -191,7 +340,6 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
             <ProcessSearch 
               onProcessSelect={handleProcessSelect} 
               isPublic={true}
-              showCourtSelector={true}
             />
           </div>
           
@@ -215,23 +363,93 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
             <h3 className="text-lg font-semibold">Verificação por Email</h3>
           </div>
           
-          <div className="py-2">
-            <p className="text-sm text-gray-600 mb-4">
-              Informe seu email para receber um código de verificação. Este passo é necessário 
-              para garantir a segurança da consulta pública.
-            </p>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="seu.email@exemplo.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+          {!codeSent ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Seu Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-gray-500">
+                  Enviaremos um código de verificação para este email.
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleSendCode} 
+                disabled={isLoading || !email}
+                className="w-full bg-primary text-white"
+              >
+                {isLoading ? "Enviando..." : "Enviar código de verificação"}
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {devCode && (
+                <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                  <InfoIcon className="h-4 w-4 text-yellow-600" />
+                  <AlertTitle className="text-yellow-800">Modo de desenvolvimento</AlertTitle>
+                  <AlertDescription className="text-yellow-800">
+                    Código de verificação: <strong>{devCode}</strong>
+                    <p className="text-xs mt-1">
+                      Este código é exibido apenas em ambiente de desenvolvimento para fins de teste.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="verification-code">Código de Verificação</Label>
+                <div className="flex justify-center">
+                  <InputOTP 
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={setVerificationCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  Insira o código de 6 dígitos enviado para {email}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleVerifyCode} 
+                  disabled={isLoading || verificationCode.length !== 6}
+                  className="w-full bg-primary text-white"
+                >
+                  {isLoading ? "Verificando..." : "Verificar código"}
+                </Button>
+                
+                <Button 
+                  variant="link" 
+                  onClick={() => {
+                    setCodeSent(false);
+                    setVerificationCode("");
+                    setDevCode(null);
+                  }}
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  Usar outro email
+                </Button>
+              </div>
+            </div>
+          )}
           
           {processNumber && (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
@@ -244,12 +462,45 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
         </div>
       )}
 
+      {step === 4 && (
+        <div className="space-y-4">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
+              <CheckCircle2Icon className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold">Dados do Processo</h3>
+          </div>
+          
+          {isLoadingProcess ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : processMovimentos && processMovimentos.length > 0 ? (
+            <div className="max-h-[60vh] overflow-y-auto">
+              <ProcessDetails
+                processMovimentos={processMovimentos}
+                mainProcess={processMovimentos[0].process}
+                onSave={handleSave}
+                onCancel={() => {}}
+                isPublicView={true}
+              />
+            </div>
+          ) : (
+            <div className="p-4 border rounded-md bg-red-50 text-red-800">
+              <p>Não foi possível carregar os dados do processo.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex justify-between mt-6 pt-4 border-t">
         {step > 1 ? (
           <Button
             variant="outline"
             onClick={handleBack}
-            disabled={isLoading}
+            disabled={isLoading || isLoadingProcess}
             className="flex items-center"
           >
             <ChevronLeftIcon className="mr-1 h-4 w-4" />
@@ -259,7 +510,7 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
           <Button
             variant="outline"
             onClick={handleClose}
-            disabled={isLoading}
+            disabled={isLoading || isLoadingProcess}
             className="flex items-center"
           >
             <XCircleIcon className="mr-1 h-4 w-4" />
@@ -267,19 +518,35 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
           </Button>
         )}
         
-        <Button
-          onClick={handleContinue}
-          disabled={
-            (step === 1 && !termsAccepted) ||
-            (step === 2 && !processNumber) ||
-            (step === 3 && !email) ||
-            isLoading
-          }
-          className="bg-primary text-white flex items-center"
-        >
-          {step === totalSteps ? "Finalizar" : "Continuar"}
-          {step !== totalSteps && <ChevronRightIcon className="ml-1 h-4 w-4" />}
-        </Button>
+        {step < 4 ? (
+          <Button
+            onClick={handleContinue}
+            disabled={
+              (step === 1 && !termsAccepted) ||
+              (step === 2 && !processNumber) ||
+              (step === 3 && (!codeSent || verificationCode.length !== 6)) ||
+              isLoading ||
+              isLoadingProcess
+            }
+            className="bg-primary text-white flex items-center"
+          >
+            {step === 3 ? (
+              isLoading ? "Verificando..." : "Verificar"
+            ) : (
+              <>
+                Continuar
+                <ChevronRightIcon className="ml-1 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleClose}
+            className="bg-primary text-white"
+          >
+            Finalizar
+          </Button>
+        )}
       </div>
     </>
   );
@@ -301,7 +568,7 @@ export function PublicConsultationWizard({ open, onOpenChange }: PublicConsultat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>Consulta Pública</DialogTitle>
         </DialogHeader>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { DatajudMovimentoProcessual } from "@/types/datajud";
@@ -69,6 +68,7 @@ export function ProcessModeSelector({
           onSave={handleSaveProcess}
           onCancel={() => setCurrentMode("search")}
           handleProcessSelect={handleProcessSelect}
+          onImportAnother={() => setCurrentMode("search")}
         />
       )}
 
