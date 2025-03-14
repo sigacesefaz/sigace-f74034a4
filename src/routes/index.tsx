@@ -1,10 +1,10 @@
 
 import React from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
-import ProcessList from "@/pages/intimations/ProcessList";
+import ProcessList from "@/pages/processes/ProcessList";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
 import { publicRoutes } from "@/routes/PublicRoutes";
@@ -27,9 +27,7 @@ const router = createBrowserRouter([
   // Rotas do dashboard
   {
     path: "/dashboard",
-    element: <DashboardLayout>
-      <React.Outlet />
-    </DashboardLayout>,
+    element: <DashboardLayout />,
     children: [
       {
         path: "/dashboard",
@@ -37,10 +35,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard/processes",
-        element: <ProcessList 
-          processes={[]} 
-          isLoading={false} 
-        />
+        element: <ProcessList />
       },
       {
         path: "/dashboard/processes/new",
