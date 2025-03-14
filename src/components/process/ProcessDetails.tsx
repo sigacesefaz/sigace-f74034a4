@@ -20,6 +20,7 @@ interface ProcessDetailsProps {
   importProgress?: number;
   isPublicView?: boolean;
   handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  onImportAnother?: () => void;
 }
 
 export function ProcessDetails({
@@ -30,7 +31,8 @@ export function ProcessDetails({
   onCancel,
   importProgress = 0,
   isPublicView = false,
-  handleProcessSelect
+  handleProcessSelect,
+  onImportAnother
 }: ProcessDetailsProps) {
   const navigate = useNavigate();
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
