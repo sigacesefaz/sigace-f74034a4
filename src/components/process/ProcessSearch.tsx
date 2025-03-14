@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,16 +14,9 @@ interface ProcessSearchProps {
   onManual?: () => void;
   isLoading?: boolean;
   isPublic?: boolean;
-  showCourtSelector?: boolean;
 }
 
-export function ProcessSearch({ 
-  onProcessSelect, 
-  onManual, 
-  isLoading: externalLoading, 
-  isPublic = false,
-  showCourtSelector = true 
-}: ProcessSearchProps) {
+export function ProcessSearch({ onProcessSelect, onManual, isLoading: externalLoading, isPublic = false }: ProcessSearchProps) {
   const {
     processNumber,
     setProcessNumber,
@@ -45,6 +39,7 @@ export function ProcessSearch({
     try {
       console.log("Process selected:", process.numeroProcesso, court.endpoint);
       
+      // Call the parent's onProcessSelect function with the correct parameters
       const result = await onProcessSelect(process.numeroProcesso, court.endpoint);
       console.log("Process selection result:", result);
     } catch (error) {
@@ -63,13 +58,11 @@ export function ProcessSearch({
         </div>
 
         <div className="grid gap-4">
-          {showCourtSelector && (
-            <ProcessCourtSelector 
-              value={court} 
-              onChange={setCourt}
-              disabled={isLoading}
-            />
-          )}
+          <ProcessCourtSelector 
+            value={court} 
+            onChange={setCourt}
+            disabled={isLoading}
+          />
 
           <ProcessSearchInput 
             value={processNumber} 

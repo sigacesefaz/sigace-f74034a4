@@ -1,12 +1,11 @@
-
 import React from "react";
-import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import IntimationsDashboard from "@/pages/intimations/IntimationsDashboard";
 import Login from "@/pages/Login";
 import PublicSearch from "@/pages/public/PublicSearch";
-// Import removed: PublicVerify
-import { ProcessList } from "@/pages/processes/ProcessList";
+import PublicVerify from "@/pages/public/PublicVerify";
+import ProcessList from "@/pages/processes/ProcessList";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
 
@@ -30,7 +29,10 @@ const router = createBrowserRouter([
         path: "/public/search",
         element: <PublicSearch />,
       },
-      // Removed PublicVerify route since it doesn't exist
+      {
+        path: "/public/verify",
+        element: <PublicVerify />,
+      },
     ],
   },
   {
@@ -41,7 +43,7 @@ const router = createBrowserRouter([
   // Rotas do dashboard
   {
     path: "/dashboard",
-    element: <DashboardLayout><Outlet /></DashboardLayout>,
+    element: <DashboardLayout />,
     children: [
       {
         path: "/dashboard",
@@ -49,7 +51,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard/processes",
-        element: <ProcessList processes={[]} isLoading={false} />,
+        element: <ProcessList />,
       },
       {
         path: "/dashboard/processes/new",

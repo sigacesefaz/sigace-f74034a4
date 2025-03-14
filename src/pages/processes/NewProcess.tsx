@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
@@ -14,7 +13,6 @@ import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { ArrowLeft } from "lucide-react";
 import { ProcessModeSelector } from "@/components/process/ProcessModeSelector";
 import { useProcessImport } from "@/hooks/useProcessImport";
-import { ProcessModeDetails } from "@/components/process/ProcessModeDetails";
 
 type FormMode = "search" | "details" | "manual";
 
