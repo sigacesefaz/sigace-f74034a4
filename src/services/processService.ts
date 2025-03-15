@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 import { toast } from "@/hooks/use-toast";
@@ -122,6 +123,11 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     await saveProcessDetails(mainProcessId, mainProcess);
     setImportProgress(55);
 
+    // Process the main process parties
+    if (mainProcess.partes && mainProcess.partes.length > 0) {
+      await saveProcessParties(mainProcessId, mainProcess.partes);
+    }
+
     // Store each hit (procedural movement)
     for (let i = 0; i < processMovimentos.length; i++) {
       const hitData = processMovimentos[i];
@@ -222,12 +228,6 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       setImportProgress(55 + Math.floor((i + 1) / processMovimentos.length * 35));
     }
     
-    // Process the main process parties
-    setImportProgress(90);
-    if (mainProcess.partes && mainProcess.partes.length > 0) {
-      await saveProcessParties(mainProcessId, mainProcess.partes);
-    }
-    
     setImportProgress(100);
 
     toast("Processo importado com sucesso", "", { variant: "success" });
@@ -295,11 +295,14 @@ export async function createManualProcess(processData: any) {
 
 export async function deleteProcess(processId: string) {
   try {
-    // First delete related data
+    // First delete related data - these will cascade due to our FK constraints
+    // but we're being explicit to ensure data is properly cleaned up
     await supabase.from('process_movements').delete().eq('process_id', processId);
     await supabase.from('process_subjects').delete().eq('process_id', processId);
     await supabase.from('process_details').delete().eq('process_id', processId);
     await supabase.from('process_parties').delete().eq('process_id', processId);
+    await supabase.from('process_hits').delete().eq('process_id', processId);
+    await supabase.from('process_judicial_decisions').delete().eq('process_id', processId);
     
     // Then delete the process itself
     const { error } = await supabase.from('processes').delete().eq('id', processId);

@@ -251,16 +251,17 @@ export type Database = {
           data_hora_ultima_atualizacao: string | null
           formato: Json | null
           grau: string | null
-          id: number
+          id: string
           json_completo: Json | null
           movimentos: Json | null
-          nivele_sigilo: number | null
+          nivel_sigilo: number | null
           orgao_julgador: Json | null
           partes: Json | null
-          process_id: number
+          process_id: number | null
           sistema: Json | null
           tribunal: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           assuntos?: Json | null
@@ -270,16 +271,17 @@ export type Database = {
           data_hora_ultima_atualizacao?: string | null
           formato?: Json | null
           grau?: string | null
-          id?: number
+          id?: string
           json_completo?: Json | null
           movimentos?: Json | null
-          nivele_sigilo?: number | null
+          nivel_sigilo?: number | null
           orgao_julgador?: Json | null
           partes?: Json | null
-          process_id: number
+          process_id?: number | null
           sistema?: Json | null
           tribunal?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           assuntos?: Json | null
@@ -289,20 +291,155 @@ export type Database = {
           data_hora_ultima_atualizacao?: string | null
           formato?: Json | null
           grau?: string | null
-          id?: number
+          id?: string
           json_completo?: Json | null
           movimentos?: Json | null
-          nivele_sigilo?: number | null
+          nivel_sigilo?: number | null
           orgao_julgador?: Json | null
           partes?: Json | null
-          process_id?: number
+          process_id?: number | null
           sistema?: Json | null
           tribunal?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "process_details_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_hits: {
+        Row: {
+          classe: Json | null
+          created_at: string | null
+          data_ajuizamento: string | null
+          data_hora_ultima_atualizacao: string | null
+          formato: Json | null
+          grau: string | null
+          hit_id: string | null
+          hit_index: string | null
+          hit_score: number | null
+          id: string
+          nivel_sigilo: number | null
+          numero_processo: string | null
+          orgao_julgador: Json | null
+          process_id: number | null
+          sistema: Json | null
+          situacao: Json | null
+          tribunal: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor_causa: number | null
+        }
+        Insert: {
+          classe?: Json | null
+          created_at?: string | null
+          data_ajuizamento?: string | null
+          data_hora_ultima_atualizacao?: string | null
+          formato?: Json | null
+          grau?: string | null
+          hit_id?: string | null
+          hit_index?: string | null
+          hit_score?: number | null
+          id?: string
+          nivel_sigilo?: number | null
+          numero_processo?: string | null
+          orgao_julgador?: Json | null
+          process_id?: number | null
+          sistema?: Json | null
+          situacao?: Json | null
+          tribunal?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_causa?: number | null
+        }
+        Update: {
+          classe?: Json | null
+          created_at?: string | null
+          data_ajuizamento?: string | null
+          data_hora_ultima_atualizacao?: string | null
+          formato?: Json | null
+          grau?: string | null
+          hit_id?: string | null
+          hit_index?: string | null
+          hit_score?: number | null
+          id?: string
+          nivel_sigilo?: number | null
+          numero_processo?: string | null
+          orgao_julgador?: Json | null
+          process_id?: number | null
+          sistema?: Json | null
+          situacao?: Json | null
+          tribunal?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_causa?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_hits_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_judicial_decisions: {
+        Row: {
+          attachments: Json | null
+          content: string | null
+          created_at: string | null
+          decision_date: string | null
+          decision_type: string | null
+          hit_id: string | null
+          id: string
+          judge: string | null
+          process_id: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          content?: string | null
+          created_at?: string | null
+          decision_date?: string | null
+          decision_type?: string | null
+          hit_id?: string | null
+          id?: string
+          judge?: string | null
+          process_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string | null
+          created_at?: string | null
+          decision_date?: string | null
+          decision_type?: string | null
+          hit_id?: string | null
+          id?: string
+          judge?: string | null
+          process_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_judicial_decisions_hit_id_fkey"
+            columns: ["hit_id"]
+            isOneToOne: false
+            referencedRelation: "process_hits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_judicial_decisions_process_id_fkey"
             columns: ["process_id"]
             isOneToOne: false
             referencedRelation: "processes"
@@ -317,13 +454,15 @@ export type Database = {
           complementos_tabelados: Json | null
           created_at: string | null
           data_hora: string | null
-          id: number
+          hit_id: string | null
+          id: string
           json_completo: Json | null
-          movimento_principal_id: number | null
+          movimento_principal_id: string | null
           nome: string | null
           orgao_julgador: Json | null
-          process_id: number
+          process_id: number | null
           tipo: string | null
+          user_id: string | null
         }
         Insert: {
           codigo?: number | null
@@ -331,13 +470,15 @@ export type Database = {
           complementos_tabelados?: Json | null
           created_at?: string | null
           data_hora?: string | null
-          id?: number
+          hit_id?: string | null
+          id?: string
           json_completo?: Json | null
-          movimento_principal_id?: number | null
+          movimento_principal_id?: string | null
           nome?: string | null
           orgao_julgador?: Json | null
-          process_id: number
+          process_id?: number | null
           tipo?: string | null
+          user_id?: string | null
         }
         Update: {
           codigo?: number | null
@@ -345,15 +486,24 @@ export type Database = {
           complementos_tabelados?: Json | null
           created_at?: string | null
           data_hora?: string | null
-          id?: number
+          hit_id?: string | null
+          id?: string
           json_completo?: Json | null
-          movimento_principal_id?: number | null
+          movimento_principal_id?: string | null
           nome?: string | null
           orgao_julgador?: Json | null
-          process_id?: number
+          process_id?: number | null
           tipo?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "process_movements_hit_id_fkey"
+            columns: ["hit_id"]
+            isOneToOne: false
+            referencedRelation: "process_hits"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "process_movements_movimento_principal_id_fkey"
             columns: ["movimento_principal_id"]
@@ -372,62 +522,42 @@ export type Database = {
       }
       process_parties: {
         Row: {
-          additional_info: Json | null
-          address: Json | null
-          contact_info: Json | null
           created_at: string | null
-          document_number: string
-          entity_type_id: number
-          id: number
+          document: string | null
+          id: string
           name: string
-          party_type_id: number
-          process_id: number
-          representative: string | null
+          person_type: string | null
+          process_id: number | null
+          subtype: string | null
+          type: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          additional_info?: Json | null
-          address?: Json | null
-          contact_info?: Json | null
           created_at?: string | null
-          document_number: string
-          entity_type_id: number
-          id?: number
+          document?: string | null
+          id?: string
           name: string
-          party_type_id: number
-          process_id: number
-          representative?: string | null
+          person_type?: string | null
+          process_id?: number | null
+          subtype?: string | null
+          type: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          additional_info?: Json | null
-          address?: Json | null
-          contact_info?: Json | null
           created_at?: string | null
-          document_number?: string
-          entity_type_id?: number
-          id?: number
+          document?: string | null
+          id?: string
           name?: string
-          party_type_id?: number
-          process_id?: number
-          representative?: string | null
+          person_type?: string | null
+          process_id?: number | null
+          subtype?: string | null
+          type?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "process_parties_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "entity_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "process_parties_party_type_id_fkey"
-            columns: ["party_type_id"]
-            isOneToOne: false
-            referencedRelation: "party_types"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "process_parties_process_id_fkey"
             columns: ["process_id"]
@@ -441,28 +571,41 @@ export type Database = {
         Row: {
           codigo: number | null
           created_at: string | null
-          id: number
+          hit_id: string | null
+          id: string
           nome: string | null
           principal: boolean | null
-          process_id: number
+          process_id: number | null
+          user_id: string | null
         }
         Insert: {
           codigo?: number | null
           created_at?: string | null
-          id?: number
+          hit_id?: string | null
+          id?: string
           nome?: string | null
           principal?: boolean | null
-          process_id: number
+          process_id?: number | null
+          user_id?: string | null
         }
         Update: {
           codigo?: number | null
           created_at?: string | null
-          id?: number
+          hit_id?: string | null
+          id?: string
           nome?: string | null
           principal?: boolean | null
-          process_id?: number
+          process_id?: number | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "process_subjects_hit_id_fkey"
+            columns: ["hit_id"]
+            isOneToOne: false
+            referencedRelation: "process_hits"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "process_subjects_process_id_fkey"
             columns: ["process_id"]
