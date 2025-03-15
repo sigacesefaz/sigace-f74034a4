@@ -3,7 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/utils/format";
 import { DatajudMovement } from "@/types/datajud";
-import { Motion, Check, AlertCircle, Clock, ArrowRight } from "lucide-react";
+import { FileText, Check, AlertCircle, Clock, ArrowRight } from "lucide-react";
 
 interface ProcessMovementsProps {
   movimentos: any[];
@@ -46,7 +46,7 @@ export function ProcessMovements({ movimentos = [], currentIndex = 0 }: ProcessM
   
   // Ícone para o tipo de movimento
   const getMovementIcon = (tipo?: string) => {
-    if (!tipo) return <Motion className="h-4 w-4" />;
+    if (!tipo) return <FileText className="h-4 w-4" />;
     
     const tipoLower = tipo.toLowerCase();
     if (tipoLower.includes("conclus") || tipoLower.includes("decisão") || tipoLower.includes("despacho")) {
@@ -62,7 +62,7 @@ export function ProcessMovements({ movimentos = [], currentIndex = 0 }: ProcessM
       return <AlertCircle className="h-4 w-4" />;
     }
     
-    return <Motion className="h-4 w-4" />;
+    return <FileText className="h-4 w-4" />;
   };
 
   return (

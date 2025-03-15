@@ -1,3 +1,4 @@
+
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -17,6 +18,7 @@ export interface Movement {
   descricao: string;
   tipo?: string;
   complemento?: string;
+  codigo?: string; // Add this property that's being used in ProcessList.tsx
   process?: Process;
   index: string;
   score: number;
