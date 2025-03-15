@@ -38,7 +38,7 @@ export function ProcessList({ processes }: ProcessListProps) {
               
               {process.movimentacoes && process.movimentacoes.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Último movimento: {process.movimentacoes[0].nome || "Sem descrição"}
+                  Último movimento: {process.movimentacoes[0].descricao || process.movimentacoes[0].nome || "Sem descrição"}
                 </p>
               )}
             </div>

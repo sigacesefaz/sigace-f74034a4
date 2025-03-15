@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ProcessList } from "@/pages/processes/ProcessList";
+import ProcessList from "@/pages/processes/ProcessList";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -334,12 +335,14 @@ export default function ProcessList() {
                             <div className="flex justify-between items-start gap-4">
                               <div>
                                 <h4 className="font-medium">
-                                  {parentProcess.movimentacoes[0].nome || "Movimento sem título"}
+                                  {parentProcess.movimentacoes[0].descricao || parentProcess.movimentacoes[0].nome || "Movimento sem título"}
                                 </h4>
                                 <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                                   <Clock className="h-3 w-3" />
                                   {parentProcess.movimentacoes[0].data_hora ? (
                                     format(new Date(parentProcess.movimentacoes[0].data_hora), "dd/MM/yyyy HH:mm")
+                                  ) : parentProcess.movimentacoes[0].data ? (
+                                    format(new Date(parentProcess.movimentacoes[0].data), "dd/MM/yyyy HH:mm")
                                   ) : (
                                     "Data não disponível"
                                   )}
@@ -371,12 +374,14 @@ export default function ProcessList() {
                               <div className="flex justify-between items-start gap-4">
                                 <div>
                                   <h4 className="font-medium">
-                                    {movimento.nome || "Movimento sem título"}
+                                    {movimento.descricao || movimento.nome || "Movimento sem título"}
                                   </h4>
                                   <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                                     <Clock className="h-3 w-3" />
                                     {movimento.data_hora ? (
                                       format(new Date(movimento.data_hora), "dd/MM/yyyy HH:mm")
+                                    ) : movimento.data ? (
+                                      format(new Date(movimento.data), "dd/MM/yyyy HH:mm")
                                     ) : (
                                       "Data não disponível"
                                     )}
