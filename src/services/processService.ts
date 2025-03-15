@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 import { toast } from "@/hooks/use-toast";
@@ -116,116 +115,148 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     }
 
     const mainProcessId = newProcess.id;
+    console.log("Main process created with ID:", mainProcessId);
     
     setImportProgress(50);
 
     // Store main process details
-    await saveProcessDetails(mainProcessId, mainProcess);
+    try {
+      await saveProcessDetails(mainProcessId, mainProcess);
+      console.log("Process details saved successfully");
+    } catch (error) {
+      console.error("Error saving process details:", error);
+    }
+    
     setImportProgress(55);
 
     // Process the main process parties
     if (mainProcess.partes && mainProcess.partes.length > 0) {
-      await saveProcessParties(mainProcessId, mainProcess.partes);
+      try {
+        await saveProcessParties(mainProcessId, mainProcess.partes);
+        console.log("Process parties saved successfully:", mainProcess.partes.length);
+      } catch (error) {
+        console.error("Error saving process parties:", error);
+      }
     }
+
+    setImportProgress(60);
 
     // Store each hit (procedural movement)
     for (let i = 0; i < processMovimentos.length; i++) {
       const hitData = processMovimentos[i];
       const hitSource = hitData.process;
       
-      // Save process hit
-      const { data: newHit, error: hitError } = await supabase
-        .from("process_hits")
-        .insert({
+      try {
+        // Save process hit
+        console.log(`Saving hit ${i} with data:`, {
           process_id: mainProcessId,
           hit_index: hitData.index || '',
           hit_id: hitData.id || '',
           hit_score: hitData.score || 0,
           tribunal: hitSource.tribunal,
-          numero_processo: hitSource.numeroProcesso,
-          data_ajuizamento: hitSource.dataAjuizamento,
-          grau: hitSource.grau,
-          nivel_sigilo: hitSource.nivelSigilo || 0,
-          formato: hitSource.formato,
-          sistema: hitSource.sistema,
-          classe: hitSource.classe,
-          orgao_julgador: hitSource.orgaoJulgador,
-          data_hora_ultima_atualizacao: hitSource.dataHoraUltimaAtualizacao,
-          valor_causa: hitSource.valorCausa,
-          situacao: hitSource.situacao,
-          user_id: user.id
-        })
-        .select('id')
-        .single();
+          numero_processo: hitSource.numeroProcesso
+        });
+
+        const { data: newHit, error: hitError } = await supabase
+          .from("process_hits")
+          .insert({
+            process_id: mainProcessId,
+            hit_index: hitData.index || '',
+            hit_id: hitData.id || '',
+            hit_score: hitData.score || 0,
+            tribunal: hitSource.tribunal,
+            numero_processo: hitSource.numeroProcesso,
+            data_ajuizamento: hitSource.dataAjuizamento,
+            grau: hitSource.grau,
+            nivel_sigilo: hitSource.nivelSigilo || 0,
+            formato: hitSource.formato,
+            sistema: hitSource.sistema,
+            classe: hitSource.classe,
+            orgao_julgador: hitSource.orgaoJulgador,
+            data_hora_ultima_atualizacao: hitSource.dataHoraUltimaAtualizacao,
+            valor_causa: hitSource.valorCausa,
+            situacao: hitSource.situacao,
+            user_id: user.id
+          })
+          .select('id')
+          .single();
+          
+        if (hitError) {
+          console.error(`Error saving hit ${i}:`, hitError);
+          continue;
+        }
         
-      if (hitError) {
-        console.error(`Error saving hit ${i}:`, hitError);
-        continue;
-      }
-      
-      if (!newHit?.id) {
-        console.error(`No ID returned for hit ${i}`);
-        continue;
-      }
-      
-      // Save hit-specific data
-      const hitId = newHit.id;
-      
-      // Save movements for this hit
-      if (hitSource.movimentos && hitSource.movimentos.length > 0) {
-        for (const movimento of hitSource.movimentos) {
-          try {
-            const { error: movementError } = await supabase
-              .from("process_movements")
-              .insert({
-                process_id: mainProcessId,
-                hit_id: hitId,
-                codigo: movimento.codigo,
-                nome: movimento.nome || "",
-                data_hora: movimento.dataHora,
-                tipo: movimento.tipo || "",
-                complemento: Array.isArray(movimento.complemento) ? movimento.complemento.join(", ") : (movimento.complemento || ""),
-                complementos_tabelados: movimento.complementosTabelados || [],
-                orgao_julgador: movimento.orgaoJulgador || {},
-                json_completo: movimento,
-                user_id: user.id
-              });
+        if (!newHit?.id) {
+          console.error(`No ID returned for hit ${i}`);
+          continue;
+        }
+        
+        // Save hit-specific data
+        const hitId = newHit.id;
+        console.log(`Hit ${i} saved with ID:`, hitId);
+        
+        // Save movements for this hit
+        if (hitSource.movimentos && hitSource.movimentos.length > 0) {
+          for (const movimento of hitSource.movimentos) {
+            try {
+              const { error: movementError } = await supabase
+                .from("process_movements")
+                .insert({
+                  process_id: mainProcessId,
+                  hit_id: hitId,
+                  codigo: movimento.codigo,
+                  nome: movimento.nome || "",
+                  data_hora: movimento.dataHora,
+                  tipo: movimento.tipo || "",
+                  complemento: Array.isArray(movimento.complemento) ? movimento.complemento.join(", ") : (movimento.complemento || ""),
+                  complementos_tabelados: movimento.complementosTabelados || [],
+                  orgao_julgador: movimento.orgaoJulgador || {},
+                  json_completo: movimento,
+                  user_id: user.id
+                });
 
-            if (movementError) {
-              console.error(`Error saving movement ${movimento.codigo}:`, movementError);
+              if (movementError) {
+                console.error(`Error saving movement ${movimento.codigo}:`, movementError);
+              } else {
+                console.log(`Movement ${movimento.codigo} saved successfully`);
+              }
+            } catch (error) {
+              console.error(`Error processing movement ${movimento.codigo}:`, error);
             }
-          } catch (error) {
-            console.error(`Error processing movement ${movimento.codigo}:`, error);
           }
         }
-      }
-      
-      // Save subjects for this hit
-      if (hitSource.assuntos && hitSource.assuntos.length > 0) {
-        for (let j = 0; j < hitSource.assuntos.length; j++) {
-          const assunto = hitSource.assuntos[j];
-          try {
-            const { error: subjectError } = await supabase
-              .from("process_subjects")
-              .insert({
-                process_id: mainProcessId,
-                hit_id: hitId,
-                codigo: assunto.codigo,
-                nome: assunto.nome || "",
-                principal: j === 0, // First subject is primary
-                user_id: user.id
-              });
+        
+        // Save subjects for this hit
+        if (hitSource.assuntos && hitSource.assuntos.length > 0) {
+          for (let j = 0; j < hitSource.assuntos.length; j++) {
+            const assunto = hitSource.assuntos[j];
+            try {
+              const { error: subjectError } = await supabase
+                .from("process_subjects")
+                .insert({
+                  process_id: mainProcessId,
+                  hit_id: hitId,
+                  codigo: assunto.codigo,
+                  nome: assunto.nome || "",
+                  principal: j === 0, // First subject is primary
+                  user_id: user.id
+                });
 
-            if (subjectError) {
-              console.error(`Error saving subject ${assunto.nome}:`, subjectError);
+              if (subjectError) {
+                console.error(`Error saving subject ${assunto.nome}:`, subjectError);
+              } else {
+                console.log(`Subject ${assunto.nome} saved successfully`);
+              }
+            } catch (error) {
+              console.error(`Error processing subject ${assunto.nome}:`, error);
             }
-          } catch (error) {
-            console.error(`Error processing subject ${assunto.nome}:`, error);
           }
         }
+      } catch (error) {
+        console.error(`Error processing hit ${i}:`, error);
       }
       
-      setImportProgress(55 + Math.floor((i + 1) / processMovimentos.length * 35));
+      setImportProgress(60 + Math.floor((i + 1) / processMovimentos.length * 35));
     }
     
     setImportProgress(100);

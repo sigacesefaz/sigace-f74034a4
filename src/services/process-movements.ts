@@ -1,12 +1,13 @@
-
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the movements of a process
-export async function saveProcessMovements(processId: string | number, movements: DatajudProcess["movimentos"]) {
+export async function saveProcessMovements(processId: string | number, movements: DatajudProcess["movimentos"], hitId?: string) {
   if (!movements || movements.length === 0) return;
   
   try {
+    console.log(`Saving ${movements.length} movements for process ID:`, processId);
+    
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -21,6 +22,7 @@ export async function saveProcessMovements(processId: string | number, movements
     for (let i = 0; i < movements.length; i += batchSize) {
       const batch = movements.slice(i, i + batchSize).map(movement => ({
         process_id: processId,
+        hit_id: hitId || null,
         codigo: movement.codigo, 
         nome: movement.nome || "",
         data_hora: movement.dataHora,
@@ -37,15 +39,25 @@ export async function saveProcessMovements(processId: string | number, movements
     }
     
     // Insert batches in parallel
-    await Promise.all(batches.map(async batch => {
+    const results = await Promise.all(batches.map(async batch => {
       const { error } = await supabase
         .from("process_movements")
         .insert(batch);
         
       if (error) {
         console.error("Error inserting movement batch:", error);
+        return { success: false, error };
       }
+      return { success: true };
     }));
+    
+    const allSuccessful = results.every(r => r.success);
+    
+    if (!allSuccessful) {
+      console.warn("Some movement batches failed to insert");
+    } else {
+      console.log(`All ${movements.length} movements successfully inserted`);
+    }
     
     // Process tabled complements in a second pass
     for (const movement of movements) {
@@ -67,6 +79,7 @@ export async function saveProcessMovements(processId: string | number, movements
           for (let i = 0; i < movement.complementosTabelados.length; i += batchSize) {
             const complementoBatch = movement.complementosTabelados.slice(i, i + batchSize).map(complemento => ({
               process_id: processId,
+              hit_id: hitId || null,
               codigo: complemento.codigo || movement.codigo,
               nome: complemento.nome || complemento.descricao || "Complemento",
               data_hora: movement.dataHora,
@@ -95,8 +108,11 @@ export async function saveProcessMovements(processId: string | number, movements
         }
       }
     }
+    
+    return true;
   } catch (error) {
     console.error("Error inserting process movements:", error);
+    throw error;
   }
 }
 

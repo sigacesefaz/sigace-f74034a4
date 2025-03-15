@@ -1,10 +1,15 @@
-
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the details of a process
 export async function saveProcessDetails(processId: string | number, processData: DatajudProcess) {
   try {
+    console.log("Saving process details for process ID:", processId, {
+      tribunal: processData.tribunal,
+      data_ajuizamento: processData.dataAjuizamento,
+      classe: processData.classe
+    });
+    
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -40,7 +45,7 @@ export async function saveProcessDetails(processId: string | number, processData
     return true;
   } catch (error) {
     console.error("Error saving process details:", error);
-    return false;
+    throw error;
   }
 }
 

@@ -8,6 +8,8 @@ export async function saveProcessParties(processId: string | number, parties: an
   if (!parties || parties.length === 0) return;
   
   try {
+    console.log(`Saving ${parties.length} parties for process ID:`, processId);
+    
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
     
