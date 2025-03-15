@@ -1,13 +1,13 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft }  from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { Process } from "@/types/process";
 import { ptBR } from "date-fns/locale";
@@ -22,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
 import { formatProcessNumber } from "@/utils/format";
@@ -42,13 +41,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingProcessId, setLoadingProcessId] = useState<string | null>(null);
-  const [showMovementsId, setShowMovementsId] = useState<string | null>(null);
   const [showOverviewId, setShowOverviewId] = useState<string | null>(null);
   const [showTabsId, setShowTabsId] = useState<string | null>(null);
   const [processTabStates, setProcessTabStates] = useState<Record<string, string>>({});
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
+  const [previousHitIndex, setPreviousHitIndex] = useState<Record<string, number>>({});
   const itemsPerPage = 5;
 
   const groupedProcesses = processes.reduce((acc, process) => {
@@ -146,13 +145,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   };
 
   const handleShare = async (process: Process) => {
-    const formatProcessNumber = (number: string) => {
-      if (!number) return "";
-      const numericOnly = number.replace(/\D/g, '');
-      if (numericOnly.length !== 20) return number;
-      return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
-    };
-
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     
     try {
@@ -230,6 +222,30 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
 
+  const handlePreviousHit = (processId: string, previousHits: any[]) => {
+    setPreviousHitIndex((prev) => {
+      const currentIndex = prev[processId] || 0;
+      const maxIndex = previousHits.length - 1;
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
+      return {
+        ...prev,
+        [processId]: newIndex
+      };
+    });
+  };
+
+  const handleNextHit = (processId: string, previousHits: any[]) => {
+    setPreviousHitIndex((prev) => {
+      const currentIndex = prev[processId] || 0;
+      const maxIndex = previousHits.length - 1;
+      const newIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
+      return {
+        ...prev,
+        [processId]: newIndex
+      };
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -291,6 +307,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         const parentProcess = group.parent;
         if (!parentProcess) return null;
         
+        // Sort hits by dataHoraUltimaAtualizacao in descending order (most recent first)
         const sortedHits = parentProcess.hits 
           ? [...parentProcess.hits].sort((a, b) => {
               const dateA = new Date(a._source?.dataHoraUltimaAtualizacao || 0);
@@ -299,8 +316,15 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
             })
           : [];
 
+        // Most recent hit for the "Atual" tab
         const currentHit = sortedHits.length > 0 ? sortedHits[0] : null;
+        
+        // All other hits for the "Anteriores" tab
         const previousHits = sortedHits.length > 1 ? sortedHits.slice(1) : [];
+        
+        // Get the current previous hit based on the navigation index
+        const currentPreviousHitIndex = previousHitIndex[parentProcess.id] || 0;
+        const currentPreviousHit = previousHits.length > 0 ? previousHits[currentPreviousHitIndex] : null;
 
         return (
           <div key={parentId} className="space-y-1">
@@ -477,90 +501,172 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                     <Tabs defaultValue="atual" className="w-full">
                       <TabsList className="w-full mb-2">
                         <TabsTrigger value="atual" className="flex-1">Atual</TabsTrigger>
-                        <TabsTrigger value="anteriores" className="flex-1">Anteriores</TabsTrigger>
+                        <TabsTrigger value="anteriores" className="flex-1">
+                          Anteriores 
+                          {previousHits.length > 0 && (
+                            <Badge variant="secondary" className="ml-2">{previousHits.length}</Badge>
+                          )}
+                        </TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="atual" className="space-y-2">
-                        <div className="space-y-2">
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                              <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
-                              <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                              <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                              <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                              <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
+                        {currentHit ? (
+                          <div className="space-y-2">
+                            <div className="bg-white rounded-lg p-3 space-y-2">
+                              <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(currentHit._source?.numeroProcesso)}</p>
+                                <p><span className="font-medium text-gray-500">Classe:</span> {currentHit._source?.classe?.nome || "Não informado"} {currentHit._source?.classe?.codigo ? `(Código: ${currentHit._source.classe.codigo})` : ""}</p>
+                                <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(currentHit._source?.dataAjuizamento)}</p>
+                                <p><span className="font-medium text-gray-500">Última Atualização:</span> {formatDate(currentHit._source?.dataHoraUltimaAtualizacao)}</p>
+                                <p><span className="font-medium text-gray-500">Grau:</span> {currentHit._source?.grau || "G1"}</p>
+                                <p><span className="font-medium text-gray-500">Tribunal:</span> {currentHit._source?.tribunal || "Não informado"}</p>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                            <div className="text-sm">
-                              {parentProcess.metadata?.assuntos?.map((assunto, index) => (
-                                <p key={index} className="text-gray-700">
-                                  {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                                </p>
-                              )) || <p className="text-gray-500">Não informado</p>}
+                            <div className="bg-white rounded-lg p-3 space-y-2">
+                              <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
+                              <div className="text-sm">
+                                {currentHit._source?.assuntos?.map((assunto, index) => (
+                                  <p key={index} className="text-gray-700">
+                                    {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
+                                  </p>
+                                )) || <p className="text-gray-500">Não informado</p>}
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
+                            <div className="bg-white rounded-lg p-3 space-y-2">
+                              <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
+                              <div className="text-sm">
+                                <p><span className="font-medium text-gray-500">Nome:</span> {currentHit._source?.orgaoJulgador?.nome || "Não informado"} {currentHit._source?.orgaoJulgador?.codigo ? `(Código: ${currentHit._source.orgaoJulgador.codigo})` : ""}</p>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                              <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
+                            <div className="bg-white rounded-lg p-3 space-y-2">
+                              <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
+                              <div className="text-sm">
+                                <p><span className="font-medium text-gray-500">Nome:</span> {currentHit._source?.sistema?.nome || "Não informado"}</p>
+                                <p><span className="font-medium text-gray-500">Formato:</span> {currentHit._source?.formato?.nome || "Eletrônico"}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="text-center py-4 text-gray-500">
+                            Nenhuma informação atual disponível
+                          </div>
+                        )}
                       </TabsContent>
 
                       <TabsContent value="anteriores" className="space-y-2">
                         <div className="bg-gray-100 p-2 rounded-lg mb-2">
-                          <p className="text-sm text-gray-600">
-                            Total de atualizações anteriores: <span className="font-medium">{previousHits.length}</span>
-                          </p>
-                        </div>
-                        {previousHits.length > 0 ? (
-                          previousHits.map((hit, index) => (
-                            <div key={index} className="bg-white rounded-lg p-4 space-y-3">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="space-y-1 flex-1">
-                                  <p className="text-gray-900 font-medium">
-                                    {hit._source?.descricao}
-                                  </p>
-                                  <p className="text-gray-600">
-                                    {formatDate(hit._source?.dataHoraUltimaAtualizacao)}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  {hit._source?.codigo && (
-                                    <Badge variant="outline" className="text-gray-600">
-                                      Código: {hit._source?.codigo}
-                                    </Badge>
-                                  )}
-                                  {hit._source?.tipo && (
-                                    <Badge variant="secondary" className="bg-gray-100">
-                                      {hit._source?.tipo}
-                                    </Badge>
-                                  )}
-                                </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-gray-600">
+                              Total de atualizações anteriores: <span className="font-medium">{previousHits.length}</span>
+                            </p>
+                            
+                            {previousHits.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePreviousHit(parentProcess.id, previousHits)}
+                                  className="h-7 w-7 p-0"
+                                  title="Hit anterior"
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <span className="text-xs font-medium">
+                                  {currentPreviousHitIndex + 1}/{previousHits.length}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleNextHit(parentProcess.id, previousHits)}
+                                  className="h-7 w-7 p-0"
+                                  title="Próximo hit"
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
                               </div>
-                              {hit._source?.complemento && (
-                                <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
-                                  {typeof hit._source?.complemento === 'string' 
-                                    ? hit._source?.complemento 
-                                    : JSON.stringify(hit._source?.complemento)}
+                            )}
+                          </div>
+                        </div>
+                        
+                        {previousHits.length > 0 ? (
+                          <div>
+                            {currentPreviousHit && (
+                              <div className="bg-white rounded-lg p-4 space-y-3">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="space-y-1 flex-1">
+                                    <Badge variant="outline" className="mb-2">
+                                      Atualização {currentPreviousHitIndex + 1} de {previousHits.length}
+                                    </Badge>
+                                    <p className="text-gray-900 font-medium">
+                                      {currentPreviousHit._source?.classe?.nome || "Atualização de processo"}
+                                    </p>
+                                    <p className="text-gray-600">
+                                      Última atualização: {formatDate(currentPreviousHit._source?.dataHoraUltimaAtualizacao)}
+                                    </p>
+                                    <p className="text-gray-600">
+                                      Data de ajuizamento: {formatDate(currentPreviousHit._source?.dataAjuizamento)}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-2">
+                                    {currentPreviousHit._source?.tribunal && (
+                                      <Badge variant="outline" className="text-gray-600">
+                                        Tribunal: {currentPreviousHit._source?.tribunal}
+                                      </Badge>
+                                    )}
+                                    {currentPreviousHit._source?.grau && (
+                                      <Badge variant="secondary" className="bg-gray-100">
+                                        Grau: {currentPreviousHit._source?.grau}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          ))
+                                
+                                <div className="bg-gray-50 p-3 rounded-md border border-gray-100">
+                                  <h5 className="font-medium text-sm text-gray-900 mb-2">Órgão Julgador</h5>
+                                  <p className="text-sm text-gray-700">
+                                    {currentPreviousHit._source?.orgaoJulgador?.nome || "Não informado"}
+                                    {currentPreviousHit._source?.orgaoJulgador?.codigo && (
+                                      <span className="text-gray-500"> (Código: {currentPreviousHit._source.orgaoJulgador.codigo})</span>
+                                    )}
+                                  </p>
+                                </div>
+                                
+                                {currentPreviousHit._source?.assuntos && currentPreviousHit._source.assuntos.length > 0 && (
+                                  <div className="bg-gray-50 p-3 rounded-md border border-gray-100">
+                                    <h5 className="font-medium text-sm text-gray-900 mb-2">Assuntos</h5>
+                                    <div className="space-y-1">
+                                      {currentPreviousHit._source.assuntos.map((assunto, index) => (
+                                        <p key={index} className="text-sm text-gray-700">
+                                          {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {currentPreviousHit._source?.movimentos && currentPreviousHit._source.movimentos.length > 0 && (
+                                  <div className="bg-gray-50 p-3 rounded-md border border-gray-100">
+                                    <h5 className="font-medium text-sm text-gray-900 mb-2">Movimentos Recentes</h5>
+                                    <div className="space-y-2">
+                                      {currentPreviousHit._source.movimentos.slice(0, 3).map((movimento, movIndex) => (
+                                        <div key={movIndex} className="border-l-2 border-gray-300 pl-2">
+                                          <p className="text-sm font-medium text-gray-800">{movimento.nome}</p>
+                                          <p className="text-xs text-gray-500">{formatDate(movimento.dataHora)}</p>
+                                          {movimento.complemento && (
+                                            <p className="text-xs text-gray-600 mt-1">{movimento.complemento}</p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div className="text-center py-4 text-gray-500">
                             Nenhuma atualização anterior encontrada
