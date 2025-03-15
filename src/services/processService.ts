@@ -1,12 +1,13 @@
+
 import { supabase } from "@/lib/supabase";
-import { DatajudProcess } from "@/types/datajud";
+import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
 import { saveProcessMovements } from "./process-movements";
 import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
 
-export async function saveProcess(processMovimentos: any[], selectedCourt: string, setImportProgress: (progress: number) => void) {
+export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean> {
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
     toast.error("Dados do processo incompletos");
     return false;
@@ -26,6 +27,7 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     // Get the main process (first procedural movement)
     const mainMovimento = processMovimentos[0];
     const mainProcess = mainMovimento.process;
+    const numeroProcesso = mainProcess.numeroProcesso;
     
     setImportProgress(10);
 
@@ -33,7 +35,7 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     const { data: existingProcess } = await supabase
       .from("processes")
       .select("id")
-      .eq("number", mainProcess.numeroProcesso)
+      .eq("number", numeroProcesso)
       .maybeSingle();
 
     if (existingProcess) {
@@ -42,11 +44,11 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       return false;
     }
     
-    setImportProgress(20);
+    setImportProgress(15);
 
     console.log("Process data to be inserted:", {
-      number: mainProcess.numeroProcesso,
-      title: `${mainProcess.classe?.nome || 'Processo'} - ${mainProcess.numeroProcesso}`,
+      number: numeroProcesso,
+      title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
       status: mainProcess.situacao?.nome || "Em andamento",
       court: mainProcess.tribunal,
@@ -59,8 +61,8 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     const { data: newProcess, error: insertError } = await supabase
       .from("processes")
       .insert({
-        number: mainProcess.numeroProcesso,
-        title: `${mainProcess.classe?.nome || 'Processo'} - ${mainProcess.numeroProcesso}`,
+        number: numeroProcesso,
+        title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
         description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
         status: mainProcess.situacao?.nome || "Em andamento",
         court: mainProcess.tribunal,
@@ -75,7 +77,7 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       .select()
       .single();
       
-    setImportProgress(30);
+    setImportProgress(20);
 
     if (insertError) {
       console.error("Error inserting main process:", insertError);
@@ -103,7 +105,7 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       // Continue with the import even if details fail
     }
     
-    setImportProgress(50);
+    setImportProgress(30);
 
     // STEP 3: Store process parties
     try {
@@ -117,75 +119,107 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       // Continue with the import even if parties fail
     }
 
-    setImportProgress(70);
+    setImportProgress(40);
 
-    // STEP 4: Create a hit record for the main process
-    let mainHitId: string | null = null;
-    try {
-      console.log("Creating main hit for process ID:", mainProcessId);
-      const { data: newHit, error: hitError } = await supabase
-        .from("process_hits")
-        .insert({
-          process_id: mainProcessId,
-          hit_id: mainMovimento.id || '',
-          hit_score: mainMovimento.score || 0,
-          tribunal: mainProcess.tribunal,
-          numero_processo: mainProcess.numeroProcesso,
-          data_ajuizamento: mainProcess.dataAjuizamento,
-          grau: mainProcess.grau,
-          nivel_sigilo: mainProcess.nivelSigilo || 0,
-          formato: mainProcess.formato,
-          sistema: mainProcess.sistema,
-          classe: mainProcess.classe,
-          orgao_julgador: mainProcess.orgaoJulgador,
-          data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
-          valor_causa: mainProcess.valorCausa,
-          situacao: mainProcess.situacao,
-          user_id: user.id
-        })
-        .select()
-        .single();
-        
-      if (hitError) {
-        console.error("Error saving main hit:", hitError);
-      } else {
-        console.log("Main hit saved with ID:", newHit.id);
-        mainHitId = newHit.id;
+    // STEP 4: Create hit records for EACH movimento processual
+    // Esta é a principal mudança - salvar cada hit individual
+    console.log(`Salvando ${processMovimentos.length} hits para o processo ${mainProcessId}`);
+    const processedHits: string[] = [];
+    let successfulHits = 0;
+    
+    for (let i = 0; i < processMovimentos.length; i++) {
+      const movimento = processMovimentos[i];
+      const hitId = movimento.id || '';
+      
+      // Verificar se já processamos este hit (evitar duplicidades)
+      if (processedHits.includes(hitId)) {
+        console.log(`Hit ${hitId} já foi processado, pulando...`);
+        continue;
       }
-    } catch (error) {
-      console.error("Error creating main hit:", error);
+      
+      processedHits.push(hitId);
+      
+      try {
+        console.log(`Salvando hit #${i+1}: ${hitId}`);
+        const { data: newHit, error: hitError } = await supabase
+          .from("process_hits")
+          .insert({
+            process_id: mainProcessId,
+            hit_id: hitId,
+            hit_score: movimento.score || 0,
+            tribunal: movimento.process.tribunal,
+            numero_processo: movimento.process.numeroProcesso,
+            data_ajuizamento: movimento.process.dataAjuizamento,
+            grau: movimento.process.grau,
+            nivel_sigilo: movimento.process.nivelSigilo || 0,
+            formato: movimento.process.formato,
+            sistema: movimento.process.sistema,
+            classe: movimento.process.classe,
+            orgao_julgador: movimento.process.orgaoJulgador,
+            data_hora_ultima_atualizacao: movimento.process.dataHoraUltimaAtualizacao,
+            valor_causa: movimento.process.valorCausa,
+            situacao: movimento.process.situacao,
+            user_id: user.id
+          })
+          .select()
+          .single();
+          
+        if (hitError) {
+          console.error(`Erro ao salvar hit ${hitId}:`, hitError);
+        } else {
+          console.log(`Hit ${hitId} salvo com ID: ${newHit.id}`);
+          successfulHits++;
+          
+          // STEP 5: Store movements for this hit
+          if (movimento.process.movimentos && movimento.process.movimentos.length > 0) {
+            try {
+              console.log(`Salvando ${movimento.process.movimentos.length} movimentos para o hit ${newHit.id}`);
+              const saveMovementsResult = await saveProcessMovements(
+                mainProcessId, 
+                movimento.process.movimentos, 
+                newHit.id
+              );
+              console.log(`Movimentos salvos para hit ${hitId}:`, saveMovementsResult);
+            } catch (movError) {
+              console.error(`Erro ao salvar movimentos para hit ${hitId}:`, movError);
+            }
+          }
+          
+          // STEP 6: Store subjects for this hit
+          if (movimento.process.assuntos && movimento.process.assuntos.length > 0) {
+            try {
+              console.log(`Salvando ${movimento.process.assuntos.length} assuntos para o hit ${newHit.id}`);
+              const saveSubjectsResult = await saveProcessSubjects(
+                mainProcessId, 
+                movimento.process.assuntos, 
+                newHit.id
+              );
+              console.log(`Assuntos salvos para hit ${hitId}:`, saveSubjectsResult);
+            } catch (subError) {
+              console.error(`Erro ao salvar assuntos para hit ${hitId}:`, subError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao salvar hit ${hitId}:`, error);
+      }
+      
+      // Atualizar o progresso com base no número de hits processados
+      const progressStep = 50 / processMovimentos.length;
+      setImportProgress(40 + Math.round((i + 1) * progressStep));
     }
     
-    setImportProgress(80);
-
-    // STEP 5: Store movements
-    if (mainHitId && mainProcess.movimentos && mainProcess.movimentos.length > 0) {
-      try {
-        console.log("Saving process movements:", mainProcess.movimentos.length);
-        const saveMovementsResult = await saveProcessMovements(mainProcessId, mainProcess.movimentos, mainHitId);
-        console.log("Process movements saved:", saveMovementsResult);
-      } catch (error) {
-        console.error("Error saving process movements:", error);
-      }
-    }
-    
-    setImportProgress(90);
-
-    // STEP 6: Store subjects
-    if (mainHitId && mainProcess.assuntos && mainProcess.assuntos.length > 0) {
-      try {
-        console.log("Saving process subjects:", mainProcess.assuntos.length);
-        const saveSubjectsResult = await saveProcessSubjects(mainProcessId, mainProcess.assuntos, mainHitId);
-        console.log("Process subjects saved:", saveSubjectsResult);
-      } catch (error) {
-        console.error("Error saving process subjects:", error);
-      }
-    }
+    console.log(`Processamento completo: ${successfulHits} de ${processMovimentos.length} hits foram salvos com sucesso`);
     
     setImportProgress(100);
     
-    toast.success("Processo importado com sucesso");
-    return true;
+    if (successfulHits > 0) {
+      toast.success(`Processo importado com sucesso (${successfulHits} movimento(s) processado(s))`);
+      return true;
+    } else {
+      toast.error("Erro: Nenhum movimento processual foi salvo");
+      return false;
+    }
   } catch (error) {
     console.error("Error importing process:", error);
     

@@ -13,7 +13,7 @@ export function useProcessImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
 
-  const handleProcessSelect = async (processNumber: string, courtEndpoint: string) => {
+  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<boolean> => {
     setIsLoading(true);
     setImportComplete(false);
     try {
@@ -30,15 +30,9 @@ export function useProcessImport() {
       
       console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
       
-      // Agrupamos os movimentos pelo mesmo número de processo
-      const numeroProcessoPrincipal = movimentos[0].process.numeroProcesso;
-      const movimentosDoProcesso = movimentos.filter(m => 
-        m.process.numeroProcesso === numeroProcessoPrincipal
-      );
-      
-      console.log(`Filtrado para ${movimentosDoProcesso.length} movimento(s) do mesmo processo`);
-      
-      setProcessMovimentos(movimentosDoProcesso);
+      // Armazenamos todos os movimentos - não filtramos mais por número de processo
+      // Isso é importante para capturar todos os hits relacionados
+      setProcessMovimentos(movimentos);
       setSelectedCourt(courtEndpoint);
       return true;
     } catch (error) {
