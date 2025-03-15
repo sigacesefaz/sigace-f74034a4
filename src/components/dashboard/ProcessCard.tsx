@@ -31,22 +31,11 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose
-} from "@/components/ui/dialog";
-import { formatProcessNumber } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { safeStringValue, isEmpty } from "@/lib/utils";
+import { formatProcessNumber } from "@/utils/format";
+import { safeStringValue } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { ProcessNavigation } from "@/components/process/ProcessNavigation";
 
 // Função para formatar datas de forma segura
 const formatDate = (dateString: string) => {
@@ -104,9 +93,9 @@ interface ProcessCardProps {
 
 export function ProcessCard({ process, relatedHits = [], onDelete, onView }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentTab, setCurrentTab] = useState("movimentacao");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentTab, setCurrentTab] = useState("dados");
   const [currentHitIndex, setCurrentHitIndex] = useState(0);
+  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
   const { toast } = useToast();
 
   // Validar que o processo é um objeto válido
@@ -135,16 +124,20 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
     setIsExpanded(!isExpanded);
   };
 
-  // Navegação entre hits relacionados
-  const nextHit = () => {
-    if (relatedHits.length > 0) {
-      setCurrentHitIndex((prev) => (prev + 1) % relatedHits.length);
+  // Navegação entre movimentos processuais
+  const handleNextMovimento = () => {
+    if (movimentos.length > 0) {
+      setCurrentMovimentoIndex((prev) => 
+        prev < movimentos.length - 1 ? prev + 1 : prev
+      );
     }
   };
 
-  const prevHit = () => {
-    if (relatedHits.length > 0) {
-      setCurrentHitIndex((prev) => (prev - 1 + relatedHits.length) % relatedHits.length);
+  const handlePrevMovimento = () => {
+    if (movimentos.length > 0) {
+      setCurrentMovimentoIndex((prev) => 
+        prev > 0 ? prev - 1 : prev
+      );
     }
   };
 
@@ -157,7 +150,7 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
   const metadata = currentProcess.metadata || {};
   
   // Extrair valores básicos com tratamento de segurança
-  const processNumber = formatProcessNumber(safeStringValue(currentProcess.number || getSafeNestedValue(metadata, 'numeroProcesso', '')));
+  const processNumber = formatProcessNumber(currentProcess.number);
   const lastUpdate = currentProcess.updated_at 
     ? formatDate(currentProcess.updated_at) 
     : "Não informado";
@@ -178,301 +171,186 @@ export function ProcessCard({ process, relatedHits = [], onDelete, onView }: Pro
   const movimentos = Array.isArray(metadata.movimentos) ? metadata.movimentos : [];
   const totalMovimentos = movimentos.length;
 
-  // Partes do processo
-  const partes = Array.isArray(metadata.partes) ? metadata.partes : [];
-
-  // Intimações com tratamento seguro
-  const intimacoes = Array.isArray(metadata.intimacoes) ? metadata.intimacoes : [];
-  
-  // Documentos com tratamento seguro
-  const documentos = Array.isArray(metadata.documentos) ? metadata.documentos : [];
-
-  // Decisões com tratamento seguro
-  const decisoes = Array.isArray(metadata.decisoes) ? metadata.decisoes : [];
+  // Obtém o movimento atual
+  const currentMovimento = movimentos[currentMovimentoIndex] || null;
   
   return (
     <Card className="mb-4 w-full shadow-sm">
-      <div className="px-4 pt-4 pb-2">
-        {/* Cabeçalho com tipo e última atualização */}
+      <div className="p-4">
+        {/* Cabeçalho do card */}
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="bg-purple-100 text-purple-700 border-none">
             {currentHitIndex === 0 ? "PROCESSO PRINCIPAL" : "PROCESSO RELACIONADO"}
           </Badge>
           <span className="text-gray-500 text-xs">Última atualização: {lastUpdate}</span>
         </div>
-        
-        {/* Título e número do processo */}
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="text-blue-600 font-medium">{processNumber}</div>
 
-        {/* Navegação entre hits */}
-        {relatedHits.length > 0 && (
-          <div className="flex items-center gap-2 mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={prevHit}
-              className="px-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-gray-500">
-              {currentHitIndex + 1} de {relatedHits.length + 1}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextHit}
-              className="px-2"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Informações principais */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold">{formatProcessNumber(process.number)}</h2>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-blue-600">{processNumber}</div>
+            <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+              {sistema}
+            </Badge>
           </div>
-        )}
-        
-        {/* Botão Expandir/Recolher */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleExpand}
-          className="mt-2"
-        >
-          {isExpanded ? (
-            <>
-              <ChevronUp className="h-4 w-4 mr-2" />
-              Ver menos
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-4 w-4 mr-2" />
-              Ver mais
-            </>
-          )}
-        </Button>
-      </div>
+        </div>
 
-      {isExpanded && (
-        <CardContent>
-          {/* Grid de informações do processo */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="flex items-start gap-2">
-              <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Data do Ajuizamento</div>
-                <div className="text-sm">{formatDate(dataAjuizamento)}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Building2 className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Sistema</div>
-                <div className="text-sm">{sistema}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Grau</div>
-                <div className="text-sm">{grau}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Building2 className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Órgão Julgador</div>
-                <div className="text-sm">{orgaoJulgador}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <ShieldAlert className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Nível de Sigilo</div>
-                <div className="text-sm">{nivelSigilo}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <FileText className="h-4 w-4 text-gray-500 mt-1" />
-              <div>
-                <div className="text-sm text-gray-500">Assunto Principal</div>
-                <div className="text-sm">{assuntoPrincipal}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Abas */}
-          <Tabs defaultValue="movimentacao" className="w-full">
-            <TabsList className="w-full bg-transparent border-b">
-              <TabsTrigger value="movimentacao" className="flex-1">
-                Movimentação
-                {movimentos.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {movimentos.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="intimacao" className="flex-1">
-                Intimação
-                {intimacoes.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {intimacoes.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="documentos" className="flex-1">
-                Documentos
-                {documentos.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {documentos.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="decisao" className="flex-1">
-                Decisão
-                {decisoes.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {decisoes.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="partes" className="flex-1">
-                Partes
-                {partes.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {partes.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="movimentacao" className="py-4">
-              <div className="space-y-4">
-                {movimentos.map((movimento: any, index: number) => (
-                  <div key={index} className="flex items-start gap-4 border-b pb-4">
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(movimento.dataHora)}
-                      </div>
-                      <div className="font-medium">{movimento.nome}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="intimacao" className="py-4">
-              <div className="space-y-4">
-                {intimacoes.map((intimacao: any, index: number) => (
-                  <div key={index} className="flex items-start gap-4 border-b pb-4">
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(intimacao.data)}
-                      </div>
-                      <div className="font-medium">{intimacao.descricao}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="documentos" className="py-4">
-              <div className="space-y-4">
-                {documentos.map((documento: any, index: number) => (
-                  <div key={index} className="flex items-start gap-4 border-b pb-4">
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(documento.data)}
-                      </div>
-                      <div className="font-medium">{documento.descricao}</div>
-                      {documento.tipo && (
-                        <div className="text-sm text-gray-500">
-                          Tipo: {documento.tipo}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="decisao" className="py-4">
-              <div className="space-y-4">
-                {decisoes.map((decisao: any, index: number) => (
-                  <div key={index} className="flex items-start gap-4 border-b pb-4">
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(decisao.data)}
-                      </div>
-                      <div className="font-medium">{decisao.descricao}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="partes" className="py-4">
-              <div className="space-y-4">
-                {partes.map((parte: any, index: number) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="font-medium mb-2">{parte.nome}</div>
-                    <div className="text-sm text-gray-500">Papel: {parte.papel}</div>
-                    {parte.documento && (
-                      <div className="text-sm text-gray-500">
-                        Documento: {parte.documento}
-                      </div>
-                    )}
-                    {Array.isArray(parte.advogados) && parte.advogados.length > 0 && (
-                      <div className="mt-2">
-                        <div className="text-sm font-medium">Advogados:</div>
-                        {parte.advogados.map((advogado: any, advIndex: number) => (
-                          <div key={advIndex} className="text-sm text-gray-500">
-                            {advogado.nome} - OAB: {advogado.inscricao}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Ações */}
-          <div className="flex justify-end gap-2 mt-4">
+        {/* Botões de ação */}
+        <div className="flex items-center justify-between mt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleExpand}
+            className="text-xs text-gray-500 hover:text-gray-700"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-3 w-3 mr-1" />
+                Ver menos
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Ver mais
+              </>
+            )}
+          </Button>
+          
+          <div className="flex items-center gap-2">
             {onView && (
               <Button variant="outline" size="sm" onClick={handleView}>
-                <Eye className="h-4 w-4 mr-2" />
-                Visualizar
+                <Eye className="h-4 w-4" />
               </Button>
             )}
             {onDelete && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirmar exclusão</DialogTitle>
-                    <DialogDescription>
-                      Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancelar</Button>
-                    </DialogClose>
-                    <Button variant="destructive" onClick={handleDelete}>
-                      Excluir
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" size="sm" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </div>
-        </CardContent>
-      )}
+        </div>
+
+        {/* Seção expansível */}
+        {isExpanded && (
+          <div className="mt-6">
+            <Tabs value={currentTab} onValueChange={setCurrentTab}>
+              <TabsList className="w-full">
+                <TabsTrigger value="dados">Dados do Processo</TabsTrigger>
+                <TabsTrigger value="movimentacao">
+                  Movimentação Processual
+                  {movimentos.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
+                      {movimentos.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dados" className="mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <div className="text-sm text-gray-500">Data do Ajuizamento</div>
+                      <div className="text-sm">{formatDate(dataAjuizamento)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <div className="text-sm text-gray-500">Órgão Julgador</div>
+                      <div className="text-sm">{orgaoJulgador}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <div className="text-sm text-gray-500">Grau</div>
+                      <div className="text-sm">{grau}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <ShieldAlert className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <div className="text-sm text-gray-500">Nível de Sigilo</div>
+                      <div className="text-sm">{nivelSigilo}</div>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-start gap-2">
+                      <FileText className="h-4 w-4 text-gray-500 mt-1" />
+                      <div>
+                        <div className="text-sm text-gray-500">Assuntos</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {assuntos.map((assunto: any, index: number) => (
+                            <Badge 
+                              key={index}
+                              variant="secondary" 
+                              className="bg-yellow-50 text-yellow-800"
+                            >
+                              {assunto.nome}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="movimentacao" className="mt-4">
+                {movimentos.length > 0 ? (
+                  <div className="space-y-4">
+                    <ProcessNavigation
+                      currentMovimentoIndex={currentMovimentoIndex}
+                      totalMovimentos={movimentos.length}
+                      handlePrevMovimento={handlePrevMovimento}
+                      handleNextMovimento={handleNextMovimento}
+                    />
+                    
+                    {currentMovimento && (
+                      <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="font-medium text-gray-900">
+                              {currentMovimento.nome}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {formatDate(currentMovimento.dataHora)}
+                            </div>
+                          </div>
+                          {currentMovimento.codigo && (
+                            <Badge variant="outline" className="text-gray-600">
+                              Código: {currentMovimento.codigo}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {currentMovimento.complemento && (
+                          <div className="text-sm text-gray-700 bg-white p-3 rounded border">
+                            {currentMovimento.complemento}
+                          </div>
+                        )}
+                        
+                        {currentMovimento.tipo && (
+                          <div className="text-sm text-gray-500">
+                            Tipo: {currentMovimento.tipo}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma movimentação processual encontrada
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

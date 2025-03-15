@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
+import { formatProcessNumber } from "@/utils/format";
 
 interface ProcessListProps {
   processes: Process[];
@@ -179,15 +180,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     } catch {
       return "Data inválida";
     }
-  };
-
-  const formatProcessNumber = (number?: string) => {
-    if (!number) return "Número não informado";
-    const cleanNumber = number.replace(/\D/g, '');
-    if (cleanNumber.length === 20) {
-      return `${cleanNumber.slice(0, 7)}-${cleanNumber.slice(7, 9)}.${cleanNumber.slice(9, 13)}.${cleanNumber.slice(13, 14)}.${cleanNumber.slice(14, 16)}.${cleanNumber.slice(16)}`;
-    }
-    return number;
   };
 
   const toggleProcessSelection = (id: string) => {
@@ -461,7 +453,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         showOverviewId === parentProcess.id ? "rotate-90" : ""
                       }`}
                     />
-                    Dados do Processo
+                    Movimentação Processual
                   </button>
                   <div 
                     id={`overview-${parentProcess.id}`}
@@ -471,44 +463,93 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         : "opacity-0 max-h-0 overflow-hidden"
                     }`}
                   >
-                    <div className="space-y-1">
-                      <div className="bg-white rounded-lg p-2 space-y-1">
-                        <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
-                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {parentProcess.number || "Não informado"}</p>
-                          <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                          <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                          <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                          <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
-                        </div>
-                      </div>
+                    <Tabs defaultValue="atual" className="w-full">
+                      <TabsList className="w-full mb-2">
+                        <TabsTrigger value="atual" className="flex-1">Atual</TabsTrigger>
+                        <TabsTrigger value="anteriores" className="flex-1">Anteriores</TabsTrigger>
+                      </TabsList>
 
-                      <div className="bg-white rounded-lg p-2 space-y-1">
-                        <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                        <div className="text-sm">
-                          {parentProcess.metadata?.assuntos?.map((assunto, index) => (
-                            <p key={index} className="text-gray-700">
-                              {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                            </p>
-                          )) || <p className="text-gray-500">Não informado</p>}
-                        </div>
-                      </div>
+                      <TabsContent value="atual" className="space-y-2">
+                        <div className="space-y-2">
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                              <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
+                              <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
+                              <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
+                              <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
+                              <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
+                            </div>
+                          </div>
 
-                      <div className="bg-white rounded-lg p-2 space-y-1">
-                        <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
-                        </div>
-                      </div>
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
+                            <div className="text-sm">
+                              {parentProcess.metadata?.assuntos?.map((assunto, index) => (
+                                <p key={index} className="text-gray-700">
+                                  {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
+                                </p>
+                              )) || <p className="text-gray-500">Não informado</p>}
+                            </div>
+                          </div>
 
-                      <div className="bg-white rounded-lg p-2 space-y-1">
-                        <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                          <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
+                            <div className="text-sm">
+                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
+                            <div className="text-sm">
+                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
+                              <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      </TabsContent>
+
+                      <TabsContent value="anteriores" className="space-y-2">
+                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 1 ? (
+                          parentProcess.movimentacoes.slice(1).map((movimento, index) => (
+                            <div key={index} className="bg-white rounded-lg p-4 space-y-3">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="space-y-1 flex-1">
+                                  <p className="text-gray-900 font-medium">
+                                    {movimento.descricao}
+                                  </p>
+                                  <p className="text-gray-600">
+                                    {formatDate(movimento.data)}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  {movimento.codigo && (
+                                    <Badge variant="outline" className="text-gray-600">
+                                      Código: {movimento.codigo}
+                                    </Badge>
+                                  )}
+                                  {movimento.tipo && (
+                                    <Badge variant="secondary" className="bg-gray-100">
+                                      {movimento.tipo}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              {movimento.complemento && (
+                                <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
+                                  {movimento.complemento}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-gray-500">
+                            Nenhuma movimentação anterior encontrada
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
                   </div>
                 </div>
 

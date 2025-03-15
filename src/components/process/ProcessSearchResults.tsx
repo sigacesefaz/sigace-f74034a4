@@ -1,7 +1,7 @@
-
 import { DatajudProcess } from "@/types/datajud";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatProcessNumber } from "@/utils/format";
 
 interface ProcessSearchResultsProps {
   results: DatajudProcess[];
@@ -70,23 +70,27 @@ export function ProcessSearchResults({
       </div>
 
       <div className="space-y-3">
-        {results.map((process, index) => (
+        {results.map((result, index) => (
           <Card 
             key={index}
             className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => handleProcessSelect(process)}
+            onClick={() => handleProcessSelect(result)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                handleProcessSelect(process);
+                handleProcessSelect(result);
               }
             }}
           >
             <div className="flex flex-col gap-2">
-              <div className="font-medium">{process.classe?.nome || "Sem classe"}</div>
-              <div className="text-sm text-muted-foreground font-mono">{process.numeroProcesso}</div>
-              <div className="text-xs text-gray-500">{process.tribunal}</div>
+              <div className="font-medium">{result.classe?.nome || "Sem classe"}</div>
+              <div className="flex flex-col">
+                <h3 className="font-medium text-gray-900">
+                  {formatProcessNumber(result.numeroProcesso)}
+                </h3>
+              </div>
+              <div className="text-xs text-gray-500">{result.tribunal}</div>
             </div>
           </Card>
         ))}

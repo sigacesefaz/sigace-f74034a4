@@ -1,6 +1,4 @@
-
 import React, { useState, useMemo } from "react";
-import { Card } from "@/components/ui/card";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -80,45 +78,43 @@ export function ProcessDetails({
 
   return (
     <div>
-      <Card className="p-4">
-        <ProcessHeader 
-          currentProcess={currentProcess} 
-          importProgress={importProgress}
-          isImporting={isImporting}
-          handleImportProcess={handleImportProcess}
-          isPublicView={isPublicView}
-        />
-        
-        <ProcessNavigation
-          currentMovimentoIndex={currentMovimentoIndex}
-          totalMovimentos={totalMovimentos}
-          handlePrevMovimento={handlePrevMovimento}
-          handleNextMovimento={handleNextMovimento}
-        />
+      <ProcessHeader 
+        currentProcess={currentProcess} 
+        importProgress={importProgress}
+        isImporting={isImporting}
+        handleImportProcess={handleImportProcess}
+        isPublicView={isPublicView}
+      />
+      
+      <ProcessNavigation
+        currentMovimentoIndex={currentMovimentoIndex}
+        totalMovimentos={totalMovimentos}
+        handlePrevMovimento={handlePrevMovimento}
+        handleNextMovimento={handleNextMovimento}
+      />
 
-        <ProcessInformation currentProcess={currentProcess} />
-        
-        <ProcessEvents currentProcess={currentProcess} />
-        
-        {!isPublicView && (
-          <ProcessPartiesList parties={currentProcess.partes} />
-        )}
-        
-        {isPublicView && (
-          <div className="mt-6 text-center">
-            <Button 
-              onClick={onCancel}
-              className="bg-gray-500 text-white hover:bg-gray-600"
-            >
-              Voltar
-            </Button>
-            <p className="mt-4 text-xs text-gray-500">
-              Esta consulta pública é fornecida apenas para fins informativos.
-              Os dados são provenientes da API DataJud e podem estar incompletos ou desatualizados.
-            </p>
-          </div>
-        )}
-      </Card>
+      <ProcessInformation currentProcess={currentProcess} />
+      
+      <ProcessEvents currentProcess={currentProcess} />
+      
+      {!isPublicView && (
+        <ProcessPartiesList parties={currentProcess.partes} />
+      )}
+      
+      {isPublicView && (
+        <div className="mt-6 text-center">
+          <Button 
+            onClick={onCancel}
+            className="bg-gray-500 text-white hover:bg-gray-600"
+          >
+            Voltar
+          </Button>
+          <p className="mt-4 text-xs text-gray-500">
+            Esta consulta pública é fornecida apenas para fins informativos.
+            Os dados são provenientes da API DataJud e podem estar incompletos ou desatualizados.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

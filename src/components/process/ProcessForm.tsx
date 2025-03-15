@@ -203,26 +203,21 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Classe do Processo*</FormLabel>
-                <div className="flex gap-2">
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma classe" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="primeira">Primeira Instância</SelectItem>
-                      <SelectItem value="segunda">Segunda Instância</SelectItem>
-                      <SelectItem value="superior">Superior</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" onClick={onCancel}>
-                    Importar Processo
-                  </Button>
-                </div>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma classe" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="primeira">Primeira Instância</SelectItem>
+                    <SelectItem value="segunda">Segunda Instância</SelectItem>
+                    <SelectItem value="superior">Superior</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

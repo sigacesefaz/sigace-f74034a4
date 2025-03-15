@@ -44,14 +44,53 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/consultas" className="text-sm text-gray-300 hover:text-[#fec30b] transition-colors">
+                <button 
+                  onClick={() => {
+                    // Scroll to top first
+                    window.scrollTo(0, 0);
+                    // Find the Consulta Pública button in the hero section and click it
+                    const consultaButton = document.querySelector('button.bg-white\\/10.text-white') as HTMLButtonElement;
+                    if (consultaButton) {
+                      consultaButton.click();
+                    }
+                  }} 
+                  className="text-sm text-gray-300 hover:text-[#fec30b] transition-colors"
+                >
                   Consultas Públicas
-                </Link>
+                </button>
               </li>
               <li>
-                <Link to="/sobre" className="text-sm text-gray-300 hover:text-[#fec30b] transition-colors">
-                  Sobre o Sistema
-                </Link>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="text-gray-300 hover:text-[#fec30b] transition-colors">
+                      Sobre o Sistema
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <div className="flex justify-center mb-4">
+                        <img
+                          src="/images/logo_to_sefaz.png"
+                          alt="SEFAZ TI Logo"
+                          className="h-24"
+                        />
+                      </div>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <DialogDescription className="text-base leading-relaxed space-y-4">
+                        <p className="text-justify">
+                          O SIGACE - Sistema de Gestão de Ações Contra o Estado - Tocantins foi desenvolvido pela Superintendência de Tecnologia e Inovação Fazendária (STIF), através da Diretoria de Inovação, com o objetivo de otimizar a gestão de processos impetrados contra a Secretaria da Fazenda do Estado do Tocantins.
+                        </p>
+                        <p className="text-justify">
+                          A ferramenta permite o acompanhamento completo de cada etapa dos processos, desde a sua abertura até a conclusão, proporcionando maior eficiência e transparência na tramitação. Além disso, o sistema utiliza a API Pública do DataJud (<a href="https://www.cnj.jus.br/sistemas/datajud/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://www.cnj.jus.br/sistemas/datajud/</a>), órgão ligado ao Conselho Nacional de Justiça (CNJ), para acesso a informações processuais relevantes.
+                        </p>
+                        <p className="text-justify">
+                          Com este sistema, buscamos modernizar a gestão pública e oferecer um serviço cada vez mais ágil e eficaz para os cidadãos e servidores.
+                        </p>
+                      </DialogDescription>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </li>
               <li>
                 <Dialog>
@@ -62,59 +101,47 @@ export function Footer() {
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl">
                     <DialogHeader>
-                      <div className="flex justify-center mb-4">
+                      <div className="flex justify-center mb-2">
                         <img
-                          src="/images/datajud-logo.jpg"
+                          src="/images/datajud-e-mail-mkt-cabecalho.jpg"
                           alt="DataJud Logo"
-                          className="h-20"
+                          className="h-16"
                         />
                       </div>
                     </DialogHeader>
-                    <div className="space-y-6">
-                      <DialogDescription className="text-base leading-relaxed space-y-4">
-                        <p className="text-justify">
+                    <div className="space-y-3">
+                      <DialogDescription className="text-base leading-relaxed space-y-2">
+                        <p className="text-justify text-sm">
                           O DataJud é uma base de dados nacional do Poder Judiciário que
                           concentra informações processuais dos diversos segmentos da Justiça.
                           O sistema foi desenvolvido pelo Conselho Nacional de Justiça (CNJ)
                           para atender à Resolução CNJ nº 331/2020.
                         </p>
-                        <p className="text-justify">
+                        <p className="text-justify text-sm">
                             Dentre as inovações trazidas pela Resolução, cabe destacar a possibilidade 
                             das informações do DataJud serem disponibilizadas por meio de API pública, 
                             resguardados o sigilo e a confidencialidade das informações, nos termos da 
                             legislação processual e da Lei Geral de Proteção de Dados.
+                        </p>
+                        <div className="bg-blue-100 p-2 rounded-lg border border-blue-200 my-2">
+                          <p className="text-blue-900 font-semibold text-center text-sm">
+                            Este sistema usa a API Pública do DATAJUD
                           </p>
-                          <p className="text-primary font-medium mt-2">
-                            Este sistema usa a API Pública do DATAJUD.
-                          </p>
-                        <p className="text-justify">
+                        </div>
+                        <p className="text-justify text-sm">
                           O objetivo do DataJud é proporcionar uma visão abrangente e
                           detalhada do funcionamento do Judiciário brasileiro, permitindo:
                         </p>
-                        <ul className="list-disc pl-6 space-y-2">
+                        <ul className="list-disc pl-6 space-y-1 text-sm">
                           <li>Gestão eficiente dos processos judiciais</li>
                           <li>Análise estatística do desempenho dos tribunais</li>
                           <li>Transparência das informações processuais</li>
                           <li>Aprimoramento das políticas judiciárias</li>
                         </ul>
-                        <p>
+                        <p className="text-sm">
                           Para mais informações e acesso ao sistema DataJud, visite o portal
-                          oficial do CNJ:
+                          oficial do CNJ - DataJud: <a href="https://www.cnj.jus.br/sistemas/datajud/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://www.cnj.jus.br/sistemas/datajud/</a>
                         </p>
-                        <div className="flex justify-center pt-4">
-                          <Button
-                            asChild
-                            className="bg-primary hover:bg-primary/90"
-                          >
-                            <a
-                              href="https://www.cnj.jus.br/sistemas/datajud/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Acessar Portal DataJud
-                            </a>
-                          </Button>
-                        </div>
                       </DialogDescription>
                     </div>
                   </DialogContent>
@@ -145,7 +172,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-300 hover:text-[#fec30b] transition-colors">
                 <MailIcon className="h-4 w-4" />
-                contato@sefaz.to.gov.br
+                sigace@sefaz.to.gov.br
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-300 hover:text-[#fec30b] transition-colors">
                 <MailIcon className="h-4 w-4" />

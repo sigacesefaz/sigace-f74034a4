@@ -1,8 +1,8 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DatajudProcess } from "@/types/datajud";
+import { formatProcessNumber } from "@/utils/format";
 
 interface ProcessHeaderProps {
   currentProcess: DatajudProcess;
@@ -24,7 +24,7 @@ export function ProcessHeader({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold">{currentProcess.classe?.nome || "Processo"}</h1>
-          <div className="font-mono text-gray-700 mt-1">{currentProcess.numeroProcesso}</div>
+          <div className="font-mono text-gray-700 mt-1">{formatProcessNumber(currentProcess.numeroProcesso)}</div>
         </div>
         
         {!isPublicView && handleImportProcess && (

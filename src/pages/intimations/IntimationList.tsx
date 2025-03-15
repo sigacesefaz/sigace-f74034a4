@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { getIntimations } from "@/services/intimations";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { DashboardManagerFooter } from "@/components/dashboard/DashboardManagerFooter";
 import { Plus, Search, Trash2, Loader2, FileText } from "lucide-react";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardManagerFooter } from "@/components/dashboard/DashboardManagerFooter";
 
 interface Intimation {
   id: string;
@@ -164,180 +165,163 @@ export default function IntimationList() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="fixed w-full top-0 z-50 border-b bg-white shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Link to="/dashboard">
-                <img 
-                  src="/images/logo_sefaz_estado.png" 
-                  alt="Governo do Tocantins" 
-                  className="h-12 object-contain"
-                  style={{ filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))" }}
+      <DashboardHeader />
+      <main className="flex-1 pt-16">
+        <div className="container mx-auto py-8">
+          <div className="flex justify-between items-center mb-6 my-0 py-0 px-0 mx-[33px]">
+            <h1 className="text-2xl font-bold text-[#2e3092]">Intimações</h1>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <Input 
+                  type="search" 
+                  placeholder="Pesquisar intimações..." 
+                  className="pl-10 w-64" 
+                  value={searchQuery} 
+                  onChange={e => setSearchQuery(e.target.value)} 
                 />
-              </Link>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-[#2e3092]">SIGACE</span>
-                <span className="text-xs text-gray-500">Secretaria da Fazenda do Tocantins</span>
               </div>
+              <Button asChild variant="default" className="bg-[#2e3092] hover:bg-[#2e3092]/90">
+                <Link to="/intimations/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Intimação
+                </Link>
+              </Button>
             </div>
           </div>
-        </div>
-      </header>
-      
-      <main className="flex-1 p-8 bg-gray-50 mt-16">
-        <div className="container py-8 mx-auto">
-          <div className="flex flex-col space-y-8">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-[#2e3092]">Intimações</h1>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <Input type="search" placeholder="Pesquisar intimações..." className="pl-10 w-[300px]" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                </div>
-                <Button asChild variant="default" className="bg-[#2e3092] hover:bg-[#2e3092]/90">
-                  <Link to="/intimations/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Intimação
-                  </Link>
-                </Button>
-              </div>
+
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2e3092]"></div>
             </div>
-
-            {loading ? (
-              <div className="flex justify-center py-10">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2e3092]"></div>
-              </div>
-            ) : filteredIntimations.length === 0 ? (
-              <Card className="p-8 text-center">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-4">Nenhuma intimação encontrada</p>
-                <Button asChild className="bg-[#2e3092] hover:bg-[#2e3092]/90">
-                  <Link to="/intimations/new">
-                    Cadastrar Nova Intimação
-                  </Link>
-                </Button>
-              </Card>
-            ) : (
-              <>
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      id="select-all" 
-                      className="w-4 h-4 rounded" 
-                      checked={selectedIntimations.length === filteredIntimations.length} 
-                      onChange={toggleAllIntimations} 
-                    />
-                    <label htmlFor="select-all" className="text-sm text-gray-600">
-                      Selecionar Todas
-                    </label>
-                  </div>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={handleBulkDelete} 
-                    disabled={selectedIntimations.length === 0 || isDeleting}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
-                    )}
-                    Excluir Selecionadas ({selectedIntimations.length})
-                  </Button>
+          ) : filteredIntimations.length === 0 ? (
+            <Card className="p-8 text-center">
+              <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 mb-4">Nenhuma intimação encontrada</p>
+              <Button asChild className="bg-[#2e3092] hover:bg-[#2e3092]/90">
+                <Link to="/intimations/new">
+                  Cadastrar Nova Intimação
+                </Link>
+              </Button>
+            </Card>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    id="select-all" 
+                    className="w-4 h-4 rounded" 
+                    checked={selectedIntimations.length === filteredIntimations.length} 
+                    onChange={toggleAllIntimations} 
+                  />
+                  <label htmlFor="select-all" className="text-sm text-gray-600">
+                    Selecionar Todas
+                  </label>
                 </div>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={handleBulkDelete} 
+                  disabled={selectedIntimations.length === 0 || isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Excluir Selecionadas ({selectedIntimations.length})
+                </Button>
+              </div>
 
-                <div className="grid gap-4">
-                  {currentItems.map(intimation => (
-                    <Card key={intimation.id} className="p-4 shadow-sm">
-                      <div className="flex items-start">
-                        <div className="pr-4">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded" 
-                            checked={selectedIntimations.includes(intimation.id)} 
-                            onChange={() => toggleIntimationSelection(intimation.id)} 
-                          />
-                        </div>
-                        <div className="flex-grow">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h2 className="text-lg font-bold">{intimation.title || "Sem título"}</h2>
-                              <p className="text-sm text-gray-500">
-                                Processo: {intimation.process_number || "N/A"}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                intimation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                intimation.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                intimation.status === 'expired' ? 'bg-red-100 text-red-800' : 
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {translateStatus(intimation.status)}
-                              </span>
-                            </div>
+              <div className="grid gap-4">
+                {currentItems.map(intimation => (
+                  <Card key={intimation.id} className="p-4 shadow-sm">
+                    <div className="flex items-start">
+                      <div className="pr-4">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded" 
+                          checked={selectedIntimations.includes(intimation.id)} 
+                          onChange={() => toggleIntimationSelection(intimation.id)} 
+                        />
+                      </div>
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h2 className="text-lg font-bold">{intimation.title || "Sem título"}</h2>
+                            <p className="text-sm text-gray-500">
+                              Processo: {intimation.process_number || "N/A"}
+                            </p>
                           </div>
-                          <p className="text-gray-600 mt-2 mb-4">{intimation.description || "Sem descrição"}</p>
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center space-x-2 text-xs text-gray-500">
-                              <span>Data limite: {formatDate(intimation.deadline)}</span>
-                              <span>•</span>
-                              <span>Criado em: {formatDate(intimation.created_at)}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button variant="outline" size="sm" className="border-gray-200" asChild>
-                                <Link to={`/intimations/${intimation.id}`}>
-                                  <FileText className="h-4 w-4 mr-1" />
-                                  Detalhes
-                                </Link>
-                              </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm" 
-                                onClick={() => handleDeleteIntimation(intimation.id)} 
-                                disabled={isDeleting}
-                              >
-                                {isDeleting ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              intimation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                              intimation.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                              intimation.status === 'expired' ? 'bg-red-100 text-red-800' : 
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {translateStatus(intimation.status)}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 mt-2 mb-4">{intimation.description || "Sem descrição"}</p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                            <span>Data limite: {formatDate(intimation.deadline)}</span>
+                            <span>•</span>
+                            <span>Criado em: {formatDate(intimation.created_at)}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="sm" className="border-gray-200" asChild>
+                              <Link to={`/intimations/${intimation.id}`}>
+                                <FileText className="h-4 w-4 mr-1" />
+                                Detalhes
+                              </Link>
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => handleDeleteIntimation(intimation.id)} 
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-6 flex justify-center">
-                    <div className="flex gap-2">
-                      {[...Array(totalPages).keys()].map(page => (
-                        <Button 
-                          key={page} 
-                          variant={currentPage === page + 1 ? "default" : "outline"} 
-                          className={currentPage === page + 1 ? "bg-[#2e3092] hover:bg-[#2e3092]/90" : ""} 
-                          onClick={() => setCurrentPage(page + 1)}
-                        >
-                          {page + 1}
-                        </Button>
-                      ))}
                     </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex justify-center">
+                  <div className="flex gap-2">
+                    {[...Array(totalPages).keys()].map(page => (
+                      <Button 
+                        key={page} 
+                        variant={currentPage === page + 1 ? "default" : "outline"} 
+                        className={currentPage === page + 1 ? "bg-[#2e3092] hover:bg-[#2e3092]/90" : ""} 
+                        onClick={() => setCurrentPage(page + 1)}
+                      >
+                        {page + 1}
+                      </Button>
+                    ))}
                   </div>
-                )}
-              </>
-            )}
-          </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
-
       <DashboardManagerFooter />
     </div>
   );

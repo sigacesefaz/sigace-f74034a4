@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { safeStringValue, getSafeNestedValue } from "@/utils/data";
 import { ProcessTimeline } from "./ProcessTimeline";
 import ProcessParties from "./ProcessParties";
+import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessMovements } from "./ProcessMovements";
 
 interface ProcessCardProps {
@@ -32,20 +33,11 @@ interface ProcessCardProps {
 
 export function ProcessCard({ process }: ProcessCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [showMovements, setShowMovements] = useState(false);
+  const [currentTab, setCurrentTab] = useState("dados");
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
-  const [isTabsExpanded, setIsTabsExpanded] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const movimentos = process.metadata?.movimentos || [];
   const totalMovimentos = movimentos.length;
-  const totalPages = Math.ceil(totalMovimentos / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-
-  const currentPageMovimentos = movimentos
-    .sort((a: any, b: any) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime())
-    .slice(startIndex, startIndex + itemsPerPage);
 
   const formatDate = (date: string) => {
     try {
@@ -67,82 +59,8 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
-  const renderProcessInfo = (processData: any) => (
-    <div className="grid grid-cols-2 gap-6 mb-6">
-      <div className="flex items-start gap-2">
-        <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
-        <div>
-          <div className="text-sm text-muted-foreground">Data do Ajuizamento</div>
-          <div className="text-sm">
-            {formatDate(getSafeNestedValue(processData.metadata, 'dataAjuizamento'))}
-          </div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2">
-        <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-        <div>
-          <div className="text-sm text-muted-foreground">Sistema</div>
-          <div className="text-sm">{safeStringValue(processData.metadata?.sistema?.nome, "Inválido")}</div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2">
-        <Scale className="h-4 w-4 text-muted-foreground mt-1" />
-        <div>
-          <div className="text-sm text-muted-foreground">Grau</div>
-          <div className="text-sm">{safeStringValue(processData.metadata?.grau, "G1")}</div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2">
-        <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-        <div>
-          <div className="text-sm text-muted-foreground">Órgão Julgador</div>
-          <div className="text-sm">{safeStringValue(processData.metadata?.orgaoJulgador?.nome)}</div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2 col-span-2">
-        <div className="flex-1">
-          <div className="text-sm text-muted-foreground mb-1">Assuntos</div>
-          <div className="flex flex-wrap gap-1">
-            {Array.isArray(processData.metadata?.assuntos) ? (
-              processData.metadata.assuntos.map((assunto: any, index: number) => (
-                <Badge key={index} variant="secondary" className="bg-yellow-50 text-yellow-800 hover:bg-yellow-50">
-                  {safeStringValue(assunto.nome)}
-                </Badge>
-              ))
-            ) : (
-              <Badge variant="secondary" className="bg-yellow-50 text-yellow-800 hover:bg-yellow-50">
-                {safeStringValue(processData.metadata?.assuntos)}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="flex items-start gap-2">
-        <Eye className="h-4 w-4 text-muted-foreground mt-1" />
-        <div>
-          <div className="text-sm text-muted-foreground">Nível de Sigilo</div>
-          <div className="text-sm">{safeStringValue(processData.metadata?.nivelSigilo, "Público")}</div>
-        </div>
-      </div>
-      <div className="flex items-end justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowMovements(!showMovements)}
-          className="gap-2"
-        >
-          <Eye className="h-4 w-4" />
-          {showMovements ? "Ocultar Movimentação" : "Ver Movimentação"}
-        </Button>
-      </div>
-
-      {showMovements && process.metadata?.movimentos && (
-        <div className="col-span-2">
-          <ProcessMovements movimentos={process.metadata.movimentos} />
-        </div>
-      )}
-    </div>
-  );
+  // Obtém o movimento atual
+  const currentMovimento = movimentos[currentMovimentoIndex] || null;
 
   return (
     <Card className="p-6">
@@ -182,122 +100,174 @@ export function ProcessCard({ process }: ProcessCardProps) {
       </Button>
 
       {isExpanded && (
-        <>
-          {renderProcessInfo(process)}
-
-          {process.hits && process.hits.length > 0 && (
-            <div className="mt-8 space-y-6">
-              <h3 className="text-lg font-medium">Processos Relacionados</h3>
-              {process.hits.map((hit) => (
-                <div key={hit.id} className="border-t pt-6">
-                  <div className="space-y-2 mb-4">
-                    <h4 className="text-md font-medium">{safeStringValue(hit.type)}</h4>
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm text-blue-600">{safeStringValue(hit.number)}</div>
-                      <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                        {safeStringValue(hit.metadata?.formato, "Eletrônico")}
-                      </Badge>
-                    </div>
-                  </div>
-                  {renderProcessInfo(hit)}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <Tabs defaultValue="movimentacao" className="w-full">
-            <TabsList className="w-full bg-transparent border-b">
-              <TabsTrigger 
-                value="movimentacao" 
-                className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Movimentação
-                {process.metadata?.movimentos?.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-900">
-                    {process.metadata.movimentos.length}
+        <div className="mt-6">
+          <Tabs value={currentTab} onValueChange={setCurrentTab}>
+            <TabsList className="w-full">
+              <TabsTrigger value="dados">Dados do Processo</TabsTrigger>
+              <TabsTrigger value="movimentacao">
+                Movimentação Processual
+                {movimentos.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
+                    {movimentos.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="intimacao" 
-                className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Intimação
-              </TabsTrigger>
-              <TabsTrigger 
-                value="documentos" 
-                className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Documentos
-              </TabsTrigger>
-              <TabsTrigger 
-                value="decisao" 
-                className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Decisão
-              </TabsTrigger>
-              <TabsTrigger 
-                value="partes" 
-                className="flex-1 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Partes
-              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="movimentacao">
-              <ProcessTimeline 
-                events={process.metadata?.movimentos?.map((mov: any) => ({
-                  id: mov.id || String(Math.random()),
-                  date: mov.data,
-                  title: mov.descricao,
-                  type: "movement"
-                })) || []}
-                maxItems={5}
-              />
+            <TabsContent value="dados" className="mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-start gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Data do Ajuizamento</div>
+                    <div className="text-sm">
+                      {formatDate(getSafeNestedValue(process.metadata, 'dataAjuizamento'))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Sistema</div>
+                    <div className="text-sm">{safeStringValue(process.metadata?.sistema?.nome, "Inválido")}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Scale className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Grau</div>
+                    <div className="text-sm">{safeStringValue(process.metadata?.grau, "G1")}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Órgão Julgador</div>
+                    <div className="text-sm">{safeStringValue(process.metadata?.orgaoJulgador?.nome)}</div>
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-500 mb-1">Assuntos</div>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.isArray(process.metadata?.assuntos) ? (
+                          process.metadata.assuntos.map((assunto: any, index: number) => (
+                            <Badge 
+                              key={index}
+                              variant="secondary" 
+                              className="bg-yellow-50 text-yellow-800 hover:bg-yellow-50"
+                            >
+                              {safeStringValue(assunto.nome)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary" className="bg-yellow-50 text-yellow-800 hover:bg-yellow-50">
+                            {safeStringValue(process.metadata?.assuntos)}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Eye className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Nível de Sigilo</div>
+                    <div className="text-sm">{safeStringValue(process.metadata?.nivelSigilo, "Público")}</div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
-            <TabsContent value="intimacao">
-              <ProcessTimeline 
-                events={process.metadata?.intimacoes?.map((int: any) => ({
-                  id: int.id || String(Math.random()),
-                  date: int.data,
-                  title: int.descricao,
-                  type: "document"
-                })) || []}
-                maxItems={5}
-              />
-            </TabsContent>
-
-            <TabsContent value="documentos">
-              <ProcessTimeline 
-                events={process.metadata?.documentos?.map((doc: any) => ({
-                  id: doc.id || String(Math.random()),
-                  date: doc.data,
-                  title: doc.descricao,
-                  type: "document",
-                  metadata: { documentType: doc.tipo }
-                })) || []}
-                maxItems={5}
-              />
-            </TabsContent>
-
-            <TabsContent value="decisao">
-              <ProcessTimeline 
-                events={process.metadata?.decisoes?.map((dec: any) => ({
-                  id: dec.id || String(Math.random()),
-                  date: dec.data,
-                  title: dec.descricao,
-                  type: "decision"
-                })) || []}
-                maxItems={5}
-              />
-            </TabsContent>
-
-            <TabsContent value="partes">
-              <ProcessParties processId={process.id} />
+            <TabsContent value="movimentacao" className="mt-4">
+              {movimentos.length > 0 ? (
+                <div className="space-y-4">
+                  <ProcessNavigation
+                    currentMovimentoIndex={currentMovimentoIndex}
+                    totalMovimentos={movimentos.length}
+                    handlePrevMovimento={handlePrevMovimento}
+                    handleNextMovimento={handleNextMovimento}
+                  />
+                  
+                  {currentMovimento && (
+                    <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900">
+                            {currentMovimento.nome}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDate(currentMovimento.dataHora)}
+                          </div>
+                        </div>
+                        {currentMovimento.codigo && (
+                          <Badge variant="outline" className="text-gray-600">
+                            Código: {currentMovimento.codigo}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {currentMovimento.complemento && (
+                        <div className="text-sm text-gray-700 bg-white p-3 rounded border">
+                          {currentMovimento.complemento}
+                        </div>
+                      )}
+                      
+                      {currentMovimento.tipo && (
+                        <div className="text-sm text-gray-500">
+                          Tipo: {currentMovimento.tipo}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhuma movimentação processual encontrada
+                </div>
+              )}
             </TabsContent>
           </Tabs>
-        </>
+        </div>
+      )}
+
+      {process.hits && process.hits.length > 0 && (
+        <div className="mt-8 space-y-6">
+          <h3 className="text-lg font-medium">Processos Relacionados</h3>
+          {process.hits.map((hit) => (
+            <div key={hit.id} className="border-t pt-6">
+              <div className="space-y-2 mb-4">
+                <h4 className="text-md font-medium">{safeStringValue(hit.type)}</h4>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-blue-600">{safeStringValue(hit.number)}</div>
+                  <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                    {safeStringValue(hit.metadata?.formato, "Eletrônico")}
+                  </Badge>
+                </div>
+              </div>
+              {/* Renderizar informações do processo relacionado */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-start gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Data do Ajuizamento</div>
+                    <div className="text-sm">
+                      {formatDate(getSafeNestedValue(hit.metadata, 'dataAjuizamento'))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-gray-500 mt-1" />
+                  <div>
+                    <div className="text-sm text-gray-500">Sistema</div>
+                    <div className="text-sm">{safeStringValue(hit.metadata?.sistema?.nome)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </Card>
   );

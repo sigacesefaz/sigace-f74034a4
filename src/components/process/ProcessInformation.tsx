@@ -1,7 +1,7 @@
-
 import React from "react";
 import { DatajudProcess } from "@/types/datajud";
-import { formatDate, formatProcessNumber } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { formatProcessNumber } from "@/utils/format";
 
 interface ProcessInformationProps {
   currentProcess: DatajudProcess;
