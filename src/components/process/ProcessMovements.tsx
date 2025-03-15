@@ -1,127 +1,127 @@
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Movement } from "@/types/process";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { formatDateTime } from "@/utils/format";
+import { DatajudMovement } from "@/types/datajud";
+import { Motion, Check, AlertCircle, Clock, ArrowRight } from "lucide-react";
 
 interface ProcessMovementsProps {
-  movimentos: Movement[];
+  movimentos: any[];
   currentIndex?: number;
 }
 
-export function ProcessMovements({ movimentos, currentIndex = 0 }: ProcessMovementsProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+export function ProcessMovements({ movimentos = [], currentIndex = 0 }: ProcessMovementsProps) {
+  // Garantir que o índice está dentro dos limites
+  const safeIndex = Math.min(Math.max(0, currentIndex), movimentos.length - 1);
+  const currentMovimento = movimentos[safeIndex];
 
-  const sortedMovimentos = [...movimentos].sort((a, b) => {
-    const dateA = new Date(a.data).getTime();
-    const dateB = new Date(b.data).getTime();
-    return dateB - dateA;
-  });
+  if (!movimentos.length) {
+    return (
+      <div className="bg-white rounded-lg p-4 text-center">
+        <div className="text-gray-500">Nenhuma movimentação encontrada para este processo.</div>
+      </div>
+    );
+  }
 
-  const totalPages = Math.ceil(sortedMovimentos.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentMovimentos = sortedMovimentos.slice(startIndex, endIndex);
-
-  const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Data inválida";
-      return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
-    } catch {
-      return "Data inválida";
+  // Determinar o tipo de badge a ser exibido com base no tipo de movimento
+  const getBadgeVariant = (tipo?: string) => {
+    if (!tipo) return "secondary";
+    
+    const tipoLower = tipo.toLowerCase();
+    if (tipoLower.includes("conclus") || tipoLower.includes("decisão") || tipoLower.includes("despacho")) {
+      return "default";
     }
-  };
-
-  // Atualiza a página quando o currentIndex muda para mostrar a movimentação atual
-  useEffect(() => {
-    if (currentIndex >= 0 && currentIndex < sortedMovimentos.length) {
-      const targetPage = Math.floor(currentIndex / itemsPerPage) + 1;
-      setCurrentPage(targetPage);
+    if (tipoLower.includes("juntada") || tipoLower.includes("petição")) {
+      return "outline";
     }
-  }, [currentIndex, sortedMovimentos.length]);
+    if (tipoLower.includes("audiência") || tipoLower.includes("sessão")) {
+      return "secondary";
+    }
+    if (tipoLower.includes("sentença")) {
+      return "destructive";
+    }
+    
+    return "secondary";
+  };
+  
+  // Ícone para o tipo de movimento
+  const getMovementIcon = (tipo?: string) => {
+    if (!tipo) return <Motion className="h-4 w-4" />;
+    
+    const tipoLower = tipo.toLowerCase();
+    if (tipoLower.includes("conclus") || tipoLower.includes("decisão") || tipoLower.includes("despacho")) {
+      return <ArrowRight className="h-4 w-4" />;
+    }
+    if (tipoLower.includes("sentença") || tipoLower.includes("julgado")) {
+      return <Check className="h-4 w-4" />;
+    }
+    if (tipoLower.includes("audiência") || tipoLower.includes("sessão")) {
+      return <Clock className="h-4 w-4" />;
+    }
+    if (tipoLower.includes("intimação") || tipoLower.includes("citação")) {
+      return <AlertCircle className="h-4 w-4" />;
+    }
+    
+    return <Motion className="h-4 w-4" />;
+  };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-lg p-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-sm text-gray-900">
-            Eventos Processuais ({sortedMovimentos.length})
+          {getMovementIcon(currentMovimento.tipo)}
+          <h3 className="font-medium">
+            Movimento {safeIndex + 1} de {movimentos.length}
           </h3>
-          {sortedMovimentos.length > 0 && (
-            <span className="text-xs text-blue-600 font-medium">
-              Exibindo evento {currentIndex + 1} de {sortedMovimentos.length}
-            </span>
+        </div>
+        
+        <Badge variant={getBadgeVariant(currentMovimento.tipo)} className="capitalize">
+          {currentMovimento.tipo || "Movimento"}
+        </Badge>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-lg font-medium">
+            {currentMovimento.nome || currentMovimento.descricao || "Movimento processual"}
+          </h4>
+          <p className="text-sm text-gray-500">
+            {formatDateTime(currentMovimento.dataHora || currentMovimento.data)}
+          </p>
+          {currentMovimento.codigo && (
+            <Badge variant="outline" className="mt-1">
+              Código: {currentMovimento.codigo}
+            </Badge>
           )}
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1 text-sm">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className="h-6 px-1.5"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-gray-600 min-w-[3rem] text-center">
-              {currentPage}/{totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className="h-6 px-1.5"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-1">
-        {currentMovimentos.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-2">
-            Nenhum evento encontrado.
-          </p>
-        ) : (
-          currentMovimentos.map((movimento, index) => {
-            const isCurrentMovement = index + startIndex === currentIndex;
-            return (
-              <div
-                key={movimento.id}
-                className={`bg-white p-2 rounded-lg space-y-1 text-sm transition-all duration-200 ${
-                  isCurrentMovement ? "ring-2 ring-blue-500 bg-blue-50 shadow-sm" : ""
-                }`}
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <p className="text-gray-900 flex-1">{movimento.descricao}</p>
-                  <p className="text-gray-500 whitespace-nowrap">
-                    {formatDate(movimento.data)}
-                  </p>
-                </div>
-                {movimento.complemento && (
-                  <p className="text-gray-600">{movimento.complemento}</p>
-                )}
-                {movimento.tipo && (
-                  <p className="text-gray-500 text-xs">Tipo: {movimento.tipo}</p>
-                )}
+        
+        {(currentMovimento.complemento || currentMovimento.complementosTabelados?.length > 0) && (
+          <div className="bg-gray-50 p-3 rounded-md border border-gray-100">
+            {currentMovimento.complemento && (
+              <div className="text-gray-700 text-sm whitespace-pre-line">
+                {typeof currentMovimento.complemento === 'string' 
+                  ? currentMovimento.complemento 
+                  : Array.isArray(currentMovimento.complemento)
+                    ? currentMovimento.complemento.join('\n')
+                    : JSON.stringify(currentMovimento.complemento)
+                }
               </div>
-            );
-          })
+            )}
+            
+            {currentMovimento.complementosTabelados?.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <h5 className="text-sm font-medium mb-1">Complementos:</h5>
+                <ul className="text-sm space-y-1">
+                  {currentMovimento.complementosTabelados.map((complemento: any, idx: number) => (
+                    <li key={idx} className="flex justify-between">
+                      <span className="text-gray-600">{complemento.nome || complemento.descricao}:</span>
+                      <span className="font-medium">{complemento.valor}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
