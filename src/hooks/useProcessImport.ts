@@ -51,7 +51,7 @@ export function useProcessImport() {
     }
   };
 
-  const handleSaveProcess = async () => {
+  const handleSaveProcess = async (): Promise<boolean> => {
     if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
       toast.error("Dados do processo incompletos");
       return false;

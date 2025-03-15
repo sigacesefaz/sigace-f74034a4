@@ -53,7 +53,7 @@ export function ProcessDetails({
   };
 
   const handleImportProcess = async () => {
-    await onSave();
+    return await onSave();
   };
 
   return (

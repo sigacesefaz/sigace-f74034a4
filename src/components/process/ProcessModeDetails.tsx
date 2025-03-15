@@ -67,6 +67,7 @@ export function ProcessModeDetails({
     if (success) {
       setShowCompletionDialog(true);
     }
+    return success;
   };
 
   return (
