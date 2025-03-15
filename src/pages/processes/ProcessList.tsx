@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft }  from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -291,6 +291,17 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         const parentProcess = group.parent;
         if (!parentProcess) return null;
         
+        const sortedHits = parentProcess.hits 
+          ? [...parentProcess.hits].sort((a, b) => {
+              const dateA = new Date(a._source?.dataHoraUltimaAtualizacao || 0);
+              const dateB = new Date(b._source?.dataHoraUltimaAtualizacao || 0);
+              return dateB.getTime() - dateA.getTime();
+            })
+          : [];
+
+        const currentHit = sortedHits.length > 0 ? sortedHits[0] : null;
+        const previousHits = sortedHits.length > 1 ? sortedHits.slice(1) : [];
+
         return (
           <div key={parentId} className="space-y-1">
             <Card className="overflow-hidden border-gray-200 shadow-sm">
@@ -511,43 +522,48 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       </TabsContent>
 
                       <TabsContent value="anteriores" className="space-y-2">
-                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 ? (
-                          parentProcess.movimentacoes.slice(1).map((movimento, index) => (
+                        <div className="bg-gray-100 p-2 rounded-lg mb-2">
+                          <p className="text-sm text-gray-600">
+                            Total de atualizações anteriores: <span className="font-medium">{previousHits.length}</span>
+                          </p>
+                        </div>
+                        {previousHits.length > 0 ? (
+                          previousHits.map((hit, index) => (
                             <div key={index} className="bg-white rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start gap-4">
                                 <div className="space-y-1 flex-1">
                                   <p className="text-gray-900 font-medium">
-                                    {movimento.descricao}
+                                    {hit._source?.descricao}
                                   </p>
                                   <p className="text-gray-600">
-                                    {formatDate(movimento.data)}
+                                    {formatDate(hit._source?.dataHoraUltimaAtualizacao)}
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                  {movimento.codigo && (
+                                  {hit._source?.codigo && (
                                     <Badge variant="outline" className="text-gray-600">
-                                      Código: {movimento.codigo}
+                                      Código: {hit._source?.codigo}
                                     </Badge>
                                   )}
-                                  {movimento.tipo && (
+                                  {hit._source?.tipo && (
                                     <Badge variant="secondary" className="bg-gray-100">
-                                      {movimento.tipo}
+                                      {hit._source?.tipo}
                                     </Badge>
                                   )}
                                 </div>
                               </div>
-                              {movimento.complemento && (
+                              {hit._source?.complemento && (
                                 <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
-                                  {typeof movimento.complemento === 'string' 
-                                    ? movimento.complemento 
-                                    : JSON.stringify(movimento.complemento)}
+                                  {typeof hit._source?.complemento === 'string' 
+                                    ? hit._source?.complemento 
+                                    : JSON.stringify(hit._source?.complemento)}
                                 </div>
                               )}
                             </div>
                           ))
                         ) : (
                           <div className="text-center py-4 text-gray-500">
-                            Nenhuma movimentação anterior encontrada
+                            Nenhuma atualização anterior encontrada
                           </div>
                         )}
                       </TabsContent>
