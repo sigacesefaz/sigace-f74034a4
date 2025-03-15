@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ProcessList } from "@/pages/processes/ProcessList";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase, customSupabaseQuery } from "@/lib/supabase";
-import ProcessList from "@/pages/processes/ProcessList";
 
 interface Process {
   id: string;
@@ -18,6 +18,7 @@ interface Process {
   created_at: string;
 }
 
+// Utilidade para conversão segura de valores para string
 export const safeStringValue = (value: any, defaultValue: string = ""): string => {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'string') return value;
@@ -28,6 +29,7 @@ export const safeStringValue = (value: any, defaultValue: string = ""): string =
     if (value.name) {
       return typeof value.name === 'string' ? value.name : String(value.name);
     }
+    // Para evitar [object Object] em loops JSON.stringify
     try {
       return JSON.stringify(value);
     } catch (e) {
@@ -49,6 +51,7 @@ export default function ProcessListPage() {
     queryKey: ['processes'],
     queryFn: async () => {
       try {
+        // Buscar processos
         const {
           data: processesData,
           error: processesError
@@ -61,8 +64,10 @@ export default function ProcessListPage() {
         }
         console.log("Processos carregados:", processesData);
 
+        // Adicionar metadata para cada processo para manter a compatibilidade
         const processesWithMetadata = await Promise.all(processesData.map(async process => {
           try {
+            // Buscar detalhes do processo - tentativa direta usando SQL mais simples
             const {
               data: details,
               error: detailsError
@@ -73,6 +78,7 @@ export default function ProcessListPage() {
               console.warn(`Erro ao buscar detalhes para processo ${process.id}:`, detailsError);
             }
 
+            // Buscar movimentos do processo
             const {
               data: movements,
               error: movementsError
@@ -83,6 +89,7 @@ export default function ProcessListPage() {
               console.warn(`Erro ao buscar movimentos para processo ${process.id}:`, movementsError);
             }
 
+            // Buscar assuntos do processo
             const {
               data: subjects,
               error: subjectsError
@@ -91,6 +98,7 @@ export default function ProcessListPage() {
               console.warn(`Erro ao buscar assuntos para processo ${process.id}:`, subjectsError);
             }
 
+            // Criar metadata completo para exibição
             const processDetails = Array.isArray(details) && details.length > 0 ? details[0] : null;
             const metadata = {
               numeroProcesso: process.number,
@@ -119,6 +127,7 @@ export default function ProcessListPage() {
             };
           } catch (error) {
             console.error(`Erro ao carregar dados completos para processo ${process.id}:`, error);
+            // Retornar o processo com metadata mínimo em caso de erro
             return {
               ...process,
               metadata: {
@@ -148,20 +157,24 @@ export default function ProcessListPage() {
     navigate('/processes/new');
   };
 
+  // Function to delete a process
   const handleDeleteProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Deleting process with ID: ${processId}`);
       
+      // First delete related data
       await supabase.from('process_movements').delete().eq('process_id', processId);
       await supabase.from('process_subjects').delete().eq('process_id', processId);
       await supabase.from('process_details').delete().eq('process_id', processId);
       
+      // Then delete the process itself
       const { error } = await supabase.from('processes').delete().eq('id', processId);
       
       if (error) {
         throw error;
       }
       
+      // Refetch the data to update the UI
       refetch();
       
       toast.success("Processo excluído com sucesso!");
@@ -171,9 +184,12 @@ export default function ProcessListPage() {
     }
   };
 
+  // Function to refresh a process
   const handleRefreshProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Refreshing process with ID: ${processId}`);
+      // Here you would implement the logic to refresh process data
+      // For now, just show success
       toast.success("Processo atualizado com sucesso!");
     } catch (error) {
       console.error("Error refreshing process:", error);
@@ -181,10 +197,12 @@ export default function ProcessListPage() {
     }
   };
 
+  // Filtrar processos baseado no termo de pesquisa
   const filteredProcesses = processesData ? processesData.filter(process => {
     const searchLower = searchTerm.toLowerCase();
     const number = process.number ? process.number.toLowerCase() : '';
 
+    // Extrair o nome da classe com segurança
     let classeNome = '';
     if (process.metadata?.classe) {
       if (typeof process.metadata.classe === 'object' && process.metadata.classe !== null) {
@@ -216,6 +234,7 @@ export default function ProcessListPage() {
       </div>;
   }
 
+  // Ensure we always pass an array to ProcessList, even if the data is undefined
   const safeProcesses = Array.isArray(filteredProcesses) ? filteredProcesses : [];
 
   return <div className="container mx-auto py-8">
@@ -236,7 +255,12 @@ export default function ProcessListPage() {
       </div>
       
       <div className="mb-6">
-        <ProcessList />
+        <ProcessList 
+          processes={safeProcesses} 
+          isLoading={processesLoading}
+          onDelete={handleDeleteProcess}
+          onRefresh={handleRefreshProcess} 
+        />
       </div>
     </div>;
 }

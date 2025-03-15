@@ -18,14 +18,11 @@ export interface Movement {
   descricao: string;
   tipo?: string;
   complemento?: string;
-  codigo?: string;
+  codigo?: string; // Add this property that's being used in ProcessList.tsx
   process?: Process;
   index: string;
   score: number;
   rawData?: any;
-  // Add these missing properties that are being used in ProcessList.tsx
-  nome?: string;
-  data_hora?: string;
 }
 
 export interface Process {
@@ -42,9 +39,6 @@ export interface Process {
   created_at: string;
   updated_at: string;
   dataHoraUltimaAtualizacao?: string;
-  // Add plaintiff property that's being used in ProcessList.tsx
-  plaintiff?: string;
-  plaintiff_document?: string;
 }
 
 // Add ProcessNotification type to fix notification error
