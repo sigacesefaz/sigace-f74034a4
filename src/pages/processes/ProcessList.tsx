@@ -511,7 +511,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       </TabsContent>
 
                       <TabsContent value="anteriores" className="space-y-2">
-                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 1 ? (
+                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 ? (
                           parentProcess.movimentacoes.slice(1).map((movimento, index) => (
                             <div key={index} className="bg-white rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start gap-4">
@@ -538,7 +538,9 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                               </div>
                               {movimento.complemento && (
                                 <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
-                                  {movimento.complemento}
+                                  {typeof movimento.complemento === 'string' 
+                                    ? movimento.complemento 
+                                    : JSON.stringify(movimento.complemento)}
                                 </div>
                               )}
                             </div>
@@ -685,7 +687,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo do Relatório */}
       {selectedProcess && (
         <ProcessReportDialog
           process={selectedProcess}
