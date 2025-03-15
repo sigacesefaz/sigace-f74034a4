@@ -34,9 +34,7 @@ export function ProcessList({ processes }: ProcessListProps) {
 
   const handleProcessSelect = (id: string) => {
     setSelectedProcessId(id);
-    if (activeTab !== "partes") {
-      setActiveTab("partes");
-    }
+    setActiveTab("partes");
   };
 
   return (
