@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,12 +161,6 @@ export function ProcessItem({
                 ) : (
                   <div>Nenhum detalhe disponível.</div>
                 )}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="parties">
-              <AccordionTrigger>Partes do Processo</AccordionTrigger>
-              <AccordionContent>
-                <ProcessParties processId={process.id} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
