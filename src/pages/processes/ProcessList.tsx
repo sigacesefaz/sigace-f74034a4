@@ -1,14 +1,13 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft }  from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp }  from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { Process } from "@/types/process";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,11 +41,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingProcessId, setLoadingProcessId] = useState<string | null>(null);
-  const [showMovementsId, setShowMovementsId] = useState<string | null>(null);
   const [showOverviewId, setShowOverviewId] = useState<string | null>(null);
-  const [showTabsId, setShowTabsId] = useState<string | null>(null);
-  const [processTabStates, setProcessTabStates] = useState<Record<string, string>>({});
-  const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const itemsPerPage = 5;
@@ -196,38 +191,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     } else {
       setSelectedProcesses(allParentIds);
     }
-  };
-
-  const handleTabChange = (processId: string, value: string) => {
-    setProcessTabStates(prev => ({ ...prev, [processId]: value }));
-  };
-
-  const handlePreviousMovement = (processId: string) => {
-    setCurrentMovementIndex((prev) => {
-      const currentIndex = prev[processId] || 0;
-      const process = processes.find(p => p.id === processId);
-      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
-      return {
-        ...prev,
-        [processId]: currentIndex > 0 ? currentIndex - 1 : maxIndex
-      };
-    });
-    setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
-  };
-
-  const handleNextMovement = (processId: string) => {
-    setCurrentMovementIndex((prev) => {
-      const currentIndex = prev[processId] || 0;
-      const process = processes.find(p => p.id === processId);
-      const maxIndex = (process?.movimentacoes?.length || 1) - 1;
-      return {
-        ...prev,
-        [processId]: currentIndex < maxIndex ? currentIndex + 1 : 0
-      };
-    });
-    setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
   };
 
   if (isLoading) {
@@ -428,27 +391,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                     >
                       <Trash className="h-4 w-4" />
                     </Button>
-                    <div className="h-4 w-px bg-gray-200 mx-1" />
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handlePreviousMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
-                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
-                      title="Movimentação anterior"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handleNextMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
-                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
-                      title="Próxima movimentação"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -459,9 +401,9 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                     onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)}
                     className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
                   >
-                    <ChevronRight 
+                    <ChevronDown 
                       className={`h-4 w-4 transition-transform ${
-                        showOverviewId === parentProcess.id ? "rotate-90" : ""
+                        showOverviewId === parentProcess.id ? "rotate-180" : ""
                       }`}
                     />
                     Movimentação Processual
@@ -474,176 +416,45 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         : "opacity-0 max-h-0 overflow-hidden"
                     }`}
                   >
-                    <Tabs defaultValue="atual" className="w-full">
-                      <TabsList className="w-full mb-2">
-                        <TabsTrigger value="atual" className="flex-1">Atual</TabsTrigger>
-                        <TabsTrigger value="anteriores" className="flex-1">Anteriores</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="atual" className="space-y-2">
-                        <div className="space-y-2">
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                              <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
-                              <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                              <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                              <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                              <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                            <div className="text-sm">
-                              {parentProcess.metadata?.assuntos?.map((assunto, index) => (
-                                <p key={index} className="text-gray-700">
-                                  {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                                </p>
-                              )) || <p className="text-gray-500">Não informado</p>}
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                              <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
-                            </div>
-                          </div>
+                    {/* Conteúdo da seção movimentação processual */}
+                    <div className="space-y-2">
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
+                          <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
+                          <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
+                          <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
+                          <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
                         </div>
-                      </TabsContent>
+                      </div>
 
-                      <TabsContent value="anteriores" className="space-y-2">
-                        <div className="bg-gray-100 p-2 rounded-lg mb-2">
-                          <p className="text-sm text-gray-600">
-                            Total de atualizações anteriores: <span className="font-medium">{previousHits.length}</span>
-                          </p>
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
+                        <div className="text-sm">
+                          {parentProcess.metadata?.assuntos?.map((assunto, index) => (
+                            <p key={index} className="text-gray-700">
+                              {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
+                            </p>
+                          )) || <p className="text-gray-500">Não informado</p>}
                         </div>
-                        {previousHits.length > 0 ? (
-                          previousHits.map((hit, index) => (
-                            <div key={index} className="bg-white rounded-lg p-4 space-y-3">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="space-y-1 flex-1">
-                                  <p className="text-gray-900 font-medium">
-                                    {hit._source?.descricao}
-                                  </p>
-                                  <p className="text-gray-600">
-                                    {formatDate(hit._source?.dataHoraUltimaAtualizacao)}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  {hit._source?.codigo && (
-                                    <Badge variant="outline" className="text-gray-600">
-                                      Código: {hit._source?.codigo}
-                                    </Badge>
-                                  )}
-                                  {hit._source?.tipo && (
-                                    <Badge variant="secondary" className="bg-gray-100">
-                                      {hit._source?.tipo}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              {hit._source?.complemento && (
-                                <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
-                                  {typeof hit._source?.complemento === 'string' 
-                                    ? hit._source?.complemento 
-                                    : JSON.stringify(hit._source?.complemento)}
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4 text-gray-500">
-                            Nenhuma atualização anterior encontrada
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                </div>
+                      </div>
 
-                <div className="text-sm text-gray-700 pt-1">
-                  <button 
-                    onClick={() => setShowTabsId(showTabsId === parentProcess.id ? null : parentProcess.id)}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronRight 
-                      className={`h-4 w-4 transition-transform ${
-                        showTabsId === parentProcess.id ? "rotate-90" : ""
-                      }`}
-                    />
-                    Detalhes do Processo
-                  </button>
-                  <div 
-                    id={`tabs-${parentProcess.id}`}
-                    className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${
-                      showTabsId === parentProcess.id
-                        ? "opacity-100 max-h-[2000px] mt-1"
-                        : "opacity-0 max-h-0 overflow-hidden"
-                    }`}
-                  >
-                    <Tabs 
-                      defaultValue="eventos" 
-                      value={processTabStates[parentProcess.id] || "eventos"} 
-                      onValueChange={(value) => handleTabChange(parentProcess.id, value)} 
-                      className="space-y-1"
-                    >
-                      <TabsList className="bg-white h-8">
-                        <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                        <TabsTrigger value="intimacao">Intimação</TabsTrigger>
-                        <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                        <TabsTrigger value="decisao">Decisão</TabsTrigger>
-                        <TabsTrigger value="partes">Partes</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="eventos" className="space-y-1">
-                        <ProcessMovements 
-                          movimentos={parentProcess.movimentacoes || []} 
-                          currentIndex={currentMovementIndex[parentProcess.id] || 0}
-                        />
-                      </TabsContent>
-
-                      <TabsContent value="intimacao">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Conteúdo de intimações</p>
-                          </div>
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
+                        <div className="text-sm">
+                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
                         </div>
-                      </TabsContent>
+                      </div>
 
-                      <TabsContent value="documentos">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Documentos do processo</p>
-                          </div>
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
+                        <div className="text-sm">
+                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
+                          <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
                         </div>
-                      </TabsContent>
-
-                      <TabsContent value="decisao">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Decisões do processo</p>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="partes">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Partes envolvidas no processo</p>
-                          </div>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -652,29 +463,31 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         );
       })}
 
+      {/* Paginação */}
       {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          className="mt-2"
-        />
+        <div className="flex justify-center mt-4">
+          <Pagination 
+            totalPages={totalPages} 
+            currentPage={currentPage} 
+            onPageChange={setCurrentPage} 
+          />
+        </div>
       )}
 
+      {/* Alert de confirmação de exclusão */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processo</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita
-              e todos os dados relacionados serão removidos.
+              Você tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProcessToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => processToDelete && handleDelete(processToDelete)}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Excluir
             </AlertDialogAction>
@@ -682,32 +495,33 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Alert de confirmação de exclusão em massa */}
       <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processos em Massa</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedProcesses.length} processo(s)? Esta ação não pode ser desfeita
-              e todos os dados relacionados serão removidos.
+              Você tem certeza que deseja excluir {selectedProcesses.length} processos? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBulkAlertOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleBulkDelete}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
-              Excluir {selectedProcesses.length} processo(s)
+              Excluir {selectedProcesses.length} processos
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Dialog para visualização/impressão */}
       {selectedProcess && (
-        <ProcessReportDialog
+        <ProcessReportDialog 
+          open={reportDialogOpen} 
+          onOpenChange={setReportDialogOpen} 
           process={selectedProcess}
-          open={reportDialogOpen}
-          onOpenChange={setReportDialogOpen}
         />
       )}
     </div>
