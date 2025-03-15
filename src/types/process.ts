@@ -23,6 +23,8 @@ export interface Movement {
   index: string;
   score: number;
   rawData?: any;
+  nome?: string; // Add the nome property that's being used
+  data_hora?: string; // Add the data_hora property that's being used
 }
 
 export interface Process {
@@ -39,6 +41,8 @@ export interface Process {
   created_at: string;
   updated_at: string;
   dataHoraUltimaAtualizacao?: string;
+  plaintiff?: string; // Add the plaintiff property that's being used
+  hits?: any[]; // Add the hits property that's being used in ProcessList.tsx
 }
 
 // Add ProcessNotification type to fix notification error
