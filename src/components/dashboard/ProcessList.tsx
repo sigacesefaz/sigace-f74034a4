@@ -6,6 +6,8 @@ import { useState } from "react";
 import ProcessParties from "@/components/process/ProcessParties";
 import { Process } from "@/types/process";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProcessListProps {
   processes: Process[];
@@ -14,10 +16,46 @@ interface ProcessListProps {
 export function ProcessList({ processes }: ProcessListProps) {
   const [activeTab, setActiveTab] = useState("atual");
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [previousHitIndex, setPreviousHitIndex] = useState(0);
 
-  // Separate current and previous processes
-  const currentProcesses = processes.filter(process => !process.parent_id);
-  const previousHits = processes.filter(process => process.parent_id);
+  // Get all hits and sort them by updated_at (most recent first)
+  const getAllHits = () => {
+    let allHits: any[] = [];
+    
+    processes.forEach(process => {
+      if (process.hits && Array.isArray(process.hits) && process.hits.length > 0) {
+        // Add process ID and parent info to each hit
+        const processHits = process.hits.map(hit => ({
+          ...hit,
+          processId: process.id,
+          processNumber: process.number,
+          processTitle: process.title,
+          processPlaintiff: process.plaintiff
+        }));
+        allHits = [...allHits, ...processHits];
+      }
+    });
+    
+    // Sort by updated_at in descending order (most recent first)
+    return allHits.sort((a, b) => {
+      const dateA = a.data_hora_ultima_atualizacao || a.updated_at || '';
+      const dateB = b.data_hora_ultima_atualizacao || b.updated_at || '';
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+  };
+
+  const sortedHits = getAllHits();
+  
+  // Get the most recent hit for the "Atual" tab
+  const currentHit = sortedHits.length > 0 ? sortedHits[0] : null;
+  
+  // Get all other hits for the "Anteriores" tab
+  const previousHits = sortedHits.slice(1);
+  
+  const handleProcessSelect = (id: string) => {
+    setSelectedProcessId(id);
+    setActiveTab("partes");
+  };
 
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
@@ -32,10 +70,42 @@ export function ProcessList({ processes }: ProcessListProps) {
     }
   };
 
-  const handleProcessSelect = (id: string) => {
-    setSelectedProcessId(id);
-    setActiveTab("partes");
+  const navigatePreviousHits = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setPreviousHitIndex(Math.max(0, previousHitIndex - 1));
+    } else {
+      setPreviousHitIndex(Math.min(previousHits.length - 1, previousHitIndex + 1));
+    }
   };
+
+  const renderHitCard = (hit: any) => (
+    <Card 
+      key={hit.hit_id || hit.id} 
+      className="p-4 glass-card hover:shadow-md transition-all cursor-pointer"
+      onClick={() => handleProcessSelect(hit.processId)}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{hit.processNumber || hit.numero_processo}</p>
+          <h3 className="font-medium mt-1">{hit.processTitle || "Processo sem título"}</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {hit.processPlaintiff || "Autor não informado"}
+          </p>
+        </div>
+        <Badge className={getStatusColor(hit.situacao?.nome || "active")}>
+          {hit.situacao?.nome || "Em andamento"}
+        </Badge>
+      </div>
+      <p className="text-sm text-muted-foreground mt-2">
+        Última atualização: {new Date(hit.data_hora_ultima_atualizacao || hit.updated_at).toLocaleDateString('pt-BR')}
+      </p>
+      {hit.orgao_julgador && (
+        <p className="text-sm mt-2">
+          <span className="font-medium">Órgão Julgador:</span> {hit.orgao_julgador.nome}
+        </p>
+      )}
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -49,30 +119,8 @@ export function ProcessList({ processes }: ProcessListProps) {
         </TabsList>
         
         <TabsContent value="atual" className="space-y-4 mt-4">
-          {currentProcesses.length > 0 ? (
-            currentProcesses.map((process) => (
-              <Card 
-                key={process.id} 
-                className="p-4 glass-card hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handleProcessSelect(process.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{process.number}</p>
-                    <h3 className="font-medium mt-1">{process.title || "Processo sem título"}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {process.plaintiff || "Autor não informado"}
-                    </p>
-                  </div>
-                  <Badge className={getStatusColor(process.status)}>
-                    {process.status ? process.status.charAt(0).toUpperCase() + process.status.slice(1) : "Em andamento"}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {new Date(process.created_at).toLocaleDateString('pt-BR')}
-                </p>
-              </Card>
-            ))
+          {currentHit ? (
+            renderHitCard(currentHit)
           ) : (
             <div className="text-center p-4">
               <p className="text-muted-foreground">Nenhum processo encontrado</p>
@@ -83,26 +131,31 @@ export function ProcessList({ processes }: ProcessListProps) {
         <TabsContent value="anteriores" className="mt-4">
           {previousHits.length > 0 ? (
             <div className="space-y-4">
-              {previousHits.map((process) => (
-                <Card 
-                  key={process.id} 
-                  className="p-4 glass-card hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => handleProcessSelect(process.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{process.number}</p>
-                      <h3 className="font-medium mt-1">{process.title || "Processo sem título"}</h3>
-                    </div>
-                    <Badge className={getStatusColor(process.status)}>
-                      {process.status ? process.status.charAt(0).toUpperCase() + process.status.slice(1) : "Em andamento"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {new Date(process.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                </Card>
-              ))}
+              {previousHits[previousHitIndex] && renderHitCard(previousHits[previousHitIndex])}
+              
+              {previousHits.length > 1 && (
+                <div className="flex justify-between items-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigatePreviousHits('prev')}
+                    disabled={previousHitIndex === 0}
+                    size="sm"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" /> Anterior
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    {previousHitIndex + 1} de {previousHits.length}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigatePreviousHits('next')}
+                    disabled={previousHitIndex === previousHits.length - 1}
+                    size="sm"
+                  >
+                    Próximo <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center p-4">
