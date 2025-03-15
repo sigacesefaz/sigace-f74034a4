@@ -1,20 +1,29 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the details of a process
 export async function saveProcessDetails(processId: string | number, processData: DatajudProcess) {
   try {
-    console.log("Saving process details for process ID:", processId, {
-      tribunal: processData.tribunal,
-      data_ajuizamento: processData.dataAjuizamento,
-      classe: processData.classe
-    });
+    console.log("Saving process details for process ID:", processId);
     
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error("User not authenticated");
+    }
+    
+    // First check if details already exist
+    const { data: existingDetails } = await supabase
+      .from("process_details")
+      .select("id")
+      .eq("process_id", processId)
+      .maybeSingle();
+      
+    if (existingDetails) {
+      console.log("Process details already exist, skipping insertion");
+      return true;
     }
     
     const { error: detailsError } = await supabase
@@ -42,6 +51,7 @@ export async function saveProcessDetails(processId: string | number, processData
       throw detailsError;
     }
     
+    console.log("Process details saved successfully");
     return true;
   } catch (error) {
     console.error("Error saving process details:", error);
@@ -56,7 +66,7 @@ export async function getProcessDetailsById(processId: string) {
       .from("process_details")
       .select("*")
       .eq("process_id", processId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching process details:", error);

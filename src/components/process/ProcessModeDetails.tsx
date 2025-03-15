@@ -13,15 +13,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface ProcessModeDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   importProgress: number;
   importComplete?: boolean;
-  onSave: () => Promise<void>;
+  onSave: () => Promise<boolean>;
   onCancel: () => void;
   onImportAnother?: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
+  isLoading?: boolean;
 }
 
 export function ProcessModeDetails({
@@ -31,7 +34,8 @@ export function ProcessModeDetails({
   onSave,
   onCancel,
   onImportAnother,
-  handleProcessSelect
+  handleProcessSelect,
+  isLoading = false
 }: ProcessModeDetailsProps) {
   const navigate = useNavigate();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -58,16 +62,32 @@ export function ProcessModeDetails({
     navigate('/processes');
   };
 
+  const handleSaveClick = async () => {
+    const success = await onSave();
+    if (success) {
+      setShowCompletionDialog(true);
+    }
+  };
+
   return (
     <>
+      {importProgress > 0 && importProgress < 100 && (
+        <div className="mb-6">
+          <Progress value={importProgress} className="w-full" />
+          <p className="text-sm text-gray-500 mt-2 text-center">
+            Importando processo... {importProgress}%
+          </p>
+        </div>
+      )}
+      
       <ProcessDetails
         processMovimentos={processMovimentos}
         mainProcess={processMovimentos[0].process}
         isImport={true}
-        importProgress={importProgress}
-        onSave={onSave}
+        onSave={handleSaveClick}
         onCancel={onCancel}
         handleProcessSelect={handleProcessSelect}
+        isLoading={isLoading}
       />
 
       <AlertDialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
@@ -75,12 +95,12 @@ export function ProcessModeDetails({
           <AlertDialogHeader>
             <AlertDialogTitle>Processo importado com sucesso</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja importar um novo processo?
+              O processo foi importado com êxito para o sistema. O que deseja fazer agora?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleGoToProcessList}>Não</AlertDialogCancel>
-            <AlertDialogAction onClick={handleImportAnother}>Sim</AlertDialogAction>
+            <AlertDialogCancel onClick={handleGoToProcessList}>Ver Lista de Processos</AlertDialogCancel>
+            <AlertDialogAction onClick={handleImportAnother}>Importar Outro Processo</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

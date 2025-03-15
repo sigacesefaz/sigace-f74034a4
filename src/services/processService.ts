@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { saveProcessMovements } from "./process-movements";
 import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
@@ -8,21 +8,17 @@ import { saveProcessParties } from "./process-parties";
 
 export async function saveProcess(processMovimentos: any[], selectedCourt: string, setImportProgress: (progress: number) => void) {
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
-    toast("Dados do processo incompletos", "", { variant: "destructive" });
+    toast.error("Dados do processo incompletos");
     return false;
   }
   
   setImportProgress(5); // Start progress bar
   
   try {
-    const {
-      data: {
-        user
-      }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      toast("Usuário não autenticado", "", { variant: "destructive" });
+      toast.error("Usuário não autenticado");
       setImportProgress(0);
       return false;
     }
@@ -41,7 +37,7 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       .maybeSingle();
 
     if (existingProcess) {
-      toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
+      toast.error("Este processo já foi cadastrado anteriormente");
       setImportProgress(0);
       return false;
     }
@@ -54,20 +50,12 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
       status: mainProcess.situacao?.nome || "Em andamento",
       court: mainProcess.tribunal,
-      cnj_number: mainProcess.numeroProcesso,
-      court_id: mainProcess.tribunal,
-      instance: mainProcess.grau,
       user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
       plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
-      plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
-      is_parent: true,
-      parent_id: null,
-      metadata: JSON.stringify(mainProcess)
+      plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || ""
     });
 
-    // Insert the main process
+    // Insert the main process - STEP 1
     const { data: newProcess, error: insertError } = await supabase
       .from("processes")
       .insert({
@@ -76,40 +64,28 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
         description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
         status: mainProcess.situacao?.nome || "Em andamento",
         court: mainProcess.tribunal,
-        cnj_number: mainProcess.numeroProcesso,
-        court_id: mainProcess.tribunal,
-        instance: mainProcess.grau,
         user_id: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
         plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
         is_parent: true,
-        parent_id: null,
-        metadata: JSON.stringify(mainProcess)
+        parent_id: null
       })
-      .select('id')
+      .select()
       .single();
       
-    setImportProgress(40);
+    setImportProgress(30);
 
     if (insertError) {
       console.error("Error inserting main process:", insertError);
-      console.error("Error details:", {
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint
-      });
-      toast("Erro ao importar processo", { 
-        description: insertError.message,
-        variant: "destructive" 
-      });
+      toast.error(`Erro ao importar processo: ${insertError.message}`);
       setImportProgress(0);
       return false;
     }
 
     if (!newProcess?.id) {
-      toast("Erro ao obter ID do processo principal criado", "", { variant: "destructive" });
+      toast.error("Erro ao obter ID do processo principal criado");
       setImportProgress(0);
       return false;
     }
@@ -117,160 +93,106 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
     const mainProcessId = newProcess.id;
     console.log("Main process created with ID:", mainProcessId);
     
-    setImportProgress(50);
-
-    // Store main process details
+    // STEP 2: Store process details
     try {
-      await saveProcessDetails(mainProcessId, mainProcess);
-      console.log("Process details saved successfully");
+      console.log("Saving process details for ID:", mainProcessId);
+      const saveDetailsResult = await saveProcessDetails(mainProcessId, mainProcess);
+      console.log("Process details saved:", saveDetailsResult);
     } catch (error) {
       console.error("Error saving process details:", error);
+      // Continue with the import even if details fail
     }
     
-    setImportProgress(55);
+    setImportProgress(50);
 
-    // Process the main process parties
-    if (mainProcess.partes && mainProcess.partes.length > 0) {
-      try {
-        await saveProcessParties(mainProcessId, mainProcess.partes);
-        console.log("Process parties saved successfully:", mainProcess.partes.length);
-      } catch (error) {
-        console.error("Error saving process parties:", error);
+    // STEP 3: Store process parties
+    try {
+      if (mainProcess.partes && mainProcess.partes.length > 0) {
+        console.log("Saving process parties:", mainProcess.partes.length);
+        const savePartiesResult = await saveProcessParties(mainProcessId, mainProcess.partes);
+        console.log("Process parties saved:", savePartiesResult);
       }
+    } catch (error) {
+      console.error("Error saving process parties:", error);
+      // Continue with the import even if parties fail
     }
 
-    setImportProgress(60);
+    setImportProgress(70);
 
-    // Store each hit (procedural movement)
-    for (let i = 0; i < processMovimentos.length; i++) {
-      const hitData = processMovimentos[i];
-      const hitSource = hitData.process;
-      
-      try {
-        // Save process hit
-        console.log(`Saving hit ${i} with data:`, {
+    // STEP 4: Create a hit record for the main process
+    let mainHitId: string | null = null;
+    try {
+      console.log("Creating main hit for process ID:", mainProcessId);
+      const { data: newHit, error: hitError } = await supabase
+        .from("process_hits")
+        .insert({
           process_id: mainProcessId,
-          hit_index: hitData.index || '',
-          hit_id: hitData.id || '',
-          hit_score: hitData.score || 0,
-          tribunal: hitSource.tribunal,
-          numero_processo: hitSource.numeroProcesso
-        });
-
-        const { data: newHit, error: hitError } = await supabase
-          .from("process_hits")
-          .insert({
-            process_id: mainProcessId,
-            hit_index: hitData.index || '',
-            hit_id: hitData.id || '',
-            hit_score: hitData.score || 0,
-            tribunal: hitSource.tribunal,
-            numero_processo: hitSource.numeroProcesso,
-            data_ajuizamento: hitSource.dataAjuizamento,
-            grau: hitSource.grau,
-            nivel_sigilo: hitSource.nivelSigilo || 0,
-            formato: hitSource.formato,
-            sistema: hitSource.sistema,
-            classe: hitSource.classe,
-            orgao_julgador: hitSource.orgaoJulgador,
-            data_hora_ultima_atualizacao: hitSource.dataHoraUltimaAtualizacao,
-            valor_causa: hitSource.valorCausa,
-            situacao: hitSource.situacao,
-            user_id: user.id
-          })
-          .select('id')
-          .single();
-          
-        if (hitError) {
-          console.error(`Error saving hit ${i}:`, hitError);
-          continue;
-        }
+          hit_id: mainMovimento.id || '',
+          hit_score: mainMovimento.score || 0,
+          tribunal: mainProcess.tribunal,
+          numero_processo: mainProcess.numeroProcesso,
+          data_ajuizamento: mainProcess.dataAjuizamento,
+          grau: mainProcess.grau,
+          nivel_sigilo: mainProcess.nivelSigilo || 0,
+          formato: mainProcess.formato,
+          sistema: mainProcess.sistema,
+          classe: mainProcess.classe,
+          orgao_julgador: mainProcess.orgaoJulgador,
+          data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
+          valor_causa: mainProcess.valorCausa,
+          situacao: mainProcess.situacao,
+          user_id: user.id
+        })
+        .select()
+        .single();
         
-        if (!newHit?.id) {
-          console.error(`No ID returned for hit ${i}`);
-          continue;
-        }
-        
-        // Save hit-specific data
-        const hitId = newHit.id;
-        console.log(`Hit ${i} saved with ID:`, hitId);
-        
-        // Save movements for this hit
-        if (hitSource.movimentos && hitSource.movimentos.length > 0) {
-          for (const movimento of hitSource.movimentos) {
-            try {
-              const { error: movementError } = await supabase
-                .from("process_movements")
-                .insert({
-                  process_id: mainProcessId,
-                  hit_id: hitId,
-                  codigo: movimento.codigo,
-                  nome: movimento.nome || "",
-                  data_hora: movimento.dataHora,
-                  tipo: movimento.tipo || "",
-                  complemento: Array.isArray(movimento.complemento) ? movimento.complemento.join(", ") : (movimento.complemento || ""),
-                  complementos_tabelados: movimento.complementosTabelados || [],
-                  orgao_julgador: movimento.orgaoJulgador || {},
-                  json_completo: movimento,
-                  user_id: user.id
-                });
-
-              if (movementError) {
-                console.error(`Error saving movement ${movimento.codigo}:`, movementError);
-              } else {
-                console.log(`Movement ${movimento.codigo} saved successfully`);
-              }
-            } catch (error) {
-              console.error(`Error processing movement ${movimento.codigo}:`, error);
-            }
-          }
-        }
-        
-        // Save subjects for this hit
-        if (hitSource.assuntos && hitSource.assuntos.length > 0) {
-          for (let j = 0; j < hitSource.assuntos.length; j++) {
-            const assunto = hitSource.assuntos[j];
-            try {
-              const { error: subjectError } = await supabase
-                .from("process_subjects")
-                .insert({
-                  process_id: mainProcessId,
-                  hit_id: hitId,
-                  codigo: assunto.codigo,
-                  nome: assunto.nome || "",
-                  principal: j === 0, // First subject is primary
-                  user_id: user.id
-                });
-
-              if (subjectError) {
-                console.error(`Error saving subject ${assunto.nome}:`, subjectError);
-              } else {
-                console.log(`Subject ${assunto.nome} saved successfully`);
-              }
-            } catch (error) {
-              console.error(`Error processing subject ${assunto.nome}:`, error);
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`Error processing hit ${i}:`, error);
+      if (hitError) {
+        console.error("Error saving main hit:", hitError);
+      } else {
+        console.log("Main hit saved with ID:", newHit.id);
+        mainHitId = newHit.id;
       }
-      
-      setImportProgress(60 + Math.floor((i + 1) / processMovimentos.length * 35));
+    } catch (error) {
+      console.error("Error creating main hit:", error);
+    }
+    
+    setImportProgress(80);
+
+    // STEP 5: Store movements
+    if (mainHitId && mainProcess.movimentos && mainProcess.movimentos.length > 0) {
+      try {
+        console.log("Saving process movements:", mainProcess.movimentos.length);
+        const saveMovementsResult = await saveProcessMovements(mainProcessId, mainProcess.movimentos, mainHitId);
+        console.log("Process movements saved:", saveMovementsResult);
+      } catch (error) {
+        console.error("Error saving process movements:", error);
+      }
+    }
+    
+    setImportProgress(90);
+
+    // STEP 6: Store subjects
+    if (mainHitId && mainProcess.assuntos && mainProcess.assuntos.length > 0) {
+      try {
+        console.log("Saving process subjects:", mainProcess.assuntos.length);
+        const saveSubjectsResult = await saveProcessSubjects(mainProcessId, mainProcess.assuntos, mainHitId);
+        console.log("Process subjects saved:", saveSubjectsResult);
+      } catch (error) {
+        console.error("Error saving process subjects:", error);
+      }
     }
     
     setImportProgress(100);
-
-    toast("Processo importado com sucesso", "", { variant: "success" });
+    
+    toast.success("Processo importado com sucesso");
     return true;
   } catch (error) {
     console.error("Error importing process:", error);
     
-    // Display more detailed error message
     if (error instanceof Error) {
-      toast("Erro ao importar processo", error.message, { variant: "destructive" });
+      toast.error(`Erro ao importar processo: ${error.message}`);
     } else {
-      toast("Erro ao importar processo", "", { variant: "destructive" });
+      toast.error("Erro ao importar processo");
     }
     
     setImportProgress(0);
@@ -280,13 +202,9 @@ export async function saveProcess(processMovimentos: any[], selectedCourt: strin
 
 export async function createManualProcess(processData: any) {
   try {
-    const {
-      data: {
-        user
-      }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast("Usuário não autenticado", "", { variant: "destructive" });
+      toast.error("Usuário não autenticado");
       return false;
     }
 
@@ -298,7 +216,7 @@ export async function createManualProcess(processData: any) {
       .maybeSingle();
 
     if (existingProcess) {
-      toast("Este processo já foi cadastrado anteriormente", "", { variant: "destructive" });
+      toast.error("Este processo já foi cadastrado anteriormente");
       return false;
     }
     
@@ -315,11 +233,11 @@ export async function createManualProcess(processData: any) {
     
     if (error) throw error;
     
-    toast("Processo cadastrado com sucesso", "", { variant: "success" });
+    toast.success("Processo cadastrado com sucesso");
     return true;
   } catch (error) {
     console.error("Error registering process:", error);
-    toast("Erro ao cadastrar processo", "", { variant: "destructive" });
+    toast.error("Erro ao cadastrar processo");
     return false;
   }
 }

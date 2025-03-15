@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import { getProcessById } from "@/services/datajud";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/hooks/use-toast";
-import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
+import { saveProcess } from "@/services/processService";
+import { toast } from "sonner";
+import { DatajudMovimentoProcessual } from "@/types/datajud";
 
 export function useProcessImport() {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export function useProcessImport() {
       const movimentos = await getProcessById(courtEndpoint, processNumber);
       
       if (!movimentos || movimentos.length === 0) {
-        toast("Processo não encontrado", "", { variant: "destructive" });
+        toast.error("Processo não encontrado");
         setShowManualEntry(true);
         setIsLoading(false);
         return false;
@@ -43,8 +43,32 @@ export function useProcessImport() {
       return true;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
-      toast("Erro ao importar processo", "", { variant: "destructive" });
+      toast.error("Erro ao importar processo");
       setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProcess = async () => {
+    if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
+      toast.error("Dados do processo incompletos");
+      return false;
+    }
+    
+    setIsLoading(true);
+    try {
+      const result = await saveProcess(processMovimentos, selectedCourt, setImportProgress);
+      
+      if (result) {
+        setImportComplete(true);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Erro ao salvar processo:", error);
+      toast.error("Erro ao salvar processo");
       return false;
     } finally {
       setIsLoading(false);
@@ -71,6 +95,7 @@ export function useProcessImport() {
     setShowManualEntry,
     setProcessMovimentos,
     handleProcessSelect,
+    handleSaveProcess,
     resetImportState
   };
 }

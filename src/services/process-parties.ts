@@ -5,7 +5,10 @@ import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the parties of a process
 export async function saveProcessParties(processId: string | number, parties: any[]) {
-  if (!parties || parties.length === 0) return;
+  if (!parties || parties.length === 0) {
+    console.log("No parties to save");
+    return true;
+  }
   
   try {
     console.log(`Saving ${parties.length} parties for process ID:`, processId);
@@ -33,13 +36,14 @@ export async function saveProcessParties(processId: string | number, parties: an
       
     if (error) {
       console.error("Error inserting parties:", error);
-      throw error;
+      return false;
     }
     
+    console.log(`${parties.length} parties saved successfully`);
     return true;
   } catch (error) {
     console.error("Error inserting process parties:", error);
-    throw error;
+    return false;
   }
 }
 

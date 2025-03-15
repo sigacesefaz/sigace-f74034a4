@@ -1,9 +1,13 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the subjects of a process
 export async function saveProcessSubjects(processId: string | number, subjects: DatajudProcess["assuntos"], hitId?: string) {
-  if (!subjects || subjects.length === 0) return;
+  if (!subjects || subjects.length === 0) {
+    console.log("No subjects to save");
+    return true;
+  }
   
   try {
     console.log(`Saving ${subjects.length} subjects for process ID:`, processId);
@@ -24,20 +28,49 @@ export async function saveProcessSubjects(processId: string | number, subjects: 
       user_id: user.id
     }));
     
-    const { error } = await supabase
-      .from("process_subjects")
-      .insert(subjectsData);
+    // For a small number of subjects, insert them all at once
+    if (subjects.length <= 10) {
+      const { error } = await supabase
+        .from("process_subjects")
+        .insert(subjectsData);
+        
+      if (error) {
+        console.error("Error inserting subjects:", error);
+        return false;
+      }
       
-    if (error) {
-      console.error("Error inserting subjects:", error);
-      throw error;
+      console.log(`${subjects.length} subjects saved successfully`);
+      return true;
     }
     
-    console.log(`${subjects.length} subjects saved successfully`);
-    return true;
+    // For a larger number, save in batches
+    const batchSize = 10;
+    let successCount = 0;
+    
+    for (let i = 0; i < subjectsData.length; i += batchSize) {
+      const batch = subjectsData.slice(i, Math.min(i + batchSize, subjectsData.length));
+      
+      try {
+        const { error } = await supabase
+          .from("process_subjects")
+          .insert(batch);
+          
+        if (error) {
+          console.error(`Error inserting subjects batch ${i/batchSize + 1}:`, error);
+        } else {
+          successCount += batch.length;
+          console.log(`Subjects batch ${i/batchSize + 1} inserted successfully (${batch.length} subjects)`);
+        }
+      } catch (err) {
+        console.error(`Error processing subjects batch ${i/batchSize + 1}:`, err);
+      }
+    }
+    
+    console.log(`Inserted ${successCount} out of ${subjects.length} subjects`);
+    return successCount > 0;
   } catch (error) {
     console.error("Error inserting process subjects:", error);
-    throw error;
+    return false;
   }
 }
 
