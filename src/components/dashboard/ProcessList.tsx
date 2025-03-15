@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import ProcessParties from "@/components/process/ProcessParties";
 import { Process } from "@/types/process";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 interface ProcessListProps {
   processes: Process[];
@@ -31,6 +32,13 @@ export function ProcessList({ processes }: ProcessListProps) {
     }
   };
 
+  const handleProcessSelect = (id: string) => {
+    setSelectedProcessId(id);
+    if (activeTab !== "partes") {
+      setActiveTab("partes");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="atual" value={activeTab} onValueChange={setActiveTab}>
@@ -48,7 +56,7 @@ export function ProcessList({ processes }: ProcessListProps) {
               <Card 
                 key={process.id} 
                 className="p-4 glass-card hover:shadow-md transition-all cursor-pointer"
-                onClick={() => setSelectedProcessId(process.id)}
+                onClick={() => handleProcessSelect(process.id)}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -81,7 +89,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                 <Card 
                   key={process.id} 
                   className="p-4 glass-card hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => setSelectedProcessId(process.id)}
+                  onClick={() => handleProcessSelect(process.id)}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -109,8 +117,12 @@ export function ProcessList({ processes }: ProcessListProps) {
           {selectedProcessId ? (
             <ProcessParties processId={selectedProcessId} />
           ) : (
-            <div className="text-center p-8 border rounded-md">
-              <p className="text-muted-foreground">Selecione um processo para gerenciar suas partes</p>
+            <div className="text-center p-8 border rounded-md flex flex-col items-center gap-3">
+              <ExclamationTriangleIcon className="h-10 w-10 text-amber-500" />
+              <p className="text-lg font-medium">Selecione um processo</p>
+              <p className="text-muted-foreground">
+                Para visualizar ou gerenciar as partes, selecione um processo nas abas "Atual" ou "Anteriores"
+              </p>
             </div>
           )}
         </TabsContent>
