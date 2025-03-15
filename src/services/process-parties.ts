@@ -10,16 +10,19 @@ export async function saveProcessParties(processId: string | number, parties: an
   try {
     const partiesData = parties.map(party => ({
       process_id: processId,
-      nome: party.nome || "",
-      papel: party.papel || "",
-      tipo_pessoa: party.tipoPessoa || "",
-      documento: party.documento || "",
-      advogados: party.advogados || [],
-      json_completo: party
+      name: party.nome || party.name || "",
+      type: party.papel || party.type || "",
+      person_type: party.personType || party.tipoPessoa || "",
+      document: party.documento || party.document || "",
+      subtype: party.subtype || "",
+      user_id: (async () => {
+        const { data } = await supabase.auth.getUser();
+        return data.user?.id;
+      })()
     }));
     
     const { error } = await supabase
-      .from("process_parties")
+      .from("parties")
       .insert(partiesData);
       
     if (error) {
@@ -32,7 +35,7 @@ export async function saveProcessParties(processId: string | number, parties: an
 
 export async function getPartiesByProcessId(processId: string) {
   const { data, error } = await supabase
-    .from("process_parties")
+    .from("parties")
     .select("*")
     .eq("process_id", processId)
     .order("created_at", { ascending: false });
@@ -46,9 +49,19 @@ export async function getPartiesByProcessId(processId: string) {
 }
 
 export async function createParty(partyData: Omit<PartyType, "id"> & { process_id: string }) {
+  // Get the current user to set as user_id
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+  
   const { data, error } = await supabase
-    .from("process_parties")
-    .insert(partyData)
+    .from("parties")
+    .insert({
+      ...partyData,
+      user_id: user.id
+    })
     .select()
     .single();
 
@@ -62,7 +75,7 @@ export async function createParty(partyData: Omit<PartyType, "id"> & { process_i
 
 export async function updateParty(id: string, partyData: Partial<Omit<PartyType, "id">>) {
   const { data, error } = await supabase
-    .from("process_parties")
+    .from("parties")
     .update(partyData)
     .eq("id", id)
     .select()
@@ -78,7 +91,7 @@ export async function updateParty(id: string, partyData: Partial<Omit<PartyType,
 
 export async function deleteParty(id: string) {
   const { error } = await supabase
-    .from("process_parties")
+    .from("parties")
     .delete()
     .eq("id", id);
 

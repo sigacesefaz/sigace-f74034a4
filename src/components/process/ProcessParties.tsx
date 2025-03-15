@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { PartyType, PartyPersonType } from "@/types/process";
 import { getPartiesByProcessId, createParty, updateParty, deleteParty } from "@/services/process-parties";
 
@@ -39,11 +39,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
       setParties(data);
     } catch (error) {
       console.error("Error loading parties:", error);
-      toast({
-        title: "Erro ao carregar partes",
-        description: "Não foi possível carregar as partes do processo.",
-        variant: "destructive"
-      });
+      toast.error("Não foi possível carregar as partes do processo.");
     } finally {
       setIsLoading(false);
     }
@@ -77,32 +73,20 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
       
       if (editMode) {
         await updateParty(editMode, formData);
-        toast({
-          title: "Parte atualizada",
-          description: "A parte foi atualizada com sucesso.",
-          variant: "default"
-        });
+        toast.success("A parte foi atualizada com sucesso.");
       } else {
         await createParty({
           ...formData,
           process_id: processId
         });
-        toast({
-          title: "Parte adicionada",
-          description: "A parte foi adicionada com sucesso.",
-          variant: "default"
-        });
+        toast.success("A parte foi adicionada com sucesso.");
       }
       
       await loadParties();
       resetForm();
     } catch (error) {
       console.error("Error saving party:", error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar a parte do processo.",
-        variant: "destructive"
-      });
+      toast.error("Não foi possível salvar a parte do processo.");
     } finally {
       setIsLoading(false);
     }
@@ -125,18 +109,10 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
         setIsLoading(true);
         await deleteParty(id);
         await loadParties();
-        toast({
-          title: "Parte excluída",
-          description: "A parte foi excluída com sucesso.",
-          variant: "default"
-        });
+        toast.success("A parte foi excluída com sucesso.");
       } catch (error) {
         console.error("Error deleting party:", error);
-        toast({
-          title: "Erro ao excluir",
-          description: "Não foi possível excluir a parte do processo.",
-          variant: "destructive"
-        });
+        toast.error("Não foi possível excluir a parte do processo.");
       } finally {
         setIsLoading(false);
       }
