@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -291,6 +292,10 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         const parentProcess = group.parent;
         if (!parentProcess) return null;
         
+        // Add console logging to debug the movements data
+        console.log("Process ID:", parentProcess.id);
+        console.log("Movements:", parentProcess.movimentacoes);
+        
         return (
           <div key={parentId} className="space-y-1">
             <Card className="overflow-hidden border-gray-200 shadow-sm">
@@ -511,7 +516,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       </TabsContent>
 
                       <TabsContent value="anteriores" className="space-y-2">
-                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 ? (
+                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 1 ? (
                           parentProcess.movimentacoes.slice(1).map((movimento, index) => (
                             <div key={index} className="bg-white rounded-lg p-4 space-y-3">
                               <div className="flex justify-between items-start gap-4">
