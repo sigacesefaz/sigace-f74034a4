@@ -5,6 +5,13 @@ import { DatajudProcess } from "@/types/datajud";
 // Function to save the details of a process
 export async function saveProcessDetails(processId: string | number, processData: DatajudProcess) {
   try {
+    // Get the current user to set as user_id
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    
     const { error: detailsError } = await supabase
       .from("process_details")
       .insert({
@@ -12,7 +19,7 @@ export async function saveProcessDetails(processId: string | number, processData
         tribunal: processData.tribunal,
         data_ajuizamento: processData.dataAjuizamento,
         grau: processData.grau,
-        nivele_sigilo: processData.nivelSigilo,
+        nivel_sigilo: processData.nivelSigilo,
         formato: processData.formato,
         sistema: processData.sistema,
         classe: processData.classe,
@@ -21,7 +28,8 @@ export async function saveProcessDetails(processId: string | number, processData
         movimentos: processData.movimentos,
         partes: processData.partes,
         data_hora_ultima_atualizacao: processData.dataHoraUltimaAtualizacao,
-        json_completo: processData
+        json_completo: processData,
+        user_id: user.id
       });
       
     if (detailsError) {
@@ -38,16 +46,21 @@ export async function saveProcessDetails(processId: string | number, processData
 
 // Function to get process details by process ID
 export async function getProcessDetailsById(processId: string) {
-  const { data, error } = await supabase
-    .from("process_details")
-    .select("*")
-    .eq("process_id", processId)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("process_details")
+      .select("*")
+      .eq("process_id", processId)
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error("Error fetching process details:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
     console.error("Error fetching process details:", error);
     throw error;
   }
-
-  return data;
 }
