@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import ProcessParties from "./ProcessParties";
 
 interface ProcessItemProps {
   process: any;
@@ -90,80 +89,75 @@ export function ProcessItem({
         </div>
 
         {isExpanded && (
-          <Accordion type="single" collapsible className="w-full mt-4">
-            <AccordionItem value="details">
-              <AccordionTrigger>Detalhes do Processo</AccordionTrigger>
-              <AccordionContent>
-                {isLoadingDetails ? (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                ) : expandedDetails ? (
-                  <Table>
-                    <TableCaption>Informações detalhadas do processo.</TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[100px]">Campo</TableHead>
-                        <TableHead>Valor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Número</TableCell>
-                        <TableCell>{process.number}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Classe</TableCell>
-                        <TableCell>{process.metadata?.classe?.nome}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Data de Ajuizamento</TableCell>
-                        <TableCell>{process.metadata?.dataAjuizamento}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Sistema</TableCell>
-                        <TableCell>{process.metadata?.sistema?.nome}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Órgão Julgador</TableCell>
-                        <TableCell>{process.metadata?.orgaoJulgador?.nome}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Grau</TableCell>
-                        <TableCell>{process.metadata?.grau}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Nível de Sigilo</TableCell>
-                        <TableCell>{process.metadata?.nivelSigilo}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Assuntos</TableCell>
-                        <TableCell>
-                          {process.metadata?.assuntos?.map((assunto: any) => (
-                            <div key={assunto.codigo}>
-                              {assunto.nome} ({assunto.codigo})
-                            </div>
-                          ))}
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Movimentos</TableCell>
-                        <TableCell>
-                          {process.metadata?.movimentos?.map((movimento: any) => (
-                            <div key={movimento.codigo}>
-                              {movimento.nome} - {movimento.dataHora}
-                            </div>
-                          ))}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div>Nenhum detalhe disponível.</div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          <div className="mt-4">
+            {isLoadingDetails ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : expandedDetails ? (
+              <Table>
+                <TableCaption>Informações detalhadas do processo.</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Campo</TableHead>
+                    <TableHead>Valor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Número</TableCell>
+                    <TableCell>{process.number}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Classe</TableCell>
+                    <TableCell>{process.metadata?.classe?.nome}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Data de Ajuizamento</TableCell>
+                    <TableCell>{process.metadata?.dataAjuizamento}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Sistema</TableCell>
+                    <TableCell>{process.metadata?.sistema?.nome}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Órgão Julgador</TableCell>
+                    <TableCell>{process.metadata?.orgaoJulgador?.nome}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Grau</TableCell>
+                    <TableCell>{process.metadata?.grau}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Nível de Sigilo</TableCell>
+                    <TableCell>{process.metadata?.nivelSigilo}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Assuntos</TableCell>
+                    <TableCell>
+                      {process.metadata?.assuntos?.map((assunto: any) => (
+                        <div key={assunto.codigo}>
+                          {assunto.nome} ({assunto.codigo})
+                        </div>
+                      ))}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Movimentos</TableCell>
+                    <TableCell>
+                      {process.metadata?.movimentos?.map((movimento: any) => (
+                        <div key={movimento.codigo}>
+                          {movimento.nome} - {movimento.dataHora}
+                        </div>
+                      ))}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            ) : (
+              <div>Nenhum detalhe disponível.</div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
