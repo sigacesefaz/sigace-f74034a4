@@ -35,7 +35,9 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
   const loadParties = async () => {
     try {
       setIsLoading(true);
+      console.log("Loading parties for process ID:", processId);
       const data = await getPartiesByProcessId(processId);
+      console.log("Parties loaded:", data);
       setParties(data);
     } catch (error) {
       console.error("Error loading parties:", error);
@@ -131,6 +133,18 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
   const getPersonTypeLabel = (type: PartyPersonType) => {
     return type === "physical" ? "Pessoa Física" : "Pessoa Jurídica";
   };
+
+  // Mostrar uma mensagem quando não há process ID
+  if (!processId) {
+    return (
+      <div className="text-center p-8 border rounded-md flex flex-col items-center gap-3">
+        <p className="text-lg font-medium">Nenhum processo selecionado</p>
+        <p className="text-muted-foreground">
+          Selecione um processo para gerenciar suas partes
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
