@@ -375,7 +375,7 @@ export function ProcessList({
 
                   <Tabs defaultValue="informacoes" className="w-full mt-4">
                     <TabsList className="w-full mb-2">
-                      <TabsTrigger value="informacoes">Informações</TabsTrigger>
+                      
                       <TabsTrigger value="eventos">Eventos</TabsTrigger>
                       <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
                       <TabsTrigger value="decisao">Decisão</TabsTrigger>
