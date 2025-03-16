@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ProcessCard } from "@/components/dashboard/ProcessCard";
 import { toast } from "@/components/ui/use-toast";
@@ -17,21 +16,23 @@ const exampleProcesses = [
     metadata: {
       numeroProcesso: "0037536-57.2015.8.27.2729",
       classe: {
-        codigo: "120",
+        codigo: 120,
         nome: "Mandado de Segurança Cível"
       },
       dataAjuizamento: "2015-12-08T12:50:00",
       sistema: {
-        nome: "Inválido"
+        nome: "Inválido",
+        codigo: 0
       },
       orgaoJulgador: {
-        nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas"
+        nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
+        codigo: 2729
       },
       grau: "G1",
-      nivelSigilo: "Público",
+      nivelSigilo: 0,
       assuntos: [
         {
-          codigo: "10536",
+          codigo: 10536,
           nome: "ICMS / Incidência Sobre o Ativo Fixo"
         }
       ],
@@ -122,11 +123,11 @@ const exampleProcesses = [
         data_ajuizamento: "2015-12-08T12:50:00",
         classe: {
           nome: "Mandado de Segurança Cível",
-          codigo: "120"
+          codigo: 120
         },
         orgao_julgador: {
           nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
-          codigo: "2729"
+          codigo: 2729
         },
         data_hora_ultima_atualizacao: "2023-05-09T16:24:00"
       },
@@ -139,11 +140,11 @@ const exampleProcesses = [
         data_ajuizamento: "2015-12-08T12:50:00",
         classe: {
           nome: "Mandado de Segurança Cível",
-          codigo: "120"
+          codigo: 120
         },
         orgao_julgador: {
           nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
-          codigo: "2729"
+          codigo: 2729
         },
         data_hora_ultima_atualizacao: "2022-10-15T08:30:00"
       }
@@ -159,21 +160,23 @@ const exampleProcesses = [
     metadata: {
       numeroProcesso: "1234567-89.2022.8.27.2700",
       classe: {
-        codigo: "65",
+        codigo: 65,
         nome: "Ação Civil Pública"
       },
       dataAjuizamento: "2022-01-10T09:30:00",
       sistema: {
-        nome: "PJe"
+        nome: "PJe",
+        codigo: 1
       },
       orgaoJulgador: {
-        nome: "2ª Vara Cível de Palmas"
+        nome: "2ª Vara Cível de Palmas",
+        codigo: 2700
       },
       grau: "G1",
-      nivelSigilo: "Público",
+      nivelSigilo: 0,
       assuntos: [
         {
-          codigo: "9985",
+          codigo: 9985,
           nome: "Direito do Consumidor"
         }
       ],
@@ -243,11 +246,11 @@ const exampleProcesses = [
         data_ajuizamento: "2022-01-10T09:30:00",
         classe: {
           nome: "Ação Civil Pública",
-          codigo: "65"
+          codigo: 65
         },
         orgao_julgador: {
           nome: "2ª Vara Cível de Palmas", 
-          codigo: "2700"
+          codigo: 2700
         },
         data_hora_ultima_atualizacao: "2023-01-15T11:20:00"
       }
