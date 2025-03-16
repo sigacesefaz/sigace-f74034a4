@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Document } from "@/types/process";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Trash, Edit, Plus, FileText, Download, Eye, Search, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Upload, File, Trash, Download, Eye, Search, X } from "lucide-react";
 import { toast } from "sonner";
+import { Pagination } from "@/components/ui/pagination";
+import { Filters } from "@/components/ui/filters";
 import {
   Dialog,
   DialogContent,
@@ -34,35 +36,23 @@ interface ProcessDocumentsProps {
   hitId?: string;
 }
 
-interface Document {
-  id: string;
-  process_id: string;
-  hit_id?: string;
-  title: string;
-  file_path: string;
-  file_name: string;
-  file_type: string;
-  file_size: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
-  const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState("");
-  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-  const [showFilter, setShowFilter] = useState(false);
-  const [textFilter, setTextFilter] = useState("");
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showFilter, setShowFilter] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -70,8 +60,16 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   }, [processId, hitId]);
 
   useEffect(() => {
-    applyFilters();
-  }, [documents, textFilter, currentPage]);
+    if (showPreviewDialog && previewDocument) {
+      getDocumentUrl(previewDocument);
+    }
+  }, [showPreviewDialog, previewDocument]);
+
+  useEffect(() => {
+    if (documents.length > 0) {
+      applyFilters();
+    }
+  }, [documents, searchText, currentPage]);
 
   const fetchDocuments = async () => {
     try {
@@ -80,8 +78,7 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       let query = supabase
         .from('process_documents')
         .select('*')
-        .eq('process_id', processId)
-        .order('created_at', { ascending: false });
+        .eq('process_id', processId);
       
       if (hitId) {
         query = query.eq('hit_id', hitId);
@@ -94,6 +91,8 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       }
       
       setDocuments(data || []);
+      setFilteredDocuments(data || []);
+      setTotalPages(Math.ceil((data?.length || 0) / itemsPerPage));
     } catch (error) {
       console.error("Erro ao buscar documentos:", error);
       toast.error("Não foi possível carregar os documentos do processo");
@@ -105,185 +104,233 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   const applyFilters = () => {
     let filtered = [...documents];
     
-    if (textFilter.trim()) {
+    if (searchText.trim() !== "") {
+      const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(doc => 
-        doc.title.toLowerCase().includes(textFilter.toLowerCase()) || 
-        doc.file_name.toLowerCase().includes(textFilter.toLowerCase())
+        doc.title.toLowerCase().includes(searchLower) || 
+        doc.file_name.toLowerCase().includes(searchLower)
       );
     }
     
+    setFilteredDocuments(filtered);
     setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-    
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    
-    setFilteredDocuments(filtered.slice(start, end));
   };
-
-  const resetForm = () => {
-    setTitle("");
-    setSelectedFile(null);
-  };
-
-  const handleFilter = () => {
+  
+  const handleFilterChange = (filters: { text?: string }) => {
+    setSearchText(filters.text || "");
     setCurrentPage(1);
-    applyFilters();
   };
-
-  const resetFilter = () => {
-    setTextFilter("");
+  
+  const handleResetFilter = () => {
+    setSearchText("");
     setCurrentPage(1);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Verificar se o arquivo é PDF, DOC ou DOCX
-      const fileType = file.type;
-      if (
-        fileType !== 'application/pdf' && 
-        fileType !== 'application/msword' && 
-        fileType !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ) {
-        toast.error("Apenas arquivos PDF, DOC ou DOCX são permitidos");
-        return;
-      }
-      
-      setSelectedFile(file);
-    }
-  };
-
-  const handleViewDocument = async (document: Document) => {
+  const getDocumentUrl = async (document: Document) => {
     try {
-      setCurrentDocument(document);
-      
-      // Obter URL pública do documento
-      const { data, error } = await supabase
-        .storage
+      const { data, error } = await supabase.storage
         .from('process-documents')
-        .createSignedUrl(document.file_path, 60); // URL válida por 60 segundos
+        .createSignedUrl(document.file_path, 3600); // URL válida por 1 hora
       
       if (error) {
         throw error;
       }
       
-      setDocumentUrl(data.signedUrl);
-      setIsViewerOpen(true);
+      setPreviewUrl(data?.signedUrl || null);
     } catch (error) {
-      console.error("Erro ao visualizar documento:", error);
-      toast.error("Não foi possível visualizar o documento");
+      console.error("Erro ao obter URL do documento:", error);
+      toast.error("Não foi possível obter a URL do documento");
+      setPreviewUrl(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const documentToDelete = documents.find(doc => doc.id === id);
-      
-      if (!documentToDelete) {
-        throw new Error("Documento não encontrado");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      // Verificar tipo de arquivo
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(selectedFile.type)) {
+        toast.error("Tipo de arquivo não permitido. Por favor, selecione um arquivo PDF ou Word.");
+        e.target.value = '';
+        return;
       }
       
-      // Excluir o arquivo do armazenamento
-      const { error: storageError } = await supabase
-        .storage
-        .from('process-documents')
-        .remove([documentToDelete.file_path]);
-      
-      if (storageError) {
-        throw storageError;
+      // Verificar tamanho do arquivo (max 50MB)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        toast.error("O arquivo é muito grande. O tamanho máximo permitido é 50MB.");
+        e.target.value = '';
+        return;
       }
       
-      // Excluir o registro do banco de dados
-      const { error: dbError } = await supabase
-        .from('process_documents')
-        .delete()
-        .eq('id', id);
-      
-      if (dbError) {
-        throw dbError;
-      }
-      
-      setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== id));
-      toast.success("Documento excluído com sucesso");
-    } catch (error) {
-      console.error("Erro ao excluir documento:", error);
-      toast.error("Não foi possível excluir o documento");
-    } finally {
-      setDocumentToDelete(null);
-      setDeleteDialogOpen(false);
+      setFile(selectedFile);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedFile) {
-      toast.error("Selecione um arquivo para upload");
+    if (!file || !title.trim()) {
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
     
     try {
-      // Fazer upload do arquivo
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${processId}/${Date.now()}.${fileExt}`;
+      setUploading(true);
       
-      const { data: fileData, error: uploadError } = await supabase
-        .storage
+      // 1. Fazer upload do arquivo para o Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${processId}_${Date.now()}.${fileExt}`;
+      const filePath = `${processId}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
         .from('process-documents')
-        .upload(fileName, selectedFile);
+        .upload(filePath, file);
       
       if (uploadError) {
         throw uploadError;
       }
       
-      // Salvar os metadados no banco de dados
-      const documentData = {
+      // 2. Salvar os metadados do documento no banco de dados
+      const newDocument = {
         process_id: processId,
-        hit_id: hitId,
-        title,
-        file_path: fileName,
-        file_name: selectedFile.name,
-        file_type: selectedFile.type,
-        file_size: selectedFile.size,
+        hit_id: hitId || null,
+        title: title.trim(),
+        file_path: filePath,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size
       };
       
-      const { data, error } = await supabase
+      const { error: dbError } = await supabase
         .from('process_documents')
-        .insert(documentData)
-        .select();
+        .insert(newDocument);
+      
+      if (dbError) {
+        // Se houve erro ao salvar no banco, excluir o arquivo do Storage
+        await supabase.storage
+          .from('process-documents')
+          .remove([filePath]);
+        
+        throw dbError;
+      }
+      
+      // Atualizar a lista de documentos
+      await fetchDocuments();
+      
+      // Limpar o formulário
+      setTitle("");
+      setFile(null);
+      setShowUploadDialog(false);
+      
+      toast.success("Documento enviado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao enviar documento:", error);
+      toast.error("Não foi possível enviar o documento. Por favor, tente novamente.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!documentToDelete) return;
+    
+    try {
+      // 1. Buscar o documento para obter o file_path
+      const { data, error: fetchError } = await supabase
+        .from('process_documents')
+        .select('file_path')
+        .eq('id', documentToDelete)
+        .single();
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+      
+      // 2. Excluir o arquivo do Storage
+      if (data?.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('process-documents')
+          .remove([data.file_path]);
+        
+        if (storageError) {
+          console.error("Erro ao excluir arquivo do storage:", storageError);
+          // Continuar mesmo com erro no storage
+        }
+      }
+      
+      // 3. Excluir o registro do banco de dados
+      const { error: dbError } = await supabase
+        .from('process_documents')
+        .delete()
+        .eq('id', documentToDelete);
+      
+      if (dbError) {
+        throw dbError;
+      }
+      
+      // Atualizar a lista de documentos
+      setDocuments(prevDocuments => 
+        prevDocuments.filter(doc => doc.id !== documentToDelete)
+      );
+      setFilteredDocuments(prevDocuments => 
+        prevDocuments.filter(doc => doc.id !== documentToDelete)
+      );
+      
+      toast.success("Documento excluído com sucesso!");
+    } catch (error) {
+      console.error("Erro ao excluir documento:", error);
+      toast.error("Não foi possível excluir o documento. Por favor, tente novamente.");
+    } finally {
+      setDocumentToDelete(null);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleDownload = async (document: Document) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('process-documents')
+        .createSignedUrl(document.file_path, 60); // URL válida por 1 minuto
       
       if (error) {
         throw error;
       }
       
-      toast.success("Documento adicionado com sucesso");
-      
-      // Atualizar a lista de documentos
-      fetchDocuments();
-      
-      // Resetar formulário e fechar diálogo
-      resetForm();
-      setIsFormOpen(false);
+      if (data?.signedUrl) {
+        // Criar um link temporário e simular o clique para download
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = document.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
-      console.error("Erro ao salvar documento:", error);
-      toast.error("Não foi possível salvar o documento");
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch {
-      return "Data inválida";
+      console.error("Erro ao baixar documento:", error);
+      toast.error("Não foi possível baixar o documento. Por favor, tente novamente.");
     }
   };
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' bytes';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
   };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) {
+      return <File className="h-10 w-10 text-red-500" />;
+    } else if (fileType.includes('word') || fileType.includes('msword')) {
+      return <File className="h-10 w-10 text-blue-500" />;
+    } else {
+      return <File className="h-10 w-10 text-gray-500" />;
+    }
+  };
+
+  const paginatedDocuments = filteredDocuments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -294,64 +341,71 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-medium">Inteiro Teor</h3>
-        <div className="flex gap-2">
+        <h3 className="font-medium">Documentos do Processo</h3>
+        <div className="flex gap-2 items-center">
           <Button 
             variant="outline" 
-            size="sm"
+            size="sm" 
             onClick={() => setShowFilter(!showFilter)}
           >
-            {showFilter ? "Ocultar Filtro" : "Filtrar"}
+            {showFilter ? "Ocultar Filtros" : "Filtrar"}
           </Button>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
             <DialogTrigger asChild>
-              <Button size="sm" onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-1" /> Novo Documento
+              <Button size="sm">
+                <Upload className="h-4 w-4 mr-1" /> Adicionar Documento
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Novo Documento</DialogTitle>
+                <DialogTitle>Adicionar Novo Documento</DialogTitle>
                 <DialogDescription>
-                  Faça upload do documento de inteiro teor do processo
+                  Faça upload de um documento para o processo. Formatos permitidos: PDF, DOC e DOCX.
                 </DialogDescription>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleUpload} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Título</Label>
+                  <Label htmlFor="title">Título do Documento *</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ex: Petição inicial, Decisão, etc."
                     required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="file">Arquivo (PDF, DOC, DOCX)</Label>
+                  <Label htmlFor="file">Arquivo *</Label>
                   <Input
                     id="file"
                     type="file"
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     required
                   />
-                  {selectedFile && (
-                    <p className="text-sm text-gray-500">
-                      {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                    </p>
-                  )}
+                  <p className="text-xs text-gray-500">
+                    Formatos permitidos: PDF, DOC, DOCX. Tamanho máximo: 50MB.
+                  </p>
                 </div>
                 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowUploadDialog(false)}
+                    disabled={uploading}
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!selectedFile}>
-                    Salvar
+                  <Button 
+                    type="submit" 
+                    disabled={uploading || !file || !title.trim()}
+                  >
+                    {uploading ? "Enviando..." : "Enviar"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -361,134 +415,129 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       </div>
       
       {showFilter && (
-        <div className="bg-gray-50 p-3 rounded-md border mb-4">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                placeholder="Pesquisar por título ou nome do arquivo"
-                value={textFilter}
-                onChange={(e) => setTextFilter(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" onClick={resetFilter}>
-              <X className="h-4 w-4 mr-1" /> Limpar
-            </Button>
-            <Button onClick={handleFilter}>
-              <Search className="h-4 w-4 mr-1" /> Buscar
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {filteredDocuments.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
-          <p>Nenhuma informação encontrada</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {filteredDocuments.map((doc) => (
-            <div key={doc.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
-              <div className="flex justify-between items-start">
-                <div className="flex items-start gap-2">
-                  <FileText className="h-5 w-5 text-blue-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium">{doc.title}</h4>
-                    <div className="flex flex-wrap gap-2 items-center mt-1 text-sm text-gray-600">
-                      <span>{doc.file_name}</span>
-                      <span>•</span>
-                      <span>{formatFileSize(doc.file_size)}</span>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                        {doc.file_type.includes('pdf') ? 'PDF' : doc.file_type.includes('word') ? 'DOCX' : 'DOC'}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Adicionado em: {formatDate(doc.created_at)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewDocument(doc)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" /> Visualizar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => {
-                      setDocumentToDelete(doc.id);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
+        <Filters 
+          onFilter={handleFilterChange}
+          onResetFilter={handleResetFilter}
+          showCodeFilter={false}
+          showDateFilter={false}
+          initialValues={{ text: searchText }}
         />
       )}
+
+      {filteredDocuments.length === 0 ? (
+        <div className="text-center py-8 border rounded-md">
+          <File className="h-12 w-12 mx-auto text-gray-300" />
+          <p className="mt-2 text-gray-500">
+            Nenhum documento encontrado. Clique em "Adicionar Documento" para enviar um novo.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {paginatedDocuments.map((document) => (
+              <Card key={document.id} className="p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-4">
+                  {getFileIcon(document.file_type)}
+                  
+                  <div className="flex-1">
+                    <h4 className="font-medium">{document.title}</h4>
+                    <p className="text-sm text-gray-500">{document.file_name}</p>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                      <span>{formatFileSize(document.file_size)}</span>
+                      <span>{format(new Date(document.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setPreviewDocument(document);
+                        setShowPreviewDialog(true);
+                      }}
+                      title="Visualizar"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDownload(document)}
+                      title="Baixar"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        setDocumentToDelete(document.id);
+                        setShowDeleteDialog(true);
+                      }}
+                      title="Excluir"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
       
-      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+      {/* Visualização do documento */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{currentDocument?.title}</DialogTitle>
+            <DialogTitle>
+              {previewDocument?.title}
+            </DialogTitle>
             <DialogDescription>
-              {currentDocument?.file_name} ({formatFileSize(currentDocument?.file_size || 0)})
+              {previewDocument?.file_name}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 h-full min-h-[400px] overflow-hidden">
-            {documentUrl && (
-              currentDocument?.file_type.includes('pdf') ? (
-                <iframe
-                  src={`${documentUrl}#toolbar=1`}
-                  className="w-full h-full border-0"
-                  title={currentDocument?.title}
-                />
+          {previewUrl ? (
+            <div className="w-full h-[70vh] border rounded">
+              {previewDocument?.file_type.includes('pdf') ? (
+                <iframe 
+                  src={`${previewUrl}#toolbar=0`} 
+                  className="w-full h-full" 
+                  title={previewDocument?.title}
+                ></iframe>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-4">
-                  <FileText className="h-16 w-16 text-blue-500" />
-                  <p className="text-center">
-                    Este tipo de documento não pode ser visualizado diretamente no navegador.
-                  </p>
-                  <Button
-                    onClick={() => window.open(documentUrl, '_blank')}
-                  >
-                    <Download className="h-4 w-4 mr-1" /> Baixar Documento
-                  </Button>
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <File className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+                    <p className="mb-4">Este documento não pode ser visualizado diretamente no navegador.</p>
+                    <Button
+                      onClick={() => previewDocument && handleDownload(previewDocument)}
+                    >
+                      <Download className="h-4 w-4 mr-2" /> Baixar Documento
+                    </Button>
+                  </div>
                 </div>
-              )
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewerOpen(false)}>
-              Fechar
-            </Button>
-            {documentUrl && (
-              <Button
-                onClick={() => window.open(documentUrl, '_blank')}
-              >
-                <Download className="h-4 w-4 mr-1" /> Baixar
-              </Button>
-            )}
-          </DialogFooter>
+              )}
+            </div>
+          ) : (
+            <div className="flex justify-center items-center h-[50vh]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Diálogo de confirmação de exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Documento</AlertDialogTitle>
@@ -497,9 +546,11 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => documentToDelete && handleDelete(documentToDelete)}
+              onClick={handleDelete}
               className="bg-red-500 hover:bg-red-600"
             >
               Excluir

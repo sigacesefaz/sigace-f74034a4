@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Search, X } from "lucide-react";
+import { Filters } from "@/components/ui/filters";
 
 interface MovementFilter {
   startDate?: Date;
@@ -40,7 +41,7 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
   const [endDate, setEndDate] = useState<Date | undefined>(filter?.endDate);
   const [codeFilter, setCodeFilter] = useState<string>(filter?.code?.toString() || "");
   const [textFilter, setTextFilter] = useState<string>(filter?.text || "");
-  const [appliedFilter, setAppliedFilter] = useState<MovementFilter | undefined>(filter);
+  const [appliedFilter, setAppliedFilter] = useState<MovementFilter | undefined>(undefined);
 
   useEffect(() => {
     fetchMovements();
@@ -104,23 +105,12 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
     }
   };
   
-  const handleApplyFilter = () => {
-    const newFilter: MovementFilter = {};
-    
-    if (startDate) newFilter.startDate = startDate;
-    if (endDate) newFilter.endDate = endDate;
-    if (codeFilter.trim()) newFilter.code = parseInt(codeFilter.trim());
-    if (textFilter.trim()) newFilter.text = textFilter.trim();
-    
+  const handleApplyFilter = (newFilter: MovementFilter) => {
     setAppliedFilter(Object.keys(newFilter).length > 0 ? newFilter : undefined);
     setCurrentPage(1);
   };
   
   const handleResetFilter = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setCodeFilter("");
-    setTextFilter("");
     setAppliedFilter(undefined);
     setCurrentPage(1);
   };
@@ -175,60 +165,12 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
       </div>
       
       {showFilter && (
-        <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startDate">Data inicial</Label>
-              <DatePicker
-                selected={startDate}
-                onSelect={setStartDate}
-                className="w-full"
-                placeholder="Selecione a data inicial"
-              />
-            </div>
-            <div>
-              <Label htmlFor="endDate">Data final</Label>
-              <DatePicker
-                selected={endDate}
-                onSelect={setEndDate}
-                className="w-full"
-                placeholder="Selecione a data final"
-              />
-            </div>
-            <div>
-              <Label htmlFor="codeFilter">Código</Label>
-              <Input
-                id="codeFilter"
-                value={codeFilter}
-                onChange={(e) => setCodeFilter(e.target.value)}
-                type="number"
-                placeholder="Filtrar por código"
-              />
-            </div>
-            <div>
-              <Label htmlFor="textFilter">Texto</Label>
-              <Input
-                id="textFilter"
-                value={textFilter}
-                onChange={(e) => setTextFilter(e.target.value)}
-                placeholder="Filtrar por texto"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleResetFilter}
-            >
-              <X className="mr-2 h-4 w-4" /> Limpar
-            </Button>
-            <Button 
-              onClick={handleApplyFilter}
-            >
-              <Search className="mr-2 h-4 w-4" /> Aplicar
-            </Button>
-          </div>
-        </div>
+        <Filters 
+          onFilter={handleApplyFilter}
+          onResetFilter={handleResetFilter}
+          showCodeFilter={true}
+          showDateFilter={true}
+        />
       )}
 
       {movements.length === 0 ? (

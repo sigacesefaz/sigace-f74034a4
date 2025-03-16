@@ -47,6 +47,8 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [partyToDelete, setPartyToDelete] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [filteredParties, setFilteredParties] = useState<PartyType[]>([]);
   
   // Form states
   const [name, setName] = useState("");
@@ -59,11 +61,27 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     fetchParties();
   }, [processId]);
 
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setFilteredParties(parties);
+    } else {
+      const lowercaseSearch = searchText.toLowerCase();
+      setFilteredParties(
+        parties.filter(
+          party =>
+            party.name.toLowerCase().includes(lowercaseSearch) ||
+            (party.document?.toLowerCase().includes(lowercaseSearch) || false)
+        )
+      );
+    }
+  }, [searchText, parties]);
+
   const fetchParties = async () => {
     try {
       setLoading(true);
       const data = await getPartiesByProcessId(processId);
       setParties(data);
+      setFilteredParties(data);
     } catch (error) {
       console.error("Erro ao buscar partes:", error);
       toast.error("Não foi possível carregar as partes do processo");
@@ -95,6 +113,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     try {
       await deleteParty(id);
       setParties(prevParties => prevParties.filter(party => party.id !== id));
+      setFilteredParties(prevParties => prevParties.filter(party => party.id !== id));
       toast.success("Parte excluída com sucesso");
     } catch (error) {
       console.error("Erro ao excluir parte:", error);
@@ -109,7 +128,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     e.preventDefault();
     
     try {
-      const partyData = {
+      const partyData: Partial<PartyType> & { process_id?: string } = {
         name,
         document,
         type,
@@ -125,14 +144,21 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
             party.id === editingParty.id ? updatedParty : party
           )
         );
+        setFilteredParties(prevParties => 
+          prevParties.map(party => 
+            party.id === editingParty.id ? updatedParty : party
+          )
+        );
         toast.success("Parte atualizada com sucesso");
       } else {
         // Create new party
-        const newParty = await createParty({
+        const newPartyData = {
           ...partyData,
           process_id: processId
-        });
+        };
+        const newParty = await createParty(newPartyData);
         setParties(prevParties => [...prevParties, newParty]);
+        setFilteredParties(prevParties => [...prevParties, newParty]);
         toast.success("Parte adicionada com sucesso");
       }
       
@@ -157,101 +183,109 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium">Partes do Processo</h3>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={() => resetForm()}>
-              <Plus className="h-4 w-4 mr-1" /> Nova Parte
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingParty ? "Editar Parte" : "Nova Parte"}</DialogTitle>
-              <DialogDescription>
-                Preencha os dados da parte do processo
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Pesquisar partes..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-64"
+          />
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" onClick={() => resetForm()}>
+                <Plus className="h-4 w-4 mr-1" /> Nova Parte
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingParty ? "Editar Parte" : "Nova Parte"}</DialogTitle>
+                <DialogDescription>
+                  Preencha os dados da parte do processo
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="space-y-2">
-                <Label htmlFor="personType">Tipo de Pessoa</Label>
-                <Select value={personType} onValueChange={setPersonType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo de pessoa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="physical">Física</SelectItem>
-                    <SelectItem value="legal">Jurídica</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="document">Documento</Label>
-                <Input
-                  id="document"
-                  value={document}
-                  onChange={(e) => setDocument(e.target.value)}
-                  placeholder={personType === "physical" ? "CPF" : "CNPJ"}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo</Label>
-                <Select value={type} onValueChange={setType} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="autor">Autor</SelectItem>
-                    <SelectItem value="réu">Réu</SelectItem>
-                    <SelectItem value="terceiro">Terceiro Interessado</SelectItem>
-                    <SelectItem value="advogado">Advogado</SelectItem>
-                    <SelectItem value="assistente">Assistente</SelectItem>
-                    <SelectItem value="perito">Perito</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="subtype">Subtipo</Label>
-                <Input
-                  id="subtype"
-                  value={subtype}
-                  onChange={(e) => setSubtype(e.target.value)}
-                  placeholder="Ex: Assistente de acusação, etc."
-                />
-              </div>
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingParty ? "Atualizar" : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="personType">Tipo de Pessoa</Label>
+                  <Select value={personType} onValueChange={setPersonType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de pessoa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="physical">Física</SelectItem>
+                      <SelectItem value="legal">Jurídica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="document">Documento</Label>
+                  <Input
+                    id="document"
+                    value={document}
+                    onChange={(e) => setDocument(e.target.value)}
+                    placeholder={personType === "physical" ? "CPF" : "CNPJ"}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={type} onValueChange={setType} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="autor">Autor</SelectItem>
+                      <SelectItem value="réu">Réu</SelectItem>
+                      <SelectItem value="terceiro">Terceiro Interessado</SelectItem>
+                      <SelectItem value="advogado">Advogado</SelectItem>
+                      <SelectItem value="assistente">Assistente</SelectItem>
+                      <SelectItem value="perito">Perito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="subtype">Subtipo</Label>
+                  <Input
+                    id="subtype"
+                    value={subtype}
+                    onChange={(e) => setSubtype(e.target.value)}
+                    placeholder="Ex: Assistente de acusação, etc."
+                  />
+                </div>
+                
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    {editingParty ? "Atualizar" : "Salvar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
-      {parties.length === 0 ? (
+      {filteredParties.length === 0 ? (
         <div className="text-center py-4 text-gray-500">
           <p>Nenhuma informação encontrada</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {parties.map((party) => (
+          {filteredParties.map((party) => (
             <div key={party.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-2">
