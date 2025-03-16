@@ -1,4 +1,3 @@
-
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -80,6 +79,10 @@ export interface ProcessHit {
   situacao?: any;
   created_at?: string;
   updated_at?: string;
+  assuntos?: Array<{
+    codigo?: number | string;
+    nome?: string;
+  }>;  // Added the assuntos property
 }
 
 export interface ProcessUpdateHistory {
