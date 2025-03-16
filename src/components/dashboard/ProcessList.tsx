@@ -116,35 +116,12 @@ export function ProcessList({ processes }: ProcessListProps) {
                 {/* Navegação de movimentos do processo */}
                 {process.movimentacoes && process.movimentacoes.length > 0 && (
                   <div className="mt-4 border-t pt-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-700">
-                        Movimento {(currentMovementIndex[process.id] || 0) + 1} de {process.movimentacoes.length}
-                      </span>
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePreviousMovement(process.id);
-                          }}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNextMovement(process.id);
-                          }}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                    <ProcessNavigation
+                      currentMovimentoIndex={currentMovementIndex[process.id] || 0}
+                      totalMovimentos={process.movimentacoes.length}
+                      handlePrevMovimento={() => handlePreviousMovement(process.id)}
+                      handleNextMovimento={() => handleNextMovement(process.id)}
+                    />
 
                     {getCurrentMovement(process.id) && (
                       <div 
@@ -208,35 +185,12 @@ export function ProcessList({ processes }: ProcessListProps) {
                   {/* Navegação de movimentos do processo */}
                   {process.movimentacoes && process.movimentacoes.length > 0 && (
                     <div className="mt-4 border-t pt-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-700">
-                          Movimento {(currentMovementIndex[process.id] || 0) + 1} de {process.movimentacoes.length}
-                        </span>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePreviousMovement(process.id);
-                            }}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNextMovement(process.id);
-                            }}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      <ProcessNavigation
+                        currentMovimentoIndex={currentMovementIndex[process.id] || 0}
+                        totalMovimentos={process.movimentacoes.length}
+                        handlePrevMovimento={() => handlePreviousMovement(process.id)}
+                        handleNextMovimento={() => handleNextMovement(process.id)}
+                      />
 
                       {getCurrentMovement(process.id) && (
                         <div 
