@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      email_tracking: {
+        Row: {
+          count: number
+          id: string
+          month: number
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          count?: number
+          id?: string
+          month: number
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          count?: number
+          id?: string
+          month?: number
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       entity_types: {
         Row: {
           created_at: string | null
@@ -625,6 +649,50 @@ export type Database = {
           },
         ]
       }
+      process_update_history: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          new_status: string | null
+          previous_status: string | null
+          process_id: number
+          update_date: string | null
+          update_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          process_id: number
+          update_date?: string | null
+          update_type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          process_id?: number
+          update_date?: string | null
+          update_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_update_history_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processes: {
         Row: {
           court: string | null
@@ -714,6 +782,36 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
+      system_configuration: {
+        Row: {
+          created_at: string | null
+          email_monthly_limit: number
+          google_auth_client_id: string | null
+          google_auth_client_secret: string | null
+          id: string
+          update_processes_day: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_monthly_limit?: number
+          google_auth_client_id?: string | null
+          google_auth_client_secret?: string | null
+          id?: string
+          update_processes_day?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_monthly_limit?: number
+          google_auth_client_id?: string | null
+          google_auth_client_secret?: string | null
+          id?: string
+          update_processes_day?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
