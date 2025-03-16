@@ -108,8 +108,12 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       
       let query = supabase
         .from('process_judicial_decisions')
-        .select('*')
-        .eq('process_id', processId);
+        .select('*');
+      
+      const processIdNum = parseInt(processId, 10);
+      if (!isNaN(processIdNum)) {
+        query = query.eq('process_id', processIdNum);
+      }
       
       if (hitId) {
         query = query.eq('hit_id', hitId);
@@ -121,6 +125,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         throw error;
       }
       
+      console.log("Fetched decisions:", data);
       setDecisions(data || []);
       setFilteredDecisions(data || []);
       setTotalPages(Math.ceil((data?.length || 0) / itemsPerPage));
@@ -178,13 +183,18 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
     try {
       setFormLoading(true);
       
+      const processIdNum = parseInt(processId, 10);
+      if (isNaN(processIdNum)) {
+        throw new Error("Invalid process ID format");
+      }
+      
       const decisionData = {
         title: title.trim(),
         content: description.trim(),
         judge: judge.trim() || null,
         decision_type: decisionType,
         decision_date: decisionDate.toISOString(),
-        process_id: processId,
+        process_id: processIdNum,
         hit_id: hitId || null
       };
       
@@ -198,7 +208,10 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
           .select('*')
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating decision:", error);
+          throw error;
+        }
         result = data;
         
         setDecisions(prev => 
@@ -207,13 +220,17 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         
         toast.success("Decisão atualizada com sucesso!");
       } else {
+        console.log("Inserting decision with data:", decisionData);
         const { data, error } = await supabase
           .from('process_judicial_decisions')
           .insert(decisionData)
           .select('*')
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error inserting decision:", error);
+          throw error;
+        }
         result = data;
         
         setDecisions(prev => [...prev, result]);
@@ -223,6 +240,8 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       
       resetForm();
       setIsFormOpen(false);
+      
+      fetchDecisions();
     } catch (error) {
       console.error("Erro ao salvar decisão:", error);
       toast.error("Não foi possível salvar a decisão. Por favor, tente novamente.");
