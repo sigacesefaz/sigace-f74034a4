@@ -23,14 +23,12 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessDocuments } from "@/components/process/ProcessDocuments";
-
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
-
 export function ProcessList({
   processes,
   isLoading,
@@ -54,9 +52,7 @@ export function ProcessList({
   const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
   const [eventCode, setEventCode] = useState<string>("");
   const [eventText, setEventText] = useState<string>("");
-
   const itemsPerPage = 5;
-
   const groupedProcesses = processes.reduce((acc, process) => {
     if (process.is_parent || !process.parent_id) {
       if (!acc[process.id]) {
@@ -82,10 +78,8 @@ export function ProcessList({
     parent: Process | null;
     children: Process[];
   }>);
-
   const paginatedGroups = Object.entries(groupedProcesses).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
-
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -103,7 +97,6 @@ export function ProcessList({
       }
     }
   };
-
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
@@ -124,7 +117,6 @@ export function ProcessList({
       setBulkAlertOpen(false);
     }
   };
-
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -139,17 +131,14 @@ export function ProcessList({
       }
     }
   };
-
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleShare = async (process: Process) => {
     const formatProcessNumber = (number: string) => {
       if (!number) return "";
@@ -173,7 +162,6 @@ export function ProcessList({
       toast.error("Não foi possível compartilhar o processo");
     }
   };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -186,11 +174,9 @@ export function ProcessList({
       return "Data inválida";
     }
   };
-
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
-
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
@@ -199,14 +185,12 @@ export function ProcessList({
       setSelectedProcesses(allParentIds);
     }
   };
-
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({
       ...prev,
       [processId]: value
     }));
   };
-
   const handlePreviousMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -223,7 +207,6 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   const handleNextMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -240,7 +223,6 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   if (isLoading) {
     return <div className="space-y-2">
         {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
@@ -251,7 +233,6 @@ export function ProcessList({
           </Card>)}
       </div>;
   }
-
   if (processes.length === 0) {
     return <Card className="text-center py-6">
         <CardContent>
@@ -262,11 +243,9 @@ export function ProcessList({
         </CardContent>
       </Card>;
   }
-
   const applyFilters = () => {
     // Lógica de filtragem aqui
   };
-
   return <div className="space-y-2">
       {processes.length > 0 && <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-1">
@@ -361,7 +340,7 @@ export function ProcessList({
                     </Button>
                     <div className="h-4 w-px bg-gray-200 mx-1" />
                     <Button size="sm" variant="default" onClick={() => handlePreviousMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Movimentação anterior">
-                      <ChevronLeft className="h-4 w-4" />
+                      
                     </Button>
                     
                   </div>
