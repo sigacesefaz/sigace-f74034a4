@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, customSupabaseQuery } from "@/lib/supabase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Decision } from "@/types/process";
@@ -105,21 +106,19 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
   const fetchDecisions = async () => {
     try {
       setLoading(true);
-      
-      let query = supabase
-        .from('process_judicial_decisions')
-        .select('*');
-      
+
       const processIdNum = parseInt(processId, 10);
-      if (!isNaN(processIdNum)) {
-        query = query.eq('process_id', processIdNum);
+      if (isNaN(processIdNum)) {
+        throw new Error("Invalid process ID format");
       }
       
-      if (hitId) {
-        query = query.eq('hit_id', hitId);
-      }
-      
-      const { data, error } = await query;
+      // Use customSupabaseQuery instead of direct supabase query
+      const { data, error } = await customSupabaseQuery('process_judicial_decisions', {
+        select: '*',
+        filters: [
+          { column: 'process_id', value: processIdNum }
+        ]
+      });
       
       if (error) {
         throw error;
@@ -201,12 +200,12 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       let result;
       
       if (editingDecision) {
-        const { data, error } = await supabase
-          .from('process_judicial_decisions')
-          .update(decisionData)
-          .eq('id', editingDecision.id)
-          .select('*')
-          .single();
+        // Use customSupabaseQuery for update
+        const { data, error } = await customSupabaseQuery('process_judicial_decisions', {
+          method: 'PATCH',
+          body: decisionData,
+          filter: { column: 'id', value: editingDecision.id }
+        });
           
         if (error) {
           console.error("Error updating decision:", error);
@@ -221,11 +220,11 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         toast.success("Decisão atualizada com sucesso!");
       } else {
         console.log("Inserting decision with data:", decisionData);
-        const { data, error } = await supabase
-          .from('process_judicial_decisions')
-          .insert(decisionData)
-          .select('*')
-          .single();
+        // Use customSupabaseQuery for insert
+        const { data, error } = await customSupabaseQuery('process_judicial_decisions', {
+          method: 'POST',
+          body: decisionData
+        });
           
         if (error) {
           console.error("Error inserting decision:", error);
@@ -254,10 +253,11 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
     if (!decisionToDelete) return;
     
     try {
-      const { error } = await supabase
-        .from('process_judicial_decisions')
-        .delete()
-        .eq('id', decisionToDelete);
+      // Use customSupabaseQuery for delete
+      const { error } = await customSupabaseQuery('process_judicial_decisions', {
+        method: 'DELETE',
+        filter: { column: 'id', value: decisionToDelete }
+      });
       
       if (error) {
         throw error;
