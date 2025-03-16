@@ -1,5 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
+import { searchProcesses, getProcessById } from "../shared/datajud.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -17,20 +19,257 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { processId, courtEndpoint } = await req.json();
     
-    // Get request data
-    const requestData = await req.json();
-    const { processId, userId, updateType = "manual" } = requestData;
-    
-    console.log(`Processing update for process ID: ${processId}, update type: ${updateType}`);
-    
-    // If processId is specified, update just that process
-    if (processId) {
-      return await updateSingleProcess(supabase, processId, userId, updateType);
-    } 
-    // Otherwise update all processes (for scheduled updates)
-    else {
-      return await updateAllProcesses(supabase, updateType);
+    if (!processId) {
+      if (req.method === "POST") {
+        // This is the scheduled update for all processes
+        const { data: processes } = await supabase
+          .from("processes")
+          .select("id, number, court")
+          .order("created_at", { ascending: false });
+          
+        if (!processes || processes.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, message: "No processes found to update" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+          );
+        }
+        
+        const results = [];
+        for (const process of processes) {
+          try {
+            // Determine the court endpoint based on the process court field
+            const endpoint = process.court.toLowerCase().includes("tjto") ? 
+              "https://api-publica.datajud.cnj.jus.br/api/v2/jurimetria/tjto" : 
+              "https://api-publica.datajud.cnj.jus.br/api/v2/jurimetria/stj";
+              
+            // Get the latest data for this process
+            const updatedData = await getProcessById(endpoint, process.number);
+            
+            if (updatedData && updatedData.length > 0) {
+              // Check for new hits
+              const { data: existingHits } = await supabase
+                .from("process_hits")
+                .select("hit_id")
+                .eq("process_id", process.id);
+                
+              const existingHitIds = existingHits ? existingHits.map(h => h.hit_id) : [];
+              const newHits = updatedData.filter(hit => !existingHitIds.includes(hit.id));
+              
+              if (newHits.length > 0) {
+                // Log the update history
+                await supabase.from("process_update_history").insert({
+                  process_id: process.id,
+                  update_type: "automatic",
+                  details: { new_hits: newHits.length },
+                });
+                
+                // Save the new hits
+                for (const hit of newHits) {
+                  const movimento = hit;
+                  await supabase.from("process_hits").insert({
+                    process_id: process.id,
+                    hit_id: movimento.id,
+                    hit_score: movimento.score || 0,
+                    tribunal: movimento.process.tribunal,
+                    numero_processo: movimento.process.numeroProcesso,
+                    data_ajuizamento: movimento.process.dataAjuizamento,
+                    grau: movimento.process.grau,
+                    nivel_sigilo: movimento.process.nivelSigilo || 0,
+                    formato: movimento.process.formato,
+                    sistema: movimento.process.sistema,
+                    classe: movimento.process.classe,
+                    orgao_julgador: movimento.process.orgaoJulgador,
+                    data_hora_ultima_atualizacao: movimento.process.dataHoraUltimaAtualizacao,
+                    valor_causa: movimento.process.valorCausa,
+                    situacao: movimento.process.situacao,
+                  });
+                  
+                  // Save movements for this hit
+                  if (movimento.process.movimentos && movimento.process.movimentos.length > 0) {
+                    for (const mov of movimento.process.movimentos) {
+                      await supabase.from("process_movements").insert({
+                        process_id: process.id,
+                        hit_id: movimento.id,
+                        codigo: mov.codigo,
+                        nome: mov.nome,
+                        data_hora: mov.dataHora,
+                        tipo: mov.tipo || "N/A",
+                        complemento: mov.complemento,
+                        complementos_tabelados: mov.complementosTabelados || [],
+                      });
+                    }
+                  }
+                  
+                  // Save subjects for this hit
+                  if (movimento.process.assuntos && movimento.process.assuntos.length > 0) {
+                    for (const assunto of movimento.process.assuntos) {
+                      await supabase.from("process_subjects").insert({
+                        process_id: process.id,
+                        hit_id: movimento.id,
+                        codigo: assunto.codigo,
+                        nome: assunto.nome,
+                        principal: false
+                      });
+                    }
+                  }
+                }
+                
+                results.push({
+                  processId: process.id,
+                  processNumber: process.number,
+                  newHits: newHits.length,
+                  success: true
+                });
+              } else {
+                results.push({
+                  processId: process.id,
+                  processNumber: process.number,
+                  newHits: 0,
+                  success: true
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error updating process ${process.id}:`, error);
+            results.push({
+              processId: process.id,
+              processNumber: process.number,
+              error: error.message,
+              success: false
+            });
+          }
+        }
+        
+        return new Response(
+          JSON.stringify({ success: true, results }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({ error: "Invalid request method or missing processId" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+    } else {
+      // Manual update for a specific process
+      const { data: process } = await supabase
+        .from("processes")
+        .select("number, court")
+        .eq("id", processId)
+        .single();
+        
+      if (!process) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Process not found" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+        );
+      }
+      
+      // Use provided courtEndpoint or determine from process.court
+      const endpoint = courtEndpoint || (process.court.toLowerCase().includes("tjto") ? 
+        "https://api-publica.datajud.cnj.jus.br/api/v2/jurimetria/tjto" : 
+        "https://api-publica.datajud.cnj.jus.br/api/v2/jurimetria/stj");
+        
+      const updatedData = await getProcessById(endpoint, process.number);
+      
+      if (!updatedData || updatedData.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, message: "No data returned from Datajud API" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+        );
+      }
+      
+      // Check for new hits
+      const { data: existingHits } = await supabase
+        .from("process_hits")
+        .select("hit_id")
+        .eq("process_id", processId);
+        
+      const existingHitIds = existingHits ? existingHits.map(h => h.hit_id) : [];
+      const newHits = updatedData.filter(hit => !existingHitIds.includes(hit.id));
+      
+      if (newHits.length > 0) {
+        // Log the update history
+        await supabase.from("process_update_history").insert({
+          process_id: processId,
+          update_type: "manual",
+          details: { new_hits: newHits.length },
+        });
+        
+        // Save the new hits
+        for (const hit of newHits) {
+          const movimento = hit;
+          await supabase.from("process_hits").insert({
+            process_id: processId,
+            hit_id: movimento.id,
+            hit_score: movimento.score || 0,
+            tribunal: movimento.process.tribunal,
+            numero_processo: movimento.process.numeroProcesso,
+            data_ajuizamento: movimento.process.dataAjuizamento,
+            grau: movimento.process.grau,
+            nivel_sigilo: movimento.process.nivelSigilo || 0,
+            formato: movimento.process.formato,
+            sistema: movimento.process.sistema,
+            classe: movimento.process.classe,
+            orgao_julgador: movimento.process.orgaoJulgador,
+            data_hora_ultima_atualizacao: movimento.process.dataHoraUltimaAtualizacao,
+            valor_causa: movimento.process.valorCausa,
+            situacao: movimento.process.situacao,
+          });
+          
+          // Save movements for this hit
+          if (movimento.process.movimentos && movimento.process.movimentos.length > 0) {
+            for (const mov of movimento.process.movimentos) {
+              await supabase.from("process_movements").insert({
+                process_id: processId,
+                hit_id: movimento.id,
+                codigo: mov.codigo,
+                nome: mov.nome,
+                data_hora: mov.dataHora,
+                tipo: mov.tipo || "N/A",
+                complemento: mov.complemento,
+                complementos_tabelados: mov.complementosTabelados || [],
+              });
+            }
+          }
+          
+          // Save subjects for this hit
+          if (movimento.process.assuntos && movimento.process.assuntos.length > 0) {
+            for (const assunto of movimento.process.assuntos) {
+              await supabase.from("process_subjects").insert({
+                process_id: processId,
+                hit_id: movimento.id,
+                codigo: assunto.codigo,
+                nome: assunto.nome,
+                principal: false
+              });
+            }
+          }
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            processId,
+            processNumber: process.number,
+            newHits: newHits.length 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            processId,
+            processNumber: process.number,
+            newHits: 0,
+            message: "No new hits found" 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
   } catch (error) {
     console.error("Error in update-process function:", error);
@@ -40,173 +279,3 @@ serve(async (req) => {
     );
   }
 });
-
-async function updateSingleProcess(supabase, processId, userId, updateType) {
-  // Get the process details including the number
-  const { data: process, error: processError } = await supabase
-    .from("processes")
-    .select("number, court, metadata")
-    .eq("id", processId)
-    .single();
-    
-  if (processError) {
-    console.error("Error fetching process:", processError);
-    return new Response(
-      JSON.stringify({ success: false, error: processError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
-  }
-  
-  // Call DataJud API to get updated process data
-  console.log(`Fetching updated data for process number: ${process.number} from court: ${process.court}`);
-  
-  // Simulate API call here - in a real scenario, you would call the actual DataJud API
-  // For this example, we'll just simulate finding a new movement
-  const newDataFound = true;
-  const previousHits = process.metadata?.hits || [];
-  const newHit = {
-    id: crypto.randomUUID(),
-    date: new Date().toISOString(),
-    description: `Automatic update on ${new Date().toISOString()}`,
-    type: "MOVEMENT",
-    content: "This is a simulated new movement from an update."
-  };
-  
-  // Only update if new data is found
-  if (newDataFound) {
-    const updatedHits = [...previousHits, newHit];
-    
-    // Update the process with the new data
-    const { data: updateResult, error: updateError } = await supabase
-      .from("processes")
-      .update({
-        metadata: {
-          ...process.metadata,
-          hits: updatedHits,
-          last_updated: new Date().toISOString()
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", processId)
-      .select();
-      
-    if (updateError) {
-      console.error("Error updating process:", updateError);
-      return new Response(
-        JSON.stringify({ success: false, error: updateError.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-    
-    // Record the update in the history
-    const { error: historyError } = await supabase
-      .from("process_update_history")
-      .insert({
-        process_id: processId,
-        update_type: updateType,
-        update_date: new Date().toISOString(),
-        user_id: userId,
-        details: {
-          new_hits: 1,
-          previous_status: process.metadata?.status,
-          new_status: process.metadata?.status // Same in this case, but could be different
-        }
-      });
-      
-    if (historyError) {
-      console.error("Error recording update history:", historyError);
-      // We don't fail the request if just the history recording fails
-    }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Process updated successfully", 
-        newData: true,
-        process: updateResult[0]
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } else {
-    // Record that we checked but found no updates
-    const { error: historyError } = await supabase
-      .from("process_update_history")
-      .insert({
-        process_id: processId,
-        update_type: updateType,
-        update_date: new Date().toISOString(),
-        user_id: userId,
-        details: {
-          new_hits: 0
-        }
-      });
-      
-    if (historyError) {
-      console.error("Error recording update history:", historyError);
-    }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "No new data found for process", 
-        newData: false 
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-}
-
-async function updateAllProcesses(supabase, updateType) {
-  // Get all processes to be updated
-  const { data: processes, error: processesError } = await supabase
-    .from("processes")
-    .select("id, user_id, number, court");
-    
-  if (processesError) {
-    console.error("Error fetching processes:", processesError);
-    return new Response(
-      JSON.stringify({ success: false, error: processesError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
-  }
-  
-  console.log(`Found ${processes.length} processes to update`);
-  
-  // Update each process
-  const updateResults = [];
-  for (const process of processes) {
-    try {
-      const response = await updateSingleProcess(
-        supabase, 
-        process.id, 
-        process.user_id, 
-        updateType
-      );
-      
-      const result = await response.json();
-      updateResults.push({
-        processId: process.id,
-        success: result.success,
-        newData: result.newData
-      });
-    } catch (error) {
-      console.error(`Error updating process ${process.id}:`, error);
-      updateResults.push({
-        processId: process.id,
-        success: false,
-        error: error.message
-      });
-    }
-  }
-  
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      message: `Completed update of ${processes.length} processes`,
-      results: updateResults,
-      updatedCount: updateResults.filter(r => r.success && r.newData).length,
-      failedCount: updateResults.filter(r => !r.success).length
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}

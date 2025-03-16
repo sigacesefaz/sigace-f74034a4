@@ -1,8 +1,13 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
+import { Resend } from "npm:resend@2.0.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
+
+const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,22 +23,130 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get request data
-    const requestData = await req.json();
-    const { action } = requestData;
-    
-    // Get current month and year
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
-    const currentYear = now.getFullYear();
-    
-    // Check if we're tracking or checking the limit
-    if (action === "track") {
-      // Track email sent
-      return await trackEmail(supabase, currentMonth, currentYear);
+    if (req.method === "GET") {
+      // Get the current email count for the current month
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      
+      const { data: emailTracking } = await supabase
+        .from("email_tracking")
+        .select("*")
+        .eq("month", currentMonth)
+        .eq("year", currentYear)
+        .single();
+        
+      // Get the monthly limit from system configuration
+      const { data: systemConfig } = await supabase
+        .from("system_configuration")
+        .select("email_monthly_limit")
+        .single();
+        
+      const emailCount = emailTracking?.count || 0;
+      const emailLimit = systemConfig?.email_monthly_limit || 3000;
+      const emailsRemaining = emailLimit - emailCount;
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          currentMonth,
+          currentYear,
+          emailCount,
+          emailLimit,
+          emailsRemaining,
+          limitReached: emailCount >= emailLimit
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else if (req.method === "POST") {
+      // This endpoint sends an email and tracks it
+      const { to, subject, html, from } = await req.json();
+      
+      if (!to || !subject || !html) {
+        return new Response(
+          JSON.stringify({ error: "Missing required fields" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+      
+      // Check if we've hit the monthly limit
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      
+      // Get the current email count
+      const { data: emailTracking } = await supabase
+        .from("email_tracking")
+        .select("*")
+        .eq("month", currentMonth)
+        .eq("year", currentYear)
+        .single();
+        
+      // Get the limit from system configuration
+      const { data: systemConfig } = await supabase
+        .from("system_configuration")
+        .select("email_monthly_limit")
+        .single();
+        
+      const emailLimit = systemConfig?.email_monthly_limit || 3000;
+      const currentCount = emailTracking?.count || 0;
+      
+      if (currentCount >= emailLimit) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "Email monthly limit reached. Service will resume on the first day of the next month."
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 }
+        );
+      }
+      
+      // Send email via Resend
+      const emailResponse = await resend.emails.send({
+        from: from || "SIGACE <sigace@sefaz.to.gov.br>",
+        to: [to],
+        subject,
+        html
+      });
+      
+      if (emailResponse.error) {
+        throw new Error(`Failed to send email: ${emailResponse.error}`);
+      }
+      
+      // Update email count in the database
+      const { error: upsertError } = await supabase
+        .from("email_tracking")
+        .upsert(
+          { 
+            month: currentMonth, 
+            year: currentYear, 
+            count: currentCount + 1 
+          },
+          { 
+            onConflict: "month,year",
+            ignoreDuplicates: false 
+          }
+        );
+      
+      if (upsertError) {
+        console.error("Error updating email count:", upsertError);
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          emailId: emailResponse.id,
+          message: "Email sent and tracked successfully",
+          currentCount: currentCount + 1,
+          remainingEmails: emailLimit - (currentCount + 1)
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     } else {
-      // Check if we've hit the limit
-      return await checkEmailLimit(supabase, currentMonth, currentYear);
+      return new Response(
+        JSON.stringify({ error: "Method not allowed" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 405 }
+      );
     }
   } catch (error) {
     console.error("Error in email-tracker function:", error);
@@ -43,127 +156,3 @@ serve(async (req) => {
     );
   }
 });
-
-async function trackEmail(supabase, month, year) {
-  // First, get current count
-  const { data: trackingData, error: trackingError } = await supabase
-    .from("email_tracking")
-    .select("id, count")
-    .eq("month", month)
-    .eq("year", year)
-    .single();
-    
-  if (trackingError && trackingError.code !== "PGRST116") { // Not found error
-    console.error("Error fetching email tracking:", trackingError);
-    return new Response(
-      JSON.stringify({ success: false, error: trackingError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
-  }
-
-  let updateResult;
-  
-  // If we have a record, update it
-  if (trackingData) {
-    const { data, error: updateError } = await supabase
-      .from("email_tracking")
-      .update({
-        count: trackingData.count + 1
-      })
-      .eq("id", trackingData.id)
-      .select();
-      
-    if (updateError) {
-      console.error("Error updating email count:", updateError);
-      return new Response(
-        JSON.stringify({ success: false, error: updateError.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-    
-    updateResult = data[0];
-  } 
-  // Otherwise, create a new record
-  else {
-    const { data, error: insertError } = await supabase
-      .from("email_tracking")
-      .insert({
-        month,
-        year,
-        count: 1
-      })
-      .select();
-      
-    if (insertError) {
-      console.error("Error inserting email count:", insertError);
-      return new Response(
-        JSON.stringify({ success: false, error: insertError.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-    
-    updateResult = data[0];
-  }
-  
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      message: "Email tracked successfully", 
-      count: updateResult.count,
-      month: updateResult.month,
-      year: updateResult.year
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
-
-async function checkEmailLimit(supabase, month, year) {
-  // Get system configuration for email limit
-  const { data: systemConfig, error: configError } = await supabase
-    .from("system_configuration")
-    .select("email_monthly_limit")
-    .single();
-    
-  if (configError) {
-    console.error("Error fetching system configuration:", configError);
-    return new Response(
-      JSON.stringify({ success: false, error: configError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
-  }
-  
-  const emailLimit = systemConfig.email_monthly_limit || 3000;
-  
-  // Get current count for this month
-  const { data: trackingData, error: trackingError } = await supabase
-    .from("email_tracking")
-    .select("count")
-    .eq("month", month)
-    .eq("year", year)
-    .single();
-    
-  if (trackingError && trackingError.code !== "PGRST116") { // Not found error
-    console.error("Error fetching email tracking:", trackingError);
-    return new Response(
-      JSON.stringify({ success: false, error: trackingError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
-  }
-  
-  // If we don't have a record, we haven't sent any emails yet
-  const currentCount = trackingData?.count || 0;
-  const canSendEmails = currentCount < emailLimit;
-  
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      canSendEmails, 
-      currentCount, 
-      limit: emailLimit,
-      remaining: emailLimit - currentCount,
-      month,
-      year
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}

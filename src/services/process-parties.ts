@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { Party } from "@/types/process";
+import { PartyType } from "@/types/process";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the parties of a process
@@ -47,7 +47,7 @@ export async function saveProcessParties(processId: string | number, parties: an
   }
 }
 
-export async function getPartiesByProcessId(processId: string | number): Promise<Party[]> {
+export async function getPartiesByProcessId(processId: string) {
   try {
     const { data, error } = await supabase
       .from("process_parties")
@@ -60,16 +60,15 @@ export async function getPartiesByProcessId(processId: string | number): Promise
       throw error;
     }
 
-    // Map database data to Party interface
-    const mappedData: Party[] = data.map(party => ({
+    // Mapear os dados do banco para o formato PartyType
+    const mappedData = data.map(party => ({
       id: party.id,
       name: party.name,
       document: party.document,
       type: party.type,
       subtype: party.subtype,
-      personType: party.person_type,
-      process_id: party.process_id
-    }));
+      personType: party.person_type
+    })) as PartyType[];
 
     return mappedData;
   } catch (error) {
@@ -78,7 +77,7 @@ export async function getPartiesByProcessId(processId: string | number): Promise
   }
 }
 
-export async function createParty(partyData: Omit<Party, "id"> & { process_id: string | number }): Promise<Party> {
+export async function createParty(partyData: Omit<PartyType, "id"> & { process_id: string }) {
   try {
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
@@ -106,31 +105,30 @@ export async function createParty(partyData: Omit<Party, "id"> & { process_id: s
       throw error;
     }
 
-    // Map database response to Party interface
+    // Mapear o dado do banco para o formato PartyType
     return {
       id: data.id,
       name: data.name,
       document: data.document,
       type: data.type,
       subtype: data.subtype,
-      personType: data.person_type,
-      process_id: data.process_id
-    } as Party;
+      personType: data.person_type
+    } as PartyType;
   } catch (error) {
     console.error("Error creating party:", error);
     throw error;
   }
 }
 
-export async function updateParty(id: string, partyData: Partial<Omit<Party, "id">>): Promise<Party> {
+export async function updateParty(id: string, partyData: Partial<Omit<PartyType, "id">>) {
   try {
-    // Convert from Party to database format
+    // Converter de PartyType para o formato do banco
     const dbData: any = {};
-    if (partyData.name !== undefined) dbData.name = partyData.name;
-    if (partyData.document !== undefined) dbData.document = partyData.document;
-    if (partyData.type !== undefined) dbData.type = partyData.type;
-    if (partyData.subtype !== undefined) dbData.subtype = partyData.subtype;
-    if (partyData.personType !== undefined) dbData.person_type = partyData.personType;
+    if (partyData.name) dbData.name = partyData.name;
+    if (partyData.document) dbData.document = partyData.document;
+    if (partyData.type) dbData.type = partyData.type;
+    if (partyData.subtype) dbData.subtype = partyData.subtype;
+    if (partyData.personType) dbData.person_type = partyData.personType;
 
     const { data, error } = await supabase
       .from("process_parties")
@@ -144,23 +142,22 @@ export async function updateParty(id: string, partyData: Partial<Omit<Party, "id
       throw error;
     }
 
-    // Map database response to Party interface
+    // Mapear o dado do banco para o formato PartyType
     return {
       id: data.id,
       name: data.name,
       document: data.document,
       type: data.type,
       subtype: data.subtype,
-      personType: data.person_type,
-      process_id: data.process_id
-    } as Party;
+      personType: data.person_type
+    } as PartyType;
   } catch (error) {
     console.error("Error updating party:", error);
     throw error;
   }
 }
 
-export async function deleteParty(id: string): Promise<boolean> {
+export async function deleteParty(id: string) {
   try {
     const { error } = await supabase
       .from("process_parties")

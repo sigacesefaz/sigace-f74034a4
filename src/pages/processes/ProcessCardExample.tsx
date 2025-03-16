@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { ProcessCard } from "@/components/dashboard/ProcessCard";
 import { toast } from "@/components/ui/use-toast";
@@ -272,8 +273,12 @@ export default function ProcessCardExample() {
     });
   };
   
-  const handleView = (id: string | number) => {
-    navigate(`/processes/${id.toString()}`);
+  const handleView = (id: string) => {
+    toast({
+      title: "Visualizar processo",
+      description: `Visualizando processo ID: ${id}`,
+      variant: "default",
+    });
   };
   
   const handlePrint = (process: any) => {
@@ -321,7 +326,7 @@ export default function ProcessCardExample() {
           <ProcessCard 
             key={process.id}
             process={process}
-            onDelete={() => handleDelete(process.id.toString())}
+            onDelete={handleDelete}
             onView={handleView}
             onPrint={handlePrint}
             onShare={handleShare}
