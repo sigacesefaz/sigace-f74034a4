@@ -370,12 +370,7 @@ export function ProcessList({
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
-                        </div>
-                      </div>
+                      
 
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
