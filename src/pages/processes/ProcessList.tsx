@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
@@ -26,6 +27,12 @@ import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
 import { formatProcessNumber } from "@/utils/format";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import { ProcessDecisions } from "@/components/process/ProcessDecisions";
+import { ProcessParties } from "@/components/process/ProcessParties";
+import { ProcessDocuments } from "@/components/process/ProcessDocuments";
 
 interface ProcessListProps {
   processes: Process[];
@@ -42,13 +49,18 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingProcessId, setLoadingProcessId] = useState<string | null>(null);
-  const [showMovementsId, setShowMovementsId] = useState<string | null>(null);
   const [showOverviewId, setShowOverviewId] = useState<string | null>(null);
-  const [showTabsId, setShowTabsId] = useState<string | null>(null);
   const [processTabStates, setProcessTabStates] = useState<Record<string, string>>({});
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
+  
+  // Filtros para a aba Eventos
+  const [eventStartDate, setEventStartDate] = useState<Date | undefined>(undefined);
+  const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
+  const [eventCode, setEventCode] = useState<string>("");
+  const [eventText, setEventText] = useState<string>("");
+  
   const itemsPerPage = 5;
 
   const groupedProcesses = processes.reduce((acc, process) => {
@@ -443,7 +455,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
               </CardHeader>
               
               <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100">
-                <div className="text-sm text-gray-700 pb-1">
+                <div className="text-sm text-gray-700 pt-1">
                   <button 
                     onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)}
                     className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
@@ -453,7 +465,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         showOverviewId === parentProcess.id ? "rotate-90" : ""
                       }`}
                     />
-                    Movimentação Processual
+                    Detalhes do Processo
                   </button>
                   <div 
                     id={`overview-${parentProcess.id}`}
@@ -463,167 +475,159 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         : "opacity-0 max-h-0 overflow-hidden"
                     }`}
                   >
-                    <Tabs defaultValue="atual" className="w-full">
-                      <TabsList className="w-full mb-2">
-                        <TabsTrigger value="atual" className="flex-1">Atual</TabsTrigger>
-                        <TabsTrigger value="anteriores" className="flex-1">Anteriores</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="atual" className="space-y-2">
-                        <div className="space-y-2">
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                              <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
-                              <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                              <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                              <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                              <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                            <div className="text-sm">
-                              {parentProcess.metadata?.assuntos?.map((assunto, index) => (
-                                <p key={index} className="text-gray-700">
-                                  {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                                </p>
-                              )) || <p className="text-gray-500">Não informado</p>}
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                            <div className="text-sm">
-                              <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                              <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
-                            </div>
-                          </div>
+                    {/* Conteúdo da aba "Atual" realocado diretamente dentro do item retrátil */}
+                    <div className="space-y-2">
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
+                          <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
+                          <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
+                          <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
+                          <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
                         </div>
-                      </TabsContent>
+                      </div>
 
-                      <TabsContent value="anteriores" className="space-y-2">
-                        {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 1 ? (
-                          parentProcess.movimentacoes.slice(1).map((movimento, index) => (
-                            <div key={index} className="bg-white rounded-lg p-4 space-y-3">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="space-y-1 flex-1">
-                                  <p className="text-gray-900 font-medium">
-                                    {movimento.descricao}
-                                  </p>
-                                  <p className="text-gray-600">
-                                    {formatDate(movimento.data)}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  {movimento.codigo && (
-                                    <Badge variant="outline" className="text-gray-600">
-                                      Código: {movimento.codigo}
-                                    </Badge>
-                                  )}
-                                  {movimento.tipo && (
-                                    <Badge variant="secondary" className="bg-gray-100">
-                                      {movimento.tipo}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              {movimento.complemento && (
-                                <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100">
-                                  {movimento.complemento}
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4 text-gray-500">
-                            Nenhuma movimentação anterior encontrada
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                </div>
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
+                        <div className="text-sm">
+                          {parentProcess.metadata?.assuntos?.map((assunto, index) => (
+                            <p key={index} className="text-gray-700">
+                              {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
+                            </p>
+                          )) || <p className="text-gray-500">Não informado</p>}
+                        </div>
+                      </div>
 
-                <div className="text-sm text-gray-700 pt-1">
-                  <button 
-                    onClick={() => setShowTabsId(showTabsId === parentProcess.id ? null : parentProcess.id)}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronRight 
-                      className={`h-4 w-4 transition-transform ${
-                        showTabsId === parentProcess.id ? "rotate-90" : ""
-                      }`}
-                    />
-                    Detalhes do Processo
-                  </button>
-                  <div 
-                    id={`tabs-${parentProcess.id}`}
-                    className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${
-                      showTabsId === parentProcess.id
-                        ? "opacity-100 max-h-[2000px] mt-1"
-                        : "opacity-0 max-h-0 overflow-hidden"
-                    }`}
-                  >
-                    <Tabs 
-                      defaultValue="eventos" 
-                      value={processTabStates[parentProcess.id] || "eventos"} 
-                      onValueChange={(value) => handleTabChange(parentProcess.id, value)} 
-                      className="space-y-1"
-                    >
-                      <TabsList className="bg-white h-8">
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
+                        <div className="text-sm">
+                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-3 space-y-2">
+                        <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
+                        <div className="text-sm">
+                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
+                          <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Novas abas */}
+                    <Tabs defaultValue="eventos" className="w-full mt-4">
+                      <TabsList className="w-full mb-2">
                         <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                        <TabsTrigger value="intimacao">Intimação</TabsTrigger>
+                        <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
                         <TabsTrigger value="documentos">Documentos</TabsTrigger>
                         <TabsTrigger value="decisao">Decisão</TabsTrigger>
                         <TabsTrigger value="partes">Partes</TabsTrigger>
+                        <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="eventos" className="space-y-1">
-                        <ProcessMovements 
-                          movimentos={parentProcess.movimentacoes || []} 
-                          currentIndex={currentMovementIndex[parentProcess.id] || 0}
-                        />
+                      <TabsContent value="eventos">
+                        <div className="space-y-2">
+                          {/* Filtros para eventos */}
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Filtros</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="event-date-start">Data Inicial</Label>
+                                <DatePicker
+                                  selected={eventStartDate}
+                                  onSelect={setEventStartDate}
+                                  className="w-full"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="event-date-end">Data Final</Label>
+                                <DatePicker
+                                  selected={eventEndDate}
+                                  onSelect={setEventEndDate}
+                                  className="w-full"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="event-code">Código</Label>
+                                <Input
+                                  id="event-code"
+                                  placeholder="Ex: 581"
+                                  value={eventCode}
+                                  onChange={(e) => setEventCode(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="event-text">Texto</Label>
+                                <Input
+                                  id="event-text"
+                                  placeholder="Buscar no texto..."
+                                  value={eventText}
+                                  onChange={(e) => setEventText(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            <Button size="sm" className="mt-2">Filtrar</Button>
+                          </div>
+                          
+                          {/* Lista de eventos com paginação */}
+                          <ProcessMovements
+                            processId={parentProcess.id}
+                            hitId={parentProcess.hits?.[0]?.id}
+                            filter={{
+                              startDate: eventStartDate,
+                              endDate: eventEndDate,
+                              code: eventCode ? parseInt(eventCode) : undefined,
+                              text: eventText
+                            }}
+                          />
+                        </div>
                       </TabsContent>
 
-                      <TabsContent value="intimacao">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Conteúdo de intimações</p>
-                          </div>
+                      <TabsContent value="intimacoes">
+                        <div className="space-y-2">
+                          {/* Filtro de intimações (códigos 12266 e 12265) */}
+                          <ProcessMovements
+                            processId={parentProcess.id}
+                            hitId={parentProcess.hits?.[0]?.id}
+                            filter={{
+                              codes: [12266, 12265]
+                            }}
+                          />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="documentos">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Documentos do processo</p>
-                          </div>
+                        <div className="space-y-2">
+                          {/* Filtro de documentos (código 581) */}
+                          <ProcessMovements
+                            processId={parentProcess.id}
+                            hitId={parentProcess.hits?.[0]?.id}
+                            filter={{
+                              codes: [581]
+                            }}
+                          />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="decisao">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Decisões do processo</p>
-                          </div>
-                        </div>
+                        <ProcessDecisions 
+                          processId={parentProcess.id}
+                          hitId={parentProcess.hits?.[0]?.id}
+                        />
                       </TabsContent>
 
                       <TabsContent value="partes">
-                        <div className="bg-white rounded-lg p-2">
-                          <div className="text-sm text-gray-600">
-                            <p>Partes envolvidas no processo</p>
-                          </div>
-                        </div>
+                        <ProcessParties 
+                          processId={parentProcess.id}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="inteiro-teor">
+                        <ProcessDocuments 
+                          processId={parentProcess.id}
+                          hitId={parentProcess.hits?.[0]?.id}
+                        />
                       </TabsContent>
                     </Tabs>
                   </div>

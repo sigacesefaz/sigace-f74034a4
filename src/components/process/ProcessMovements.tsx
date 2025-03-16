@@ -1,129 +1,160 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { formatDateTime } from "@/utils/format";
-import { DatajudMovement } from "@/types/datajud";
-import { FileText, Check, AlertCircle, Clock, ArrowRight } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
+import { toast } from "sonner";
 
-interface ProcessMovementsProps {
-  movimentos: any[];
-  currentIndex?: number;
+interface MovementFilter {
+  startDate?: Date;
+  endDate?: Date;
+  code?: number;
+  codes?: number[];
+  text?: string;
 }
 
-export function ProcessMovements({ movimentos = [], currentIndex = 0 }: ProcessMovementsProps) {
-  // Garantir que o índice está dentro dos limites
-  const safeIndex = Math.min(Math.max(0, currentIndex), movimentos.length - 1);
-  const currentMovimento = movimentos[safeIndex];
+interface ProcessMovementsProps {
+  processId: string;
+  hitId?: string;
+  filter?: MovementFilter;
+}
 
-  if (!movimentos.length) {
+export function ProcessMovements({ processId, hitId, filter }: ProcessMovementsProps) {
+  const [movements, setMovements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    fetchMovements();
+  }, [processId, hitId, filter, currentPage]);
+
+  const fetchMovements = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('process_movements')
+        .select('*', { count: 'exact' })
+        .eq('process_id', processId)
+        .order('data_hora', { ascending: false });
+      
+      if (hitId) {
+        query = query.eq('hit_id', hitId);
+      }
+
+      // Aplicar filtros
+      if (filter) {
+        if (filter.startDate) {
+          query = query.gte('data_hora', filter.startDate.toISOString());
+        }
+        
+        if (filter.endDate) {
+          query = query.lte('data_hora', filter.endDate.toISOString());
+        }
+        
+        if (filter.code) {
+          query = query.eq('codigo', filter.code);
+        }
+        
+        if (filter.codes && filter.codes.length > 0) {
+          query = query.in('codigo', filter.codes);
+        }
+        
+        if (filter.text) {
+          query = query.ilike('nome', `%${filter.text}%`);
+        }
+      }
+      
+      // Aplicar paginação
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+      
+      const { data, error, count } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      setMovements(data || []);
+      setTotalPages(count ? Math.ceil(count / itemsPerPage) : 1);
+    } catch (error) {
+      console.error("Erro ao buscar movimentos:", error);
+      toast.error("Não foi possível carregar os movimentos do processo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
+    } catch {
+      return "Data inválida";
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="bg-white rounded-lg p-4 text-center">
-        <div className="text-gray-500">Nenhuma movimentação encontrada para este processo.</div>
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
-  // Determinar o tipo de badge a ser exibido com base no tipo de movimento
-  const getBadgeVariant = (tipo?: string) => {
-    if (!tipo) return "secondary";
-    
-    const tipoLower = tipo.toLowerCase();
-    if (tipoLower.includes("conclus") || tipoLower.includes("decisão") || tipoLower.includes("despacho")) {
-      return "default";
-    }
-    if (tipoLower.includes("juntada") || tipoLower.includes("petição")) {
-      return "outline";
-    }
-    if (tipoLower.includes("audiência") || tipoLower.includes("sessão")) {
-      return "secondary";
-    }
-    if (tipoLower.includes("sentença")) {
-      return "destructive";
-    }
-    
-    return "secondary";
-  };
-  
-  // Ícone para o tipo de movimento
-  const getMovementIcon = (tipo?: string) => {
-    if (!tipo) return <FileText className="h-4 w-4" />;
-    
-    const tipoLower = tipo.toLowerCase();
-    if (tipoLower.includes("conclus") || tipoLower.includes("decisão") || tipoLower.includes("despacho")) {
-      return <ArrowRight className="h-4 w-4" />;
-    }
-    if (tipoLower.includes("sentença") || tipoLower.includes("julgado")) {
-      return <Check className="h-4 w-4" />;
-    }
-    if (tipoLower.includes("audiência") || tipoLower.includes("sessão")) {
-      return <Clock className="h-4 w-4" />;
-    }
-    if (tipoLower.includes("intimação") || tipoLower.includes("citação")) {
-      return <AlertCircle className="h-4 w-4" />;
-    }
-    
-    return <FileText className="h-4 w-4" />;
-  };
+  if (movements.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p>Nenhuma informação encontrada</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {getMovementIcon(currentMovimento.tipo)}
-          <h3 className="font-medium">
-            Movimento {safeIndex + 1} de {movimentos.length}
-          </h3>
-        </div>
-        
-        <Badge variant={getBadgeVariant(currentMovimento.tipo)} className="capitalize">
-          {currentMovimento.tipo || "Movimento"}
-        </Badge>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <h4 className="text-lg font-medium">
-            {currentMovimento.nome || currentMovimento.descricao || "Movimento processual"}
-          </h4>
-          <p className="text-sm text-gray-500">
-            {formatDateTime(currentMovimento.dataHora || currentMovimento.data)}
-          </p>
-          {currentMovimento.codigo && (
-            <Badge variant="outline" className="mt-1">
-              Código: {currentMovimento.codigo}
-            </Badge>
+    <div className="space-y-3">
+      {movements.map((movement, index) => (
+        <div key={index} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <p className="text-gray-900 font-medium">
+                {movement.nome}
+              </p>
+              <p className="text-gray-600 text-sm">
+                {formatDate(movement.data_hora)}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              {movement.codigo && (
+                <Badge variant="outline" className="text-gray-600">
+                  Código: {movement.codigo}
+                </Badge>
+              )}
+              {movement.tipo && (
+                <Badge variant="secondary" className="bg-gray-100">
+                  {movement.tipo}
+                </Badge>
+              )}
+            </div>
+          </div>
+          {movement.complemento && (
+            <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100 text-sm">
+              {movement.complemento}
+            </div>
           )}
         </div>
-        
-        {(currentMovimento.complemento || currentMovimento.complementosTabelados?.length > 0) && (
-          <div className="bg-gray-50 p-3 rounded-md border border-gray-100">
-            {currentMovimento.complemento && (
-              <div className="text-gray-700 text-sm whitespace-pre-line">
-                {typeof currentMovimento.complemento === 'string' 
-                  ? currentMovimento.complemento 
-                  : Array.isArray(currentMovimento.complemento)
-                    ? currentMovimento.complemento.join('\n')
-                    : JSON.stringify(currentMovimento.complemento)
-                }
-              </div>
-            )}
-            
-            {currentMovimento.complementosTabelados?.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <h5 className="text-sm font-medium mb-1">Complementos:</h5>
-                <ul className="text-sm space-y-1">
-                  {currentMovimento.complementosTabelados.map((complemento: any, idx: number) => (
-                    <li key={idx} className="flex justify-between">
-                      <span className="text-gray-600">{complemento.nome || complemento.descricao}:</span>
-                      <span className="font-medium">{complemento.valor}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      ))}
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }
