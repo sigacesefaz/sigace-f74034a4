@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu, Settings, X } from "lucide-react";
+import { Menu, Settings, X, Home } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Drawer,
@@ -59,6 +59,10 @@ export function NavMenu() {
   const handleLogout = () => {
     // Aqui você pode adicionar lógica de logout se necessário
     navigate('/');
+  };
+
+  const handleHome = () => {
+    navigate('/dashboard');
   };
 
   const navigationItems = [
@@ -147,6 +151,19 @@ export function NavMenu() {
           <DrawerTitle className="text-center">Menu</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 py-2 overflow-y-auto">
+          <div className="mb-6">
+            <Button 
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-lg mb-4 font-medium"
+              onClick={() => {
+                handleHome();
+                setIsDrawerOpen(false);
+              }}
+            >
+              <Home className="h-5 w-5 mr-2" /> Início
+            </Button>
+          </div>
           {navigationItems.map((category, idx) => (
             <div key={idx} className="mb-6">
               <h3 className="font-medium text-lg mb-2">{category.title}</h3>
@@ -188,6 +205,15 @@ export function NavMenu() {
   const DesktopMenu = () => (
     <NavigationMenu>
       <NavigationMenuList>
+        <NavigationMenuItem>
+          <Button 
+            variant="ghost" 
+            onClick={handleHome} 
+            className="flex items-center px-4 py-2 text-base font-medium"
+          >
+            <Home className="h-4 w-4 mr-2" /> Início
+          </Button>
+        </NavigationMenuItem>
         {navigationItems.map((category, idx) => (
           <NavigationMenuItem key={idx}>
             <NavigationMenuTrigger>{category.title}</NavigationMenuTrigger>
