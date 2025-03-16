@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Trash2, RefreshCw } from "lucide-react";
@@ -16,7 +17,7 @@ interface ProcessCardProps {
   process: Process;
   onClick?: () => void;
   onDelete?: () => void;
-  onUpdate?: () => void; // Add this line
+  onUpdate?: () => void;
 }
 
 export function ProcessCard({ process, onClick, onDelete, onUpdate }: ProcessCardProps) {

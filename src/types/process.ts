@@ -18,11 +18,12 @@ export interface ProcessHit {
   situacao: any;
   metadata?: any;
   hit_index?: string;
+  _source?: any; // Add support for _source field used in components
 }
 
 export interface ProcessUpdateHistory {
   id: string;
-  process_id: string;
+  process_id: string | number; // Support both string and number types
   update_type: string;
   update_date: string;
   details?: {
@@ -45,6 +46,14 @@ export interface Process {
   updated_at?: string;
   user_id?: string;
   metadata?: any;
+  
+  // Additional fields used in components
+  parent_id?: string | number;
+  is_parent?: boolean;
+  plaintiff?: string;
+  plaintiff_document?: string;
+  movimentacoes?: any[];
+  hits?: ProcessHit[];
 }
 
 // Process Document interface
@@ -73,6 +82,17 @@ export enum PartyType {
 export enum PartyPersonType {
   PHYSICAL = 'physical',
   LEGAL = 'legal'
+}
+
+// Party interface - adding properties used in components
+export interface Party {
+  id: string;
+  name: string;
+  document?: string;
+  type: string;
+  subtype?: string;
+  personType?: string;
+  process_id?: string | number;
 }
 
 // Decision interface

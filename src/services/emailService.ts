@@ -65,7 +65,7 @@ export async function trackEmailSent(): Promise<boolean> {
       toast({
         title: "Alerta de limite de e-mails",
         description: `Restam apenas ${limitCheck.remaining} e-mails do limite mensal de ${limitCheck.limit}.`,
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive" as warning is not available
       });
     }
     

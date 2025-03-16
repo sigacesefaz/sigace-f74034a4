@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { PartyType } from "@/types/process";
+import { Party } from "@/types/process";
 import { DatajudProcess } from "@/types/datajud";
 
 // Function to save the parties of a process
@@ -47,7 +47,7 @@ export async function saveProcessParties(processId: string | number, parties: an
   }
 }
 
-export async function getPartiesByProcessId(processId: string) {
+export async function getPartiesByProcessId(processId: string | number): Promise<Party[]> {
   try {
     const { data, error } = await supabase
       .from("process_parties")
@@ -60,15 +60,16 @@ export async function getPartiesByProcessId(processId: string) {
       throw error;
     }
 
-    // Mapear os dados do banco para o formato PartyType
+    // Map database data to Party interface
     const mappedData = data.map(party => ({
       id: party.id,
       name: party.name,
       document: party.document,
       type: party.type,
       subtype: party.subtype,
-      personType: party.person_type
-    })) as PartyType[];
+      personType: party.person_type,
+      process_id: party.process_id
+    })) as Party[];
 
     return mappedData;
   } catch (error) {
@@ -77,7 +78,7 @@ export async function getPartiesByProcessId(processId: string) {
   }
 }
 
-export async function createParty(partyData: Omit<PartyType, "id"> & { process_id: string }) {
+export async function createParty(partyData: Omit<Party, "id"> & { process_id: string | number }): Promise<Party> {
   try {
     // Get the current user to set as user_id
     const { data: { user } } = await supabase.auth.getUser();
@@ -105,24 +106,25 @@ export async function createParty(partyData: Omit<PartyType, "id"> & { process_i
       throw error;
     }
 
-    // Mapear o dado do banco para o formato PartyType
+    // Map database response to Party interface
     return {
       id: data.id,
       name: data.name,
       document: data.document,
       type: data.type,
       subtype: data.subtype,
-      personType: data.person_type
-    } as PartyType;
+      personType: data.person_type,
+      process_id: data.process_id
+    } as Party;
   } catch (error) {
     console.error("Error creating party:", error);
     throw error;
   }
 }
 
-export async function updateParty(id: string, partyData: Partial<Omit<PartyType, "id">>) {
+export async function updateParty(id: string, partyData: Partial<Omit<Party, "id">>): Promise<Party> {
   try {
-    // Converter de PartyType para o formato do banco
+    // Convert from Party to database format
     const dbData: any = {};
     if (partyData.name) dbData.name = partyData.name;
     if (partyData.document) dbData.document = partyData.document;
@@ -142,22 +144,23 @@ export async function updateParty(id: string, partyData: Partial<Omit<PartyType,
       throw error;
     }
 
-    // Mapear o dado do banco para o formato PartyType
+    // Map database response to Party interface
     return {
       id: data.id,
       name: data.name,
       document: data.document,
       type: data.type,
       subtype: data.subtype,
-      personType: data.person_type
-    } as PartyType;
+      personType: data.person_type,
+      process_id: data.process_id
+    } as Party;
   } catch (error) {
     console.error("Error updating party:", error);
     throw error;
   }
 }
 
-export async function deleteParty(id: string) {
+export async function deleteParty(id: string): Promise<boolean> {
   try {
     const { error } = await supabase
       .from("process_parties")
