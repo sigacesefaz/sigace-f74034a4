@@ -31,84 +31,118 @@ export const AppRoutes = () => {
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
-          {/* Main routes */}
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
-          {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          
-          <Route path="/processes" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProcessListPage />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/processes/new" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <NewProcess />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/processes/:id" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProcessDetails />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/processes/:id/report" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProcessReportPage />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/processes/card-example" element={<ProcessCardExample />} />
-          
-          <Route path="/intimations" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <IntimationList />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/intimations/new" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <NewIntimation />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <NotificationList />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/reports" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ReportList />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
           
           {/* Public consultation routes */}
           <Route path="/public/search" element={<PublicSearch />} />
           <Route path="/public/verify" element={<EmailVerification />} />
           <Route path="/public/process-view" element={<ProcessView />} />
+          
+          {/* Protected routes with MainLayout */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProcessListPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes/new" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <NewProcess />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes/:id" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProcessDetails />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes/:id/report" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProcessReportPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes/card-example" 
+            element={<ProcessCardExample />} 
+          />
+          
+          <Route 
+            path="/intimations" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <IntimationList />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/intimations/new" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <NewIntimation />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <NotificationList />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/reports" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ReportList />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
