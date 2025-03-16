@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
@@ -55,7 +55,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [showTabsId, setShowTabsId] = useState<string | null>(null);
 
-  // Filtros para a aba Eventos
   const [eventStartDate, setEventStartDate] = useState<Date | undefined>(undefined);
   const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
   const [eventCode, setEventCode] = useState<string>("");
@@ -479,7 +478,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                         : "opacity-0 max-h-0 overflow-hidden"
                     }`}
                   >
-                    {/* Conteúdo da aba "Atual" realocado diretamente dentro do item retrátil */}
                     <div className="space-y-2">
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
@@ -519,7 +517,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       </div>
                     </div>
 
-                    {/* Novas abas */}
                     <Tabs defaultValue="eventos" className="w-full mt-4">
                       <TabsList className="w-full mb-2">
                         <TabsTrigger value="eventos">Eventos</TabsTrigger>
@@ -532,7 +529,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
                       <TabsContent value="eventos">
                         <div className="space-y-2">
-                          {/* Filtros para eventos */}
                           <div className="bg-white rounded-lg p-3 space-y-2">
                             <h4 className="font-medium text-sm text-gray-900">Filtros</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -574,14 +570,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                             <Button size="sm" className="mt-2">Filtrar</Button>
                           </div>
                           
-                          {/* Lista de eventos com paginação */}
                           <ProcessMovements
                             processId={parentProcess.id}
                             hitId={parentProcess.hits?.[0]?.id}
                             filter={{
                               startDate: eventStartDate,
                               endDate: eventEndDate,
-                              code: eventCode ? parseInt(eventCode) : undefined,
+                              code: eventCode ? eventCode : undefined,
                               text: eventText
                             }}
                           />
@@ -590,7 +585,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
                       <TabsContent value="intimacoes">
                         <div className="space-y-2">
-                          {/* Filtro de intimações (códigos 12266 e 12265) */}
                           <ProcessMovements
                             processId={parentProcess.id}
                             hitId={parentProcess.hits?.[0]?.id}
@@ -603,7 +597,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
                       <TabsContent value="documentos">
                         <div className="space-y-2">
-                          {/* Filtro de documentos (código 581) */}
                           <ProcessMovements
                             processId={parentProcess.id}
                             hitId={parentProcess.hits?.[0]?.id}
@@ -693,7 +686,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo do Relatório */}
       {selectedProcess && (
         <ProcessReportDialog
           process={selectedProcess}
