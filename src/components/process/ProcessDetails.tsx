@@ -1,13 +1,15 @@
 
 import React, { useState } from "react";
-import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
+import { DatajudMovimentoProcessual, DatajudProcess, DatajudMovement } from "@/types/datajud";
 import { ProcessHeader } from "./ProcessHeader";
 import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessInformation } from "./ProcessInformation";
-import { ProcessEvents } from "./ProcessEvents";
 import { ProcessPartiesList } from "./ProcessPartiesList";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Save } from "lucide-react";
+import { AlertCircle, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Pagination } from "@/components/ui/pagination";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ProcessDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
@@ -33,6 +35,10 @@ export function ProcessDetails({
   handleProcessSelect
 }: ProcessDetailsProps) {
   const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentEventPage, setCurrentEventPage] = useState(1);
+  const [currentIntimationPage, setCurrentIntimationPage] = useState(1);
+  const [currentDocumentPage, setCurrentDocumentPage] = useState(1);
   
   // Se não existirem movimentos processuais múltiplos, utilizar o principal
   const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
@@ -56,44 +62,74 @@ export function ProcessDetails({
     return await onSave();
   };
 
+  // Filter events by code for each tab
+  const allEvents = currentProcess.movimentos || [];
+  
+  // Pagination configuration
+  const itemsPerPage = 5;
+  
+  // All events for the Events tab
+  const paginateEvents = (events: DatajudMovement[], page: number) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return events.slice(startIndex, startIndex + itemsPerPage);
+  };
+  
+  // Total pages calculation for pagination
+  const getTotalPages = (items: any[]) => {
+    return Math.ceil(items.length / itemsPerPage);
+  };
+
+  // Events for different tabs
+  const allEventsSorted = [...allEvents].sort((a, b) => 
+    new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime()
+  );
+  
+  // Intimations - filter by codes 12266 and 12265
+  const intimationEvents = allEventsSorted.filter(event => 
+    event.codigo === 12266 || event.codigo === 12265
+  );
+  
+  // Documents - filter by code 581
+  const documentEvents = allEventsSorted.filter(event => 
+    event.codigo === 581
+  );
+  
+  // Current page events
+  const currentPageEvents = paginateEvents(allEventsSorted, currentEventPage);
+  const currentPageIntimations = paginateEvents(intimationEvents, currentIntimationPage);
+  const currentPageDocuments = paginateEvents(documentEvents, currentDocumentPage);
+  
+  // Parties data
+  const partiesData = currentProcess.partes || [];
+
+  // Format date for displaying
+  const formatEventDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div>
-      <ProcessHeader 
-        currentProcess={currentProcess} 
-        importProgress={importProgress}
-        isImporting={isLoading}
-        isPublicView={isPublicView}
-      />
-      
-      <ProcessNavigation
-        currentMovimentoIndex={currentMovimentoIndex}
-        totalMovimentos={totalMovimentos}
-        handlePrevMovimento={handlePrevMovimento}
-        handleNextMovimento={handleNextMovimento}
-      />
-
-      <ProcessInformation currentProcess={currentProcess} />
-      
-      <ProcessEvents currentProcess={currentProcess} />
-      
-      {!isPublicView && (
-        <ProcessPartiesList parties={currentProcess.partes} />
-      )}
-      
-      <div className="mt-6 flex justify-between">
-        <Button 
-          onClick={onCancel}
-          variant="outline"
-          disabled={isLoading}
-        >
-          Voltar
-        </Button>
+      <div className="flex items-center justify-between mb-4">
+        <ProcessHeader 
+          currentProcess={currentProcess} 
+          importProgress={importProgress}
+          isImporting={isLoading}
+          isPublicView={isPublicView}
+        />
         
         {isImport && !isPublicView && (
           <Button 
             onClick={handleImportProcess}
             disabled={isLoading}
-            className="bg-primary text-white"
+            className="bg-primary text-white ml-4"
           >
             {isLoading ? (
               <>Importando...</>
@@ -105,6 +141,175 @@ export function ProcessDetails({
             )}
           </Button>
         )}
+      </div>
+      
+      <ProcessNavigation
+        currentMovimentoIndex={currentMovimentoIndex}
+        totalMovimentos={totalMovimentos}
+        handlePrevMovimento={handlePrevMovimento}
+        handleNextMovimento={handleNextMovimento}
+      />
+
+      <ProcessInformation currentProcess={currentProcess} />
+      
+      <div className="mt-8 border-t pt-4">
+        <Collapsible
+          open={isDetailsOpen}
+          onOpenChange={setIsDetailsOpen}
+          className="w-full"
+        >
+          <CollapsibleTrigger className="w-full flex justify-between items-center py-2 hover:bg-gray-100 px-2 rounded-md">
+            <span className="font-semibold">Detalhes do Processo</span>
+            {isDetailsOpen ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="mt-4">
+            <Tabs defaultValue="eventos" className="w-full">
+              <TabsList className="w-full grid grid-cols-6">
+                <TabsTrigger value="eventos">Eventos</TabsTrigger>
+                <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
+                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                <TabsTrigger value="decisao">Decisão</TabsTrigger>
+                <TabsTrigger value="partes">Partes</TabsTrigger>
+                <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="eventos" className="mt-4">
+                {allEventsSorted.length > 0 ? (
+                  <div className="space-y-4">
+                    {currentPageEvents.map((movimento, index) => (
+                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold">
+                              #{index + 1 + (currentEventPage-1) * itemsPerPage} {movimento.nome}
+                              {movimento.codigo && 
+                                <span className="ml-2 text-sm text-gray-500">
+                                  (Código: {movimento.codigo})
+                                </span>
+                              }
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {formatEventDate(movimento.dataHora)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <Pagination 
+                      currentPage={currentEventPage} 
+                      totalPages={getTotalPages(allEventsSorted)}
+                      onPageChange={setCurrentEventPage}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    Nenhuma informação encontrada
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="intimacoes" className="mt-4">
+                {intimationEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {currentPageIntimations.map((movimento, index) => (
+                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold">
+                              #{index + 1 + (currentIntimationPage-1) * itemsPerPage} {movimento.nome}
+                              {movimento.codigo && 
+                                <span className="ml-2 text-sm text-gray-500">
+                                  (Código: {movimento.codigo})
+                                </span>
+                              }
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {formatEventDate(movimento.dataHora)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <Pagination 
+                      currentPage={currentIntimationPage} 
+                      totalPages={getTotalPages(intimationEvents)}
+                      onPageChange={setCurrentIntimationPage}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    Nenhuma informação encontrada
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="documentos" className="mt-4">
+                {documentEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {currentPageDocuments.map((movimento, index) => (
+                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold">
+                              #{index + 1 + (currentDocumentPage-1) * itemsPerPage} {movimento.nome}
+                              {movimento.codigo && 
+                                <span className="ml-2 text-sm text-gray-500">
+                                  (Código: {movimento.codigo})
+                                </span>
+                              }
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {formatEventDate(movimento.dataHora)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <Pagination 
+                      currentPage={currentDocumentPage} 
+                      totalPages={getTotalPages(documentEvents)}
+                      onPageChange={setCurrentDocumentPage}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    Nenhuma informação encontrada
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="decisao" className="mt-4">
+                <div className="p-4 text-center text-gray-500">
+                  Nenhuma informação encontrada
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="partes" className="mt-4">
+                {partiesData.length > 0 ? (
+                  <ProcessPartiesList parties={partiesData} />
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    Nenhuma informação encontrada
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="inteiro-teor" className="mt-4">
+                <div className="p-4 text-center text-gray-500">
+                  Nenhuma informação encontrada
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
       
       {mainProcess.assuntos && mainProcess.assuntos.length === 0 && (
