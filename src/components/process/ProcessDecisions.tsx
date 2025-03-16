@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -182,7 +181,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       const decisionData = {
         title: title.trim(),
         content: description.trim(),
-        judge: judge.trim() || null, // Tornando o campo opcional
+        judge: judge.trim() || null,
         decision_type: decisionType,
         decision_date: decisionDate.toISOString(),
         process_id: processId,
@@ -332,9 +331,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                   <Label htmlFor="decisionType">Tipo de Decisão *</Label>
                   <Select 
                     value={decisionType} 
-                    onValueChange={(value) => {
-                      setDecisionType(value);
-                    }}
+                    onValueChange={setDecisionType}
                   >
                     <SelectTrigger id="decisionType">
                       <SelectValue placeholder="Selecione o tipo" />

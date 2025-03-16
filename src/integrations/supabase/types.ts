@@ -313,6 +313,60 @@ export type Database = {
           },
         ]
       }
+      process_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          hit_id: string | null
+          id: string
+          process_id: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          hit_id?: string | null
+          id?: string
+          process_id?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          hit_id?: string | null
+          id?: string
+          process_id?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_documents_hit_id_fkey"
+            columns: ["hit_id"]
+            isOneToOne: false
+            referencedRelation: "process_hits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_documents_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       process_hits: {
         Row: {
           classe: Json | null
