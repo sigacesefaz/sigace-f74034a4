@@ -342,9 +342,7 @@ export function ProcessList({
                     <Button size="sm" variant="default" onClick={() => handlePreviousMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Movimentação anterior">
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="default" onClick={() => handleNextMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Próxima movimentação">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    
                   </div>
                 </div>
               </CardHeader>
