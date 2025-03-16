@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,15 +7,16 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ProcessHit } from "@/types/process";
+
 interface ProcessHitsNavigationProps {
   processId: string;
   hits: ProcessHit[];
   currentHitIndex?: number;
   onHitSelect?: (index: number) => void;
 }
+
 export function ProcessHitsNavigation({
   processId,
   hits,
@@ -30,6 +32,7 @@ export function ProcessHitsNavigation({
   useEffect(() => {
     setInternalHitIndex(currentHitIndex);
   }, [currentHitIndex]);
+
   const handlePreviousHit = () => {
     let newIndex;
     if (internalHitIndex > 0) {
@@ -42,6 +45,7 @@ export function ProcessHitsNavigation({
       onHitSelect(newIndex);
     }
   };
+
   const handleNextHit = () => {
     let newIndex;
     if (internalHitIndex < totalHits - 1) {
@@ -54,6 +58,7 @@ export function ProcessHitsNavigation({
       onHitSelect(newIndex);
     }
   };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -66,45 +71,19 @@ export function ProcessHitsNavigation({
       return "Data inválida";
     }
   };
+
   if (!hits || hits.length === 0) {
     return <div className="text-sm text-gray-500 italic">
         Nenhuma movimentação processual encontrada.
       </div>;
   }
+
   return <div className="w-full">
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm text-gray-500">
             {totalHits} movimentações
           </span>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                Lista completa
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
-              <ScrollArea className="h-72">
-                <div className="p-4">
-                  <h4 className="font-medium mb-2">Todas as Movimentações</h4>
-                  <div className="space-y-2">
-                    {hits.map((hit, idx) => <div key={hit.id} className={`p-2 text-sm rounded cursor-pointer ${internalHitIndex === idx ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`} onClick={() => {
-                    setInternalHitIndex(idx);
-                    if (onHitSelect) {
-                      onHitSelect(idx);
-                    }
-                  }}>
-                        <div className="font-medium">{hit.classe?.nome || `Movimentação ${idx + 1}`}</div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(hit.data_hora_ultima_atualizacao || hit.data_ajuizamento)}
-                        </div>
-                      </div>)}
-                  </div>
-                </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
         </div>
 
         {totalHits > 0 && <div className="flex items-center justify-between mb-2">
@@ -125,11 +104,12 @@ export function ProcessHitsNavigation({
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="flex items-center">
                 <TabsTrigger value="info">Informações</TabsTrigger>
-                
-                
-                
-                
-                
+                <TabsTrigger value="lista-movimentacao">Lista da Movimentação</TabsTrigger>
+                <TabsTrigger value="eventos">Eventos</TabsTrigger>
+                <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
+                <TabsTrigger value="decisao">Decisão</TabsTrigger>
+                <TabsTrigger value="partes">Partes</TabsTrigger>
+                <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
               </TabsList>
 
               <Card className="mt-2">
@@ -166,69 +146,145 @@ export function ProcessHitsNavigation({
                           <div>
                             <span className="font-medium">Última Atualização:</span> {formatDate(currentHit.data_hora_ultima_atualizacao)}
                           </div>
+                          <div>
+                            <span className="font-medium">Órgão Julgador:</span> {currentHit.metadata?.orgaoJulgador?.nome || "Não informado"}
+                          </div>
                         </div>
+
+                        {currentHit.metadata?.assuntos && currentHit.metadata.assuntos.length > 0 && (
+                          <div className="mt-2">
+                            <h5 className="text-sm font-medium mb-1">Assuntos do Processo</h5>
+                            <div className="space-y-1">
+                              {currentHit.metadata.assuntos.map((assunto, idx) => (
+                                <div key={idx} className="flex gap-1 text-xs text-gray-600">
+                                  <Badge variant="outline" className="text-xs">
+                                    {assunto.codigo || "Sem código"}
+                                  </Badge>
+                                  <span>{assunto.nome || "Assunto não especificado"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="lista-movimentacao" className="mt-0">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium mb-2">Todas as Movimentações</h4>
+                      <ScrollArea className="h-72">
+                        <div className="space-y-2">
+                          {hits.map((hit, idx) => (
+                            <div 
+                              key={hit.id} 
+                              className={`p-2 text-sm rounded cursor-pointer ${internalHitIndex === idx ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`}
+                              onClick={() => {
+                                setInternalHitIndex(idx);
+                                if (onHitSelect) {
+                                  onHitSelect(idx);
+                                }
+                              }}
+                            >
+                              <div className="font-medium">{hit.classe?.nome || `Movimentação ${idx + 1}`}</div>
+                              <div className="text-xs text-gray-500">
+                                {formatDate(hit.data_hora_ultima_atualizacao || hit.data_ajuizamento)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="eventos" className="mt-0">
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium">Eventos do Processo</h4>
-                      {currentHit && currentHit.metadata?.movimentos ? <div className="space-y-2">
-                          {currentHit.metadata.movimentos.map((movimento, idx) => <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
+                      {currentHit && currentHit.metadata?.movimentos ? (
+                        <div className="space-y-2">
+                          {currentHit.metadata.movimentos.map((movimento, idx) => (
+                            <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                               <p className="font-medium text-sm">{movimento.descricao}</p>
                               <p className="text-xs text-gray-500">{formatDate(movimento.data)}</p>
-                            </div>)}
-                        </div> : <p className="text-sm text-gray-500">Nenhum evento disponível.</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Nenhum evento disponível.</p>
+                      )}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="intimacoes" className="mt-0">
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium">Intimações do Processo</h4>
-                      {currentHit && currentHit.metadata?.intimacoes ? <div className="space-y-2">
-                          {currentHit.metadata.intimacoes.map((intimacao, idx) => <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
+                      {currentHit && currentHit.metadata?.intimacoes ? (
+                        <div className="space-y-2">
+                          {currentHit.metadata.intimacoes.map((intimacao, idx) => (
+                            <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                               <p className="font-medium text-sm">{intimacao.descricao}</p>
                               <p className="text-xs text-gray-500">{formatDate(intimacao.data)}</p>
-                            </div>)}
-                        </div> : <p className="text-sm text-gray-500">Nenhuma intimação disponível.</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Nenhuma intimação disponível.</p>
+                      )}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="decisao" className="mt-0">
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium">Decisões do Processo</h4>
-                      {currentHit && currentHit.metadata?.decisoes ? <div className="space-y-2">
-                          {currentHit.metadata.decisoes.map((decisao, idx) => <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
+                      {currentHit && currentHit.metadata?.decisoes ? (
+                        <div className="space-y-2">
+                          {currentHit.metadata.decisoes.map((decisao, idx) => (
+                            <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                               <p className="font-medium text-sm">{decisao.descricao}</p>
                               <p className="text-xs text-gray-500">{formatDate(decisao.data)}</p>
-                            </div>)}
-                        </div> : <p className="text-sm text-gray-500">Nenhuma decisão disponível.</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Nenhuma decisão disponível.</p>
+                      )}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="partes" className="mt-0">
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium">Partes do Processo</h4>
-                      {currentHit && currentHit.metadata?.partes ? <div className="space-y-2">
-                          {currentHit.metadata.partes.map((parte, idx) => <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
+                      {currentHit && currentHit.metadata?.partes ? (
+                        <div className="space-y-2">
+                          {currentHit.metadata.partes.map((parte, idx) => (
+                            <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                               <p className="font-medium text-sm">{parte.nome}</p>
                               <p className="text-xs text-gray-500">{parte.papel || "Não especificado"}</p>
                               {parte.documento && <p className="text-xs text-gray-500">Documento: {parte.documento}</p>}
-                            </div>)}
-                        </div> : <p className="text-sm text-gray-500">Nenhuma parte disponível.</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Nenhuma parte disponível.</p>
+                      )}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="inteiro-teor" className="mt-0">
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium">Inteiro Teor do Processo</h4>
-                      {currentHit && currentHit.metadata?.documentos ? <div className="space-y-2">
-                          {currentHit.metadata.documentos.map((documento, idx) => <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
+                      {currentHit && currentHit.metadata?.documentos ? (
+                        <div className="space-y-2">
+                          {currentHit.metadata.documentos.map((documento, idx) => (
+                            <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                               <p className="font-medium text-sm">{documento.descricao}</p>
                               <p className="text-xs text-gray-500">{formatDate(documento.data)}</p>
-                            </div>)}
-                        </div> : <p className="text-sm text-gray-500">Nenhum documento de inteiro teor disponível.</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Nenhum documento de inteiro teor disponível.</p>
+                      )}
                     </div>
                   </TabsContent>
                 </CardContent>
