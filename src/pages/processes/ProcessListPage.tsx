@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ProcessList } from "@/pages/processes/ProcessList";
@@ -6,19 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase, customSupabaseQuery } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
+import { updateProcess } from "@/services/processUpdateService";
 
-interface Process {
-  id: string;
-  number: string;
-  title: string;
-  description?: string;
-  status: "active" | "pending" | "closed";
-  court?: string;
-  created_at: string;
-}
-
-// Utilidade para conversão segura de valores para string
+// Utility for safe string conversion
 export const safeStringValue = (value: any, defaultValue: string = ""): string => {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'string') return value;
@@ -29,7 +21,7 @@ export const safeStringValue = (value: any, defaultValue: string = ""): string =
     if (value.name) {
       return typeof value.name === 'string' ? value.name : String(value.name);
     }
-    // Para evitar [object Object] em loops JSON.stringify
+    // To avoid [object Object] in JSON.stringify loops
     try {
       return JSON.stringify(value);
     } catch (e) {
@@ -51,7 +43,7 @@ export default function ProcessListPage() {
     queryKey: ['processes'],
     queryFn: async () => {
       try {
-        // Buscar processos
+        // Fetch processes
         const {
           data: processesData,
           error: processesError
@@ -59,15 +51,15 @@ export default function ProcessListPage() {
           ascending: false
         });
         if (processesError) {
-          console.error("Erro ao buscar processos:", processesError);
+          console.error("Error fetching processes:", processesError);
           throw processesError;
         }
-        console.log("Processos carregados:", processesData);
+        console.log("Processes loaded:", processesData);
 
-        // Adicionar metadata para cada processo para manter a compatibilidade
+        // Add metadata for each process to maintain compatibility
         const processesWithMetadata = await Promise.all(processesData.map(async process => {
           try {
-            // Buscar detalhes do processo - tentativa direta usando SQL mais simples
+            // Fetch process details - direct attempt using simpler SQL
             const {
               data: details,
               error: detailsError
@@ -75,10 +67,10 @@ export default function ProcessListPage() {
               ascending: false
             }).limit(1);
             if (detailsError) {
-              console.warn(`Erro ao buscar detalhes para processo ${process.id}:`, detailsError);
+              console.warn(`Error fetching details for process ${process.id}:`, detailsError);
             }
 
-            // Buscar movimentos do processo
+            // Fetch process movements
             const {
               data: movements,
               error: movementsError
@@ -86,19 +78,19 @@ export default function ProcessListPage() {
               ascending: false
             });
             if (movementsError) {
-              console.warn(`Erro ao buscar movimentos para processo ${process.id}:`, movementsError);
+              console.warn(`Error fetching movements for process ${process.id}:`, movementsError);
             }
 
-            // Buscar assuntos do processo
+            // Fetch process subjects
             const {
               data: subjects,
               error: subjectsError
             } = await supabase.from('process_subjects').select('*').eq('process_id', process.id);
             if (subjectsError) {
-              console.warn(`Erro ao buscar assuntos para processo ${process.id}:`, subjectsError);
+              console.warn(`Error fetching subjects for process ${process.id}:`, subjectsError);
             }
 
-            // Buscar hits do processo
+            // Fetch process hits
             const {
               data: hits,
               error: hitsError
@@ -106,15 +98,15 @@ export default function ProcessListPage() {
               ascending: false
             });
             if (hitsError) {
-              console.warn(`Erro ao buscar hits para processo ${process.id}:`, hitsError);
+              console.warn(`Error fetching hits for process ${process.id}:`, hitsError);
             }
 
-            // Criar metadata completo para exibição
+            // Create full metadata for display
             const processDetails = Array.isArray(details) && details.length > 0 ? details[0] : null;
             const metadata = {
               numeroProcesso: process.number,
               classe: {
-                nome: processDetails?.classe?.nome || process.title || "Não especificado",
+                nome: processDetails?.classe?.nome || process.title || "Not specified",
                 codigo: processDetails?.classe?.codigo || "0000"
               },
               dataAjuizamento: processDetails?.data_ajuizamento || process.created_at,
@@ -123,44 +115,50 @@ export default function ProcessListPage() {
                 codigo: processDetails?.sistema?.codigo || "1"
               },
               orgaoJulgador: {
-                nome: processDetails?.orgao_julgador?.nome || process.court || "Não especificado",
+                nome: processDetails?.orgao_julgador?.nome || process.court || "Not specified",
                 codigo: processDetails?.orgao_julgador?.codigo || "0000"
               },
-              grau: processDetails?.grau || process.instance || "Primeira",
+              grau: processDetails?.grau || process.instance || "First",
               nivelSigilo: processDetails?.nivel_sigilo || 0,
               movimentos: movements || [],
               assuntos: subjects || []
             };
-            console.log(`Processo ${process.id} carregado com metadata:`, metadata);
+            console.log(`Process ${process.id} loaded with metadata:`, metadata);
             return {
               ...process,
               metadata,
-              hits: hits || []
+              hits: hits || [],
+              movimentacoes: movements || [],
+              is_parent: !process.parent_id,
+              parent_id: process.parent_id || null
             };
           } catch (error) {
-            console.error(`Erro ao carregar dados completos para processo ${process.id}:`, error);
-            // Retornar o processo com metadata mínimo em caso de erro
+            console.error(`Error loading complete data for process ${process.id}:`, error);
+            // Return the process with minimal metadata on error
             return {
               ...process,
               metadata: {
                 numeroProcesso: process.number,
                 classe: {
-                  nome: process.title || "Não especificado"
+                  nome: process.title || "Not specified"
                 },
                 dataAjuizamento: process.created_at,
                 orgaoJulgador: {
-                  nome: process.court || "Não especificado"
+                  nome: process.court || "Not specified"
                 },
-                grau: process.instance || "Primeira",
+                grau: process.instance || "First",
                 nivelSigilo: 0
               },
-              hits: []
+              hits: [],
+              movimentacoes: [],
+              is_parent: !process.parent_id,
+              parent_id: process.parent_id || null
             };
           }
         }));
         return processesWithMetadata;
       } catch (error) {
-        console.error("Erro na consulta do Supabase:", error);
+        console.error("Error in Supabase query:", error);
         throw error;
       }
     }
@@ -190,10 +188,10 @@ export default function ProcessListPage() {
       // Refetch the data to update the UI
       refetch();
       
-      toast.success("Processo excluído com sucesso!");
+      toast.success("Process deleted successfully!");
     } catch (error) {
       console.error("Error deleting process:", error);
-      toast.error("Erro ao excluir o processo");
+      toast.error("Error deleting the process");
     }
   };
 
@@ -210,16 +208,16 @@ export default function ProcessListPage() {
       }
     } catch (error) {
       console.error("Error refreshing process:", error);
-      toast.error("Erro ao atualizar o processo");
+      toast.error("Error updating the process");
     }
   };
 
-  // Filtrar processos baseado no termo de pesquisa
+  // Filter processes based on the search term
   const filteredProcesses = processesData ? processesData.filter(process => {
     const searchLower = searchTerm.toLowerCase();
     const number = process.number ? process.number.toLowerCase() : '';
 
-    // Extrair o nome da classe com segurança
+    // Safely extract the class name
     let classeNome = '';
     if (process.metadata?.classe) {
       if (typeof process.metadata.classe === 'object' && process.metadata.classe !== null) {
@@ -245,8 +243,8 @@ export default function ProcessListPage() {
           <div className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center">
             {/* <AlertCircle className="h-10 w-10 text-red-600" /> */}
           </div>
-          <h2 className="text-xl font-semibold">Erro ao carregar processos</h2>
-          <p className="text-gray-600">Erro ao carregar processos</p>
+          <h2 className="text-xl font-semibold">Error loading processes</h2>
+          <p className="text-gray-600">Error loading processes</p>
         </div>
       </div>;
   }
@@ -256,17 +254,17 @@ export default function ProcessListPage() {
 
   return <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6 my-0 py-0 px-0 mx-[33px]">
-        <h1 className="text-2xl font-bold">Processos</h1>
+        <h1 className="text-2xl font-bold">Processes</h1>
         <div className="flex items-center gap-4">
           <Input 
-            placeholder="Pesquisar processos" 
+            placeholder="Search processes" 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
             className="w-64" 
           />
           <Button onClick={handleNewProcess}>
             <Plus className="h-4 w-4 mr-2" />
-            Novo Processo
+            New Process
           </Button>
         </div>
       </div>

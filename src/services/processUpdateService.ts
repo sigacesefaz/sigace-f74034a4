@@ -3,9 +3,9 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ProcessUpdateHistory } from "@/types/process";
 
-export async function updateProcess(processId: string, courtEndpoint?: string): Promise<boolean> {
+export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
-    toast.loading("Atualizando processo...");
+    toast.loading("Updating process...");
     
     const { data, error } = await supabase.functions.invoke("update-process", {
       body: { processId, courtEndpoint }
@@ -14,28 +14,28 @@ export async function updateProcess(processId: string, courtEndpoint?: string): 
     if (error) {
       console.error("Error updating process:", error);
       toast.dismiss();
-      toast.error(`Erro ao atualizar processo: ${error.message}`);
+      toast.error(`Error updating process: ${error.message}`);
       return false;
     }
     
     toast.dismiss();
     
     if (data.newHits > 0) {
-      toast.success(`Processo atualizado com sucesso! ${data.newHits} nova(s) movimentação(ões) encontrada(s).`);
+      toast.success(`Process updated successfully! ${data.newHits} new movement(s) found.`);
     } else {
-      toast.success("Processo atualizado, mas nenhuma nova movimentação foi encontrada.");
+      toast.success("Process updated, but no new movements found.");
     }
     
     return true;
   } catch (error) {
     console.error("Error in updateProcess:", error);
     toast.dismiss();
-    toast.error("Erro ao atualizar processo");
+    toast.error("Error updating process");
     return false;
   }
 }
 
-export async function getProcessUpdateHistory(processId: string): Promise<ProcessUpdateHistory[]> {
+export async function getProcessUpdateHistory(processId: string | number): Promise<ProcessUpdateHistory[]> {
   try {
     const { data, error } = await supabase
       .from("process_update_history")
@@ -48,7 +48,8 @@ export async function getProcessUpdateHistory(processId: string): Promise<Proces
       throw error;
     }
     
-    return data || [];
+    // Cast the data to ProcessUpdateHistory type
+    return (data || []) as ProcessUpdateHistory[];
   } catch (error) {
     console.error("Error in getProcessUpdateHistory:", error);
     throw error;
