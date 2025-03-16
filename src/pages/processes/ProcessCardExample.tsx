@@ -11,6 +11,7 @@ const exampleProcesses = [
     id: "1",
     number: "0037536-57.2015.8.27.2729",
     title: "Mandado de Segurança Cível",
+    court: "TJTO", // Adding the required court property
     created_at: "2023-05-09T16:24:00",
     updated_at: "2025-02-26T15:54:00",
     metadata: {
@@ -152,6 +153,7 @@ const exampleProcesses = [
     id: "2",
     number: "1234567-89.2022.8.27.2700",
     title: "Ação Civil Pública",
+    court: "TJTO", // Adding the required court property
     created_at: "2022-01-10T09:30:00",
     updated_at: "2025-02-25T14:22:00",
     metadata: {

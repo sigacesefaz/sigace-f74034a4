@@ -1,3 +1,4 @@
+
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -107,4 +108,35 @@ export interface ProcessMetadata {
   grau?: string;
   dataAjuizamento?: string;
   formato?: 'Eletrônico' | 'Físico';
+  partes?: Array<{
+    papel: string;
+    nome: string;
+    tipoPessoa: string;
+    documento?: string;
+    advogados?: Array<{
+      nome: string;
+      inscricao: string;
+    }>;
+  }>;
+  movimentos?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
+  intimacoes?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
+  documentos?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+    tipo: string;
+  }>;
+  decisoes?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
 }
