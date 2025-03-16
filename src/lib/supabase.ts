@@ -161,6 +161,8 @@ export const customSupabaseQuery = async (table: string, options: any = {}) => {
   }
 };
 
+import { Process as ProcessType, ProcessHit } from '@/types/process';
+
 export interface ProcessDetails {
   id: string;
   process_id: string;
@@ -216,6 +218,11 @@ export interface ProcessDetails {
   data_hora_ultima_atualizacao?: string;
 }
 
+interface ProcessWithDetails extends ProcessType {
+  details?: ProcessDetails;
+  hits?: ProcessHit[];
+}
+
 export interface Process {
   id: string;
   number: string;
@@ -232,6 +239,7 @@ export interface Process {
   plaintiff: string;
   plaintiff_document: string;
   details?: ProcessDetails;
+  hits?: any[];
 }
 
 export async function getProcesses() {
@@ -291,16 +299,42 @@ export async function getProcess(id: string) {
       single: true
     });
 
+    // Buscar os hits do processo
+    const { data: hits } = await getProcessHits(id);
+
     return {
       data: {
         ...process,
-        details: details || null
+        details: details || null,
+        hits: hits || []
       },
       error: null
     };
   } catch (error) {
     console.error('Erro ao buscar processo:', error);
     return { data: null, error };
+  }
+}
+
+/**
+ * Busca os hits de um processo específico
+ * @param processId ID do processo
+ * @returns Array de hits do processo
+ */
+export async function getProcessHits(processId: string): Promise<{ data: ProcessHit[], error: any }> {
+  try {
+    const { data, error } = await customSupabaseQuery('process_hits', {
+      select: '*',
+      filter: { column: 'process_id', value: processId },
+      orderBy: { column: 'data_hora_ultima_atualizacao', ascending: false }
+    });
+
+    if (error) throw error;
+
+    return { data: data as ProcessHit[], error: null };
+  } catch (error) {
+    console.error('Erro ao buscar hits do processo:', error);
+    return { data: [], error };
   }
 }
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ProcessDetails } from "@/components/process/ProcessDetails";
@@ -84,9 +83,9 @@ export default function ProcessView() {
   };
   
   // Convert the handleReturn function to return a Promise to match the expected type
-  const handleSave = async (): Promise<void> => {
+  const handleSave = async (): Promise<boolean> => {
     // This is a no-op function since we don't save in public view
-    return Promise.resolve();
+    return Promise.resolve(true);
   };
 
   const handlePrint = () => {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +7,6 @@ import { ProcessDetails as ProcessDetailsComponent } from "@/components/process/
 import { ArrowLeft } from "lucide-react";
 import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
 
-// Interface simplificada para o componente
 interface SimplifiedDatajudProcess {
   numeroProcesso: string;
   classe?: { nome?: string } | null;
@@ -39,7 +37,6 @@ export default function ProcessDetailsPage() {
       }
       
       try {
-        // Buscar o processo básico
         const { data: process, error: processError } = await supabase
           .from('processes')
           .select('*')
@@ -53,18 +50,16 @@ export default function ProcessDetailsPage() {
         
         console.log("Processo básico carregado:", process);
         
-        // Buscar os detalhes do processo separadamente
         const { data: processDetails, error: detailsError } = await supabase
           .from('process_details')
           .select('*')
           .eq('process_id', id)
           .single();
         
-        if (detailsError && detailsError.code !== 'PGRST116') { // Ignora erro quando não encontra
+        if (detailsError && detailsError.code !== 'PGRST116') {
           console.error("Erro ao carregar detalhes do processo:", detailsError);
         }
         
-        // Buscar movimentos do processo
         const { data: movements, error: movementsError } = await supabase
           .from('process_movements')
           .select('codigo, nome, data_hora, complementos_tabelados')
@@ -75,7 +70,6 @@ export default function ProcessDetailsPage() {
           console.error("Erro ao carregar movimentos do processo:", movementsError);
         }
         
-        // Buscar assuntos do processo
         const { data: subjects, error: subjectsError } = await supabase
           .from('process_subjects')
           .select('codigo, nome')
@@ -85,7 +79,6 @@ export default function ProcessDetailsPage() {
           console.error("Erro ao carregar assuntos do processo:", subjectsError);
         }
         
-        // Buscar processos relacionados (movimentos processuais) para este processo principal
         const { data: relatedProcesses, error: relatedError } = await supabase
           .from('processes')
           .select('*')
@@ -96,7 +89,6 @@ export default function ProcessDetailsPage() {
           console.error("Erro ao carregar processos relacionados:", relatedError);
         }
         
-        // Se não houver dados, usar dados simulados para demonstração
         if (!process || !processDetails && !movements?.length && !subjects?.length) {
           console.log("Usando dados simulados pois não há dados reais");
           return {
@@ -154,8 +146,9 @@ export default function ProcessDetailsPage() {
     }
   });
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     navigate('/processes');
+    return true;
   };
 
   const handleCancel = () => {
@@ -187,7 +180,6 @@ export default function ProcessDetailsPage() {
     );
   }
 
-  // Formatação do número do processo
   const formatProcessNumber = (number: string): string => {
     if (!number) return "";
     const numericOnly = number.replace(/\D/g, '');
@@ -195,12 +187,10 @@ export default function ProcessDetailsPage() {
     return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
   };
 
-  // Convertendo os dados do banco para o formato esperado pelo componente ProcessDetails
   const convertToDatajudProcess = (data: any): DatajudProcess => {
     console.log("Convertendo dados:", data);
     const details = data.details || {};
     
-    // Garantir que classe seja um objeto com propriedade nome
     let classeObj = null;
     if (details.classe) {
       classeObj = { nome: details.classe };
@@ -239,7 +229,6 @@ export default function ProcessDetailsPage() {
 
   const datajudProcess = convertToDatajudProcess(processData);
   
-  // Create a main DatajudMovimentoProcessual for the parent process
   const mainMovimento: DatajudMovimentoProcessual = {
     id: datajudProcess.id || "1",
     index: "process",
@@ -248,19 +237,17 @@ export default function ProcessDetailsPage() {
     rawData: null
   };
   
-  // Create movimentos processuais for related processes
   const relatedMovimentos: DatajudMovimentoProcessual[] = processData.relatedProcesses?.map((relatedProcess: any) => {
     const relatedDatajudProcess = convertToDatajudProcess(relatedProcess);
     return {
       id: relatedProcess.id,
       index: "process",
-      score: 0.9, // Lower score for related processes
+      score: 0.9,
       process: relatedDatajudProcess,
       rawData: null
     };
   }) || [];
   
-  // Combine main movimento with related movimentos
   const processMovimentos = [mainMovimento, ...relatedMovimentos];
 
   return (

@@ -42,7 +42,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { safeStringValue, isEmpty, getSafeNestedValue } from "@/lib/utils";
 
-// Função para formatar datas de forma segura
 const formatDate = (dateString: string) => {
   if (!dateString) return "Não informado";
   try {
@@ -55,7 +54,6 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Função para formatar datas curtas
 const formatShortDate = (dateString: string) => {
   if (!dateString) return "";
   try {
@@ -88,7 +86,6 @@ export function ProcessItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentTab, setCurrentTab] = useState("Movimentação");
 
-  // Validar que o processo é um objeto válido
   if (!process || typeof process !== 'object') {
     console.error("Processo inválido:", process);
     return (
@@ -132,17 +129,14 @@ export function ProcessItem({
     setIsExpanded(!isExpanded);
   };
 
-  // Extrair informações do processo com tratamento de segurança
   const metadata = process.metadata || {};
   
-  // Extrair valores básicos com tratamento de segurança
   const processNumber = formatProcessNumber(safeStringValue(process.number || getSafeNestedValue(metadata, 'numeroProcesso', '')));
   
   const lastUpdate = process.updated_at 
     ? format(new Date(process.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })
     : "Não informado";
   
-  // Informações básicas com tratamento seguro
   const title = safeStringValue(process.title || getSafeNestedValue(metadata, 'classe.nome'), "Não informado");
   const dataAjuizamento = safeStringValue(getSafeNestedValue(metadata, 'dataAjuizamento', ''));
   const sistema = safeStringValue(getSafeNestedValue(metadata, 'sistema.nome', 'Inválido'));
@@ -150,30 +144,25 @@ export function ProcessItem({
   const orgaoJulgador = safeStringValue(getSafeNestedValue(metadata, 'orgaoJulgador.nome', 'Não informado'));
   const nivelSigilo = safeStringValue(getSafeNestedValue(metadata, 'nivelSigilo', 'Público'));
   
-  // Assuntos com tratamento seguro
   const assuntos = Array.isArray(metadata.assuntos) ? metadata.assuntos : [];
   const assuntoPrincipal = assuntos.length > 0 ? safeStringValue(assuntos[0]?.nome, "Não informado") : "";
 
-  // Movimentações com tratamento seguro
   const movimentos = Array.isArray(metadata.movimentos) ? metadata.movimentos : [];
   const totalMovimentos = movimentos.length;
-  const totalIntimacoes = 0; // Placeholder para futura implementação
-  const totalDocumentos = 0; // Placeholder para futura implementação
-  
+  const totalIntimacoes = 0;
+  const totalDocumentos = 0;
+
   return (
     <Card className="mb-4 w-full shadow-sm">
       <div className="px-4 pt-4 pb-2">
-        {/* Cabeçalho com tipo e última atualização */}
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-none">TIPO</Badge>
           <span className="text-gray-500 text-xs">Última atualização: {lastUpdate}</span>
         </div>
         
-        {/* Título e número do processo */}
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="text-blue-600 font-medium">{processNumber}</div>
         
-        {/* Formato */}
         <div className="flex items-center mt-1 mb-2">
           <span className="text-sm mr-2">Formato:</span>
           <Badge variant="outline" className="text-xs bg-blue-100 text-blue-600 border-blue-200">
@@ -181,7 +170,6 @@ export function ProcessItem({
           </Badge>
         </div>
         
-        {/* Botão para expandir/retrair */}
         <Button 
           variant="ghost" 
           size="sm" 
@@ -200,10 +188,8 @@ export function ProcessItem({
         </Button>
       </div>
       
-      {/* Conteúdo expandido */}
       {isExpanded && (
         <CardContent className="border-t pt-4">
-          {/* Grid de informações básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="space-y-3">
               <div className="flex items-start">
@@ -264,7 +250,6 @@ export function ProcessItem({
             </div>
           </div>
           
-          {/* Tabs de navegação */}
           <Tabs defaultValue="Movimentação" onValueChange={setCurrentTab} className="mt-4">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="Movimentação">
@@ -312,7 +297,6 @@ export function ProcessItem({
                 </div>
               </div>
               
-              {/* Lista de movimentações */}
               <div className="space-y-2">
                 {movimentos.length > 0 ? (
                   movimentos.slice(0, 5).map((movimento, index) => (
@@ -326,7 +310,6 @@ export function ProcessItem({
                         </span>
                       </div>
                       <div className="font-medium">{safeStringValue(movimento.nome)}</div>
-                      {/* Complementos tabelados se existirem */}
                       {Array.isArray(movimento.complementosTabelados) && movimento.complementosTabelados.length > 0 && (
                         <div className="mt-1 text-sm text-gray-600">
                           {movimento.complementosTabelados.map((comp: any, idx: number) => (
@@ -369,7 +352,6 @@ export function ProcessItem({
             </TabsContent>
           </Tabs>
           
-          {/* Botões de ação */}
           <div className="flex justify-end space-x-2 mt-4 pt-4 border-t">
             <Button variant="outline" size="sm" onClick={handleView} title="Visualizar">
               <Eye className="h-4 w-4 mr-2" /> Visualizar

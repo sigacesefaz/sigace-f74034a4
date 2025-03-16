@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import { getProcessById } from "@/services/datajud";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/hooks/use-toast";
-import { DatajudMovimentoProcessual, DatajudProcess } from "@/types/datajud";
+import { saveProcess } from "@/services/processService";
+import { toast } from "sonner";
+import { DatajudMovimentoProcessual } from "@/types/datajud";
 
 export function useProcessImport() {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,7 +13,7 @@ export function useProcessImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
 
-  const handleProcessSelect = async (processNumber: string, courtEndpoint: string) => {
+  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<boolean> => {
     setIsLoading(true);
     setImportComplete(false);
     try {
@@ -22,7 +22,7 @@ export function useProcessImport() {
       const movimentos = await getProcessById(courtEndpoint, processNumber);
       
       if (!movimentos || movimentos.length === 0) {
-        toast("Processo não encontrado", "", { variant: "destructive" });
+        toast.error("Processo não encontrado");
         setShowManualEntry(true);
         setIsLoading(false);
         return false;
@@ -30,21 +30,39 @@ export function useProcessImport() {
       
       console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
       
-      // Agrupamos os movimentos pelo mesmo número de processo
-      const numeroProcessoPrincipal = movimentos[0].process.numeroProcesso;
-      const movimentosDoProcesso = movimentos.filter(m => 
-        m.process.numeroProcesso === numeroProcessoPrincipal
-      );
-      
-      console.log(`Filtrado para ${movimentosDoProcesso.length} movimento(s) do mesmo processo`);
-      
-      setProcessMovimentos(movimentosDoProcesso);
+      // Armazenamos todos os movimentos - não filtramos mais por número de processo
+      // Isso é importante para capturar todos os hits relacionados
+      setProcessMovimentos(movimentos);
       setSelectedCourt(courtEndpoint);
       return true;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
-      toast("Erro ao importar processo", "", { variant: "destructive" });
+      toast.error("Erro ao importar processo");
       setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProcess = async (): Promise<boolean> => {
+    if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
+      toast.error("Dados do processo incompletos");
+      return false;
+    }
+    
+    setIsLoading(true);
+    try {
+      const result = await saveProcess(processMovimentos, selectedCourt, setImportProgress);
+      
+      if (result) {
+        setImportComplete(true);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Erro ao salvar processo:", error);
+      toast.error("Erro ao salvar processo");
       return false;
     } finally {
       setIsLoading(false);
@@ -71,6 +89,7 @@ export function useProcessImport() {
     setShowManualEntry,
     setProcessMovimentos,
     handleProcessSelect,
+    handleSaveProcess,
     resetImportState
   };
 }

@@ -98,6 +98,17 @@ export default function ProcessListPage() {
               console.warn(`Erro ao buscar assuntos para processo ${process.id}:`, subjectsError);
             }
 
+            // Buscar hits do processo
+            const {
+              data: hits,
+              error: hitsError
+            } = await supabase.from('process_hits').select('*').eq('process_id', process.id).order('data_hora_ultima_atualizacao', {
+              ascending: false
+            });
+            if (hitsError) {
+              console.warn(`Erro ao buscar hits para processo ${process.id}:`, hitsError);
+            }
+
             // Criar metadata completo para exibição
             const processDetails = Array.isArray(details) && details.length > 0 ? details[0] : null;
             const metadata = {
@@ -123,7 +134,8 @@ export default function ProcessListPage() {
             console.log(`Processo ${process.id} carregado com metadata:`, metadata);
             return {
               ...process,
-              metadata
+              metadata,
+              hits: hits || []
             };
           } catch (error) {
             console.error(`Erro ao carregar dados completos para processo ${process.id}:`, error);
@@ -141,7 +153,8 @@ export default function ProcessListPage() {
                 },
                 grau: process.instance || "Primeira",
                 nivelSigilo: 0
-              }
+              },
+              hits: []
             };
           }
         }));

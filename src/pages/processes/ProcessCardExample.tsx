@@ -10,26 +10,29 @@ const exampleProcesses = [
     id: "1",
     number: "0037536-57.2015.8.27.2729",
     title: "Mandado de Segurança Cível",
+    court: "TJTO", // Adding the required court property
     created_at: "2023-05-09T16:24:00",
     updated_at: "2025-02-26T15:54:00",
     metadata: {
       numeroProcesso: "0037536-57.2015.8.27.2729",
       classe: {
-        codigo: "120",
+        codigo: 120,
         nome: "Mandado de Segurança Cível"
       },
       dataAjuizamento: "2015-12-08T12:50:00",
       sistema: {
-        nome: "Inválido"
+        nome: "Inválido",
+        codigo: 0
       },
       orgaoJulgador: {
-        nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas"
+        nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
+        codigo: 2729
       },
       grau: "G1",
-      nivelSigilo: "Público",
+      nivelSigilo: 0,
       assuntos: [
         {
-          codigo: "10536",
+          codigo: 10536,
           nome: "ICMS / Incidência Sobre o Ativo Fixo"
         }
       ],
@@ -109,32 +112,71 @@ const exampleProcesses = [
           ]
         }
       ]
-    }
+    },
+    hits: [
+      {
+        id: "h1",
+        hit_index: "1",
+        hit_id: "hit_123",
+        tribunal: "TJTO",
+        numero_processo: "0037536-57.2015.8.27.2729",
+        data_ajuizamento: "2015-12-08T12:50:00",
+        classe: {
+          nome: "Mandado de Segurança Cível",
+          codigo: 120
+        },
+        orgao_julgador: {
+          nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
+          codigo: 2729
+        },
+        data_hora_ultima_atualizacao: "2023-05-09T16:24:00"
+      },
+      {
+        id: "h2",
+        hit_index: "2",
+        hit_id: "hit_456",
+        tribunal: "TJTO",
+        numero_processo: "0037536-57.2015.8.27.2729",
+        data_ajuizamento: "2015-12-08T12:50:00",
+        classe: {
+          nome: "Mandado de Segurança Cível",
+          codigo: 120
+        },
+        orgao_julgador: {
+          nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
+          codigo: 2729
+        },
+        data_hora_ultima_atualizacao: "2022-10-15T08:30:00"
+      }
+    ]
   },
   {
     id: "2",
     number: "1234567-89.2022.8.27.2700",
     title: "Ação Civil Pública",
+    court: "TJTO", // Adding the required court property
     created_at: "2022-01-10T09:30:00",
     updated_at: "2025-02-25T14:22:00",
     metadata: {
       numeroProcesso: "1234567-89.2022.8.27.2700",
       classe: {
-        codigo: "65",
+        codigo: 65,
         nome: "Ação Civil Pública"
       },
       dataAjuizamento: "2022-01-10T09:30:00",
       sistema: {
-        nome: "PJe"
+        nome: "PJe",
+        codigo: 1
       },
       orgaoJulgador: {
-        nome: "2ª Vara Cível de Palmas"
+        nome: "2ª Vara Cível de Palmas",
+        codigo: 2700
       },
       grau: "G1",
-      nivelSigilo: "Público",
+      nivelSigilo: 0,
       assuntos: [
         {
-          codigo: "9985",
+          codigo: 9985,
           nome: "Direito do Consumidor"
         }
       ],
@@ -193,12 +235,32 @@ const exampleProcesses = [
           ]
         }
       ]
-    }
+    },
+    hits: [
+      {
+        id: "h3",
+        hit_index: "1",
+        hit_id: "hit_789",
+        tribunal: "TJTO",
+        numero_processo: "1234567-89.2022.8.27.2700",
+        data_ajuizamento: "2022-01-10T09:30:00",
+        classe: {
+          nome: "Ação Civil Pública",
+          codigo: 65
+        },
+        orgao_julgador: {
+          nome: "2ª Vara Cível de Palmas", 
+          codigo: 2700
+        },
+        data_hora_ultima_atualizacao: "2023-01-15T11:20:00"
+      }
+    ]
   }
 ];
 
 export default function ProcessCardExample() {
   const [processes, setProcesses] = useState(exampleProcesses);
+  const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   
   const handleDelete = (id: string) => {
     setProcesses(processes.filter(p => p.id !== id));
@@ -215,6 +277,36 @@ export default function ProcessCardExample() {
       description: `Visualizando processo ID: ${id}`,
       variant: "default",
     });
+  };
+  
+  const handlePrint = (process: any) => {
+    toast({
+      title: "Imprimir processo",
+      description: `Imprimindo processo: ${process.number}`,
+      variant: "default",
+    });
+  };
+  
+  const handleShare = (process: any) => {
+    toast({
+      title: "Compartilhar processo",
+      description: `Compartilhando processo: ${process.number}`,
+      variant: "default",
+    });
+  };
+  
+  const handleRefresh = (id: string) => {
+    toast({
+      title: "Atualizar processo",
+      description: `Atualizando processo ID: ${id}`,
+      variant: "default",
+    });
+  };
+  
+  const handleToggleSelect = (id: string) => {
+    setSelectedProcesses(prev => 
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
   };
   
   return (
@@ -234,6 +326,11 @@ export default function ProcessCardExample() {
             process={process}
             onDelete={handleDelete}
             onView={handleView}
+            onPrint={handlePrint}
+            onShare={handleShare}
+            onRefresh={handleRefresh}
+            isSelected={selectedProcesses.includes(process.id)}
+            onToggleSelect={handleToggleSelect}
             relatedHits={process.id === "1" ? [processes[1]] : []}
           />
         ))}

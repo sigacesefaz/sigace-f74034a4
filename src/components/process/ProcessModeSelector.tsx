@@ -18,7 +18,7 @@ interface ProcessModeSelectorProps {
   isLoading: boolean;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
   handleManualEntry: () => void;
-  handleSaveProcess: () => Promise<void>;
+  handleSaveProcess: () => Promise<boolean>;
   handleCreateManualProcess: (processData: any) => Promise<void>;
   handleCancel: () => void;
   handleImportAnother?: () => void;

@@ -1,8 +1,7 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
   currentPage: number;
@@ -12,89 +11,111 @@ interface PaginationProps {
 }
 
 export function Pagination({ currentPage, totalPages, onPageChange, className }: PaginationProps) {
-  // Calculate page numbers to show
-  const getPageNumbers = () => {
-    const pageNumbers = [];
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, currentPage + 2);
-    
-    // Adjust start and end to always show 5 page numbers if possible
-    if (endPage - startPage < 4) {
-      if (startPage === 1) {
-        endPage = Math.min(5, totalPages);
-      } else if (endPage === totalPages) {
-        startPage = Math.max(1, totalPages - 4);
-      }
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-    
-    return pageNumbers;
-  };
-
-  // If there's only 1 page or less, don't show pagination
+  // Não exibir paginação se só houver uma página
   if (totalPages <= 1) {
     return null;
   }
 
-  return (
-    <div className={cn("flex items-center justify-center space-x-1", className)}>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => onPageChange(1)}
-        disabled={currentPage === 1}
-        aria-label="First page"
-      >
-        <ChevronsLeft className="h-4 w-4" />
-      </Button>
-      
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        aria-label="Previous page"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      
-      {getPageNumbers().map((pageNumber) => (
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
+
+  // Layout mais minimalista com menos botões
+  const renderPageButtons = () => {
+    const pageButtons = [];
+    const maxButtons = 3; // Reduzindo para estilo mais minimalista
+    
+    let startPage = Math.max(1, currentPage - 1);
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
+    if (endPage - startPage + 1 < maxButtons) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    // Primeira página
+    if (startPage > 1) {
+      pageButtons.push(
         <Button
-          key={pageNumber}
-          variant={pageNumber === currentPage ? "default" : "outline"}
-          className={cn(
-            "h-8 w-8",
-            pageNumber === currentPage 
-              ? "bg-primary text-primary-foreground" 
-              : "text-foreground"
-          )}
-          onClick={() => onPageChange(pageNumber)}
+          key="first"
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(1)}
+          className="w-7 h-7 p-0 text-xs"
         >
-          {pageNumber}
+          1
         </Button>
-      ))}
+      );
       
+      if (startPage > 2) {
+        pageButtons.push(
+          <span key="ellipsis1" className="mx-1 text-gray-500">...</span>
+        );
+      }
+    }
+    
+    // Páginas do meio
+    for (let i = startPage; i <= endPage; i++) {
+      pageButtons.push(
+        <Button
+          key={i}
+          variant={i === currentPage ? "default" : "outline"}
+          size="sm"
+          onClick={() => goToPage(i)}
+          className="w-7 h-7 p-0 text-xs"
+        >
+          {i}
+        </Button>
+      );
+    }
+    
+    // Última página
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pageButtons.push(
+          <span key="ellipsis2" className="mx-1 text-gray-500">...</span>
+        );
+      }
+      
+      pageButtons.push(
+        <Button
+          key="last"
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(totalPages)}
+          className="w-7 h-7 p-0 text-xs"
+        >
+          {totalPages}
+        </Button>
+      );
+    }
+    
+    return pageButtons;
+  };
+
+  return (
+    <div className={`flex items-center space-x-1 ${className || ''}`}>
       <Button
         variant="outline"
-        size="icon"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        aria-label="Next page"
+        size="sm"
+        onClick={() => goToPage(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="w-7 h-7 p-0"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronLeft className="h-3 w-3" />
       </Button>
       
+      {renderPageButtons()}
+      
       <Button
         variant="outline"
-        size="icon"
-        onClick={() => onPageChange(totalPages)}
+        size="sm"
+        onClick={() => goToPage(currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="Last page"
+        className="w-7 h-7 p-0"
       >
-        <ChevronsRight className="h-4 w-4" />
+        <ChevronRight className="h-3 w-3" />
       </Button>
     </div>
   );
