@@ -12,16 +12,7 @@ import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { Process } from "@/types/process";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
@@ -32,15 +23,18 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessDocuments } from "@/components/process/ProcessDocuments";
-
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
-
-export function ProcessList({ processes, isLoading, onDelete, onRefresh }: ProcessListProps) {
+export function ProcessList({
+  processes,
+  isLoading,
+  onDelete,
+  onRefresh
+}: ProcessListProps) {
   const [expandedProcessId, setExpandedProcessId] = useState<string | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [bulkAlertOpen, setBulkAlertOpen] = useState(false);
@@ -54,14 +48,11 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [showTabsId, setShowTabsId] = useState<string | null>(null);
-
   const [eventStartDate, setEventStartDate] = useState<Date | undefined>(undefined);
   const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
   const [eventCode, setEventCode] = useState<string>("");
   const [eventText, setEventText] = useState<string>("");
-
   const itemsPerPage = 5;
-
   const groupedProcesses = processes.reduce((acc, process) => {
     if (process.is_parent || !process.parent_id) {
       if (!acc[process.id]) {
@@ -83,13 +74,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       }
     }
     return acc;
-  }, {} as Record<string, { parent: Process | null; children: Process[] }>);
-
-  const paginatedGroups = Object.entries(groupedProcesses)
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
+  }, {} as Record<string, {
+    parent: Process | null;
+    children: Process[];
+  }>);
+  const paginatedGroups = Object.entries(groupedProcesses).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
-
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -107,16 +97,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       }
     }
   };
-
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
         const processesToDelete = [...selectedProcesses];
-        
         for (const id of processesToDelete) {
           await onDelete(id);
         }
-        
         toast.success(`${processesToDelete.length} processos excluídos com sucesso!`);
         setSelectedProcesses([]);
         setBulkAlertOpen(false);
@@ -130,7 +117,6 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       setBulkAlertOpen(false);
     }
   };
-
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -145,17 +131,14 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       }
     }
   };
-
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleShare = async (process: Process) => {
     const formatProcessNumber = (number: string) => {
       if (!number) return "";
@@ -163,14 +146,12 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       if (numericOnly.length !== 20) return number;
       return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
     };
-
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
-    
     try {
       if (navigator.share) {
         await navigator.share({
           title: 'Compartilhar Processo',
-          text: shareText,
+          text: shareText
         });
       } else {
         await navigator.clipboard.writeText(shareText);
@@ -181,40 +162,37 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       toast.error("Não foi possível compartilhar o processo");
     }
   };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "Data inválida";
-      return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
+      return format(date, 'dd/MM/yyyy HH:mm:ss', {
+        locale: ptBR
+      });
     } catch {
       return "Data inválida";
     }
   };
-
   const toggleProcessSelection = (id: string) => {
-    setSelectedProcesses(prev => 
-      prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]
-    );
+    setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
-
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
-    
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
       setSelectedProcesses([]);
     } else {
       setSelectedProcesses(allParentIds);
     }
   };
-
   const handleTabChange = (processId: string, value: string) => {
-    setProcessTabStates(prev => ({ ...prev, [processId]: value }));
+    setProcessTabStates(prev => ({
+      ...prev,
+      [processId]: value
+    }));
   };
-
   const handlePreviousMovement = (processId: string) => {
-    setCurrentMovementIndex((prev) => {
+    setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
       const maxIndex = (process?.movimentacoes?.length || 1) - 1;
@@ -224,11 +202,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       };
     });
     setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
+    setProcessTabStates(prev => ({
+      ...prev,
+      [processId]: "eventos"
+    }));
   };
-
   const handleNextMovement = (processId: string) => {
-    setCurrentMovementIndex((prev) => {
+    setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
       const process = processes.find(p => p.id === processId);
       const maxIndex = (process?.movimentacoes?.length || 1) - 1;
@@ -238,85 +218,58 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
       };
     });
     setShowTabsId(processId);
-    setProcessTabStates(prev => ({ ...prev, [processId]: "eventos" }));
+    setProcessTabStates(prev => ({
+      ...prev,
+      [processId]: "eventos"
+    }));
   };
-
   if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
+    return <div className="space-y-2">
+        {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
             <CardHeader className="bg-gray-100 h-20"></CardHeader>
             <CardContent className="py-2">
               <div className="h-32 bg-gray-100 rounded"></div>
             </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+          </Card>)}
+      </div>;
   }
-
   if (processes.length === 0) {
-    return (
-      <Card className="text-center py-6">
+    return <Card className="text-center py-6">
         <CardContent>
           <p className="text-gray-500">Nenhum processo encontrado</p>
           <Link to="/processes/new">
             <Button className="mt-2">Cadastrar Novo Processo</Button>
           </Link>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   const applyFilters = () => {
     // Lógica de filtragem aqui
   };
-
-  return (
-    <div className="space-y-2">
-      {processes.length > 0 && (
-        <div className="flex justify-between items-center mb-2">
+  return <div className="space-y-2">
+      {processes.length > 0 && <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-1">
-            <Checkbox 
-              id="selectAll" 
-              checked={selectedProcesses.length === Object.keys(groupedProcesses).length && Object.keys(groupedProcesses).length > 0}
-              onCheckedChange={toggleAllProcesses}
-            />
+            <Checkbox id="selectAll" checked={selectedProcesses.length === Object.keys(groupedProcesses).length && Object.keys(groupedProcesses).length > 0} onCheckedChange={toggleAllProcesses} />
             <label htmlFor="selectAll" className="text-sm font-medium">
               Selecionar todos
             </label>
           </div>
           
-          {selectedProcesses.length > 0 && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={() => setBulkAlertOpen(true)}
-              className="flex items-center gap-1"
-            >
+          {selectedProcesses.length > 0 && <Button variant="destructive" size="sm" onClick={() => setBulkAlertOpen(true)} className="flex items-center gap-1">
               <Trash className="h-4 w-4" />
               Excluir {selectedProcesses.length} selecionado(s)
-            </Button>
-          )}
-        </div>
-      )}
+            </Button>}
+        </div>}
 
       {paginatedGroups.map(([parentId, group]) => {
-        const parentProcess = group.parent;
-        if (!parentProcess) return null;
-        
-        return (
-          <div key={parentId} className="space-y-1">
+      const parentProcess = group.parent;
+      if (!parentProcess) return null;
+      return <div key={parentId} className="space-y-1">
             <Card className="overflow-hidden border-gray-200 shadow-sm">
               <CardHeader className="bg-gray-50 p-2">
                 <div className="flex flex-wrap items-start gap-1 justify-between">
                   <div className="flex items-start gap-1">
-                    <Checkbox 
-                      checked={selectedProcesses.includes(parentProcess.id)} 
-                      onCheckedChange={() => toggleProcessSelection(parentProcess.id)}
-                      className="mt-1"
-                    />
+                    <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
                     <div>
                       <CardTitle className="text-lg font-medium text-gray-900">
                         {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
@@ -331,31 +284,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                           </span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                          <Badge 
-                            variant="default" 
-                            className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white"
-                            title={parentProcess.metadata?.assuntos?.[0]?.nome 
-                              ? `${parentProcess.metadata.assuntos[0].nome}${
-                                  parentProcess.metadata.assuntos[0].codigo 
-                                    ? ` (${parentProcess.metadata.assuntos[0].codigo})`
-                                    : ''
-                                }`
-                              : "Assunto não informado"
-                            }
-                          >
-                            {parentProcess.metadata?.assuntos?.[0]?.nome 
-                              ? (
-                                <>
+                          <Badge variant="default" className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white" title={parentProcess.metadata?.assuntos?.[0]?.nome ? `${parentProcess.metadata.assuntos[0].nome}${parentProcess.metadata.assuntos[0].codigo ? ` (${parentProcess.metadata.assuntos[0].codigo})` : ''}` : "Assunto não informado"}>
+                            {parentProcess.metadata?.assuntos?.[0]?.nome ? <>
                                   {parentProcess.metadata.assuntos[0].nome}
-                                  {parentProcess.metadata.assuntos[0].codigo && (
-                                    <span className="ml-1 opacity-90">
+                                  {parentProcess.metadata.assuntos[0].codigo && <span className="ml-1 opacity-90">
                                       ({parentProcess.metadata.assuntos[0].codigo})
-                                    </span>
-                                  )}
-                                </>
-                              )
-                              : "Assunto não informado"
-                            }
+                                    </span>}
+                                </> : "Assunto não informado"}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
@@ -385,72 +320,29 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRefresh?.(parentProcess.id)}
-                      disabled={loadingProcessId === parentProcess.id || !onRefresh}
-                      className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
                       <RefreshCw className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handlePrint(parentProcess)}
-                      className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                      title="Imprimir processo"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
                       <Printer className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleView(parentProcess)}
-                      className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50"
-                      title="Visualizar processo"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleShare(parentProcess)}
-                      className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
                       <Share2 className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setProcessToDelete(parentProcess.id);
-                        setAlertOpen(true);
-                      }}
-                      disabled={loadingProcessId === parentProcess.id || !onDelete}
-                      className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => {
+                  setProcessToDelete(parentProcess.id);
+                  setAlertOpen(true);
+                }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
                       <Trash className="h-4 w-4" />
                     </Button>
                     <div className="h-4 w-px bg-gray-200 mx-1" />
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handlePreviousMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
-                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
-                      title="Movimentação anterior"
-                    >
+                    <Button size="sm" variant="default" onClick={() => handlePreviousMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Movimentação anterior">
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handleNextMovement(parentProcess.id)}
-                      disabled={!parentProcess.movimentacoes?.length}
-                      className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white"
-                      title="Próxima movimentação"
-                    >
+                    <Button size="sm" variant="default" onClick={() => handleNextMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Próxima movimentação">
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -459,25 +351,11 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
               
               <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100">
                 <div className="text-sm text-gray-700 pt-1">
-                  <button 
-                    onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronRight 
-                      className={`h-4 w-4 transition-transform ${
-                        showOverviewId === parentProcess.id ? "rotate-90" : ""
-                      }`}
-                    />
+                  <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                    <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
                     Detalhes do Processo
                   </button>
-                  <div 
-                    id={`overview-${parentProcess.id}`}
-                    className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${
-                      showOverviewId === parentProcess.id
-                        ? "opacity-100 max-h-[800px] mt-1"
-                        : "opacity-0 max-h-0 overflow-hidden"
-                    }`}
-                  >
+                  <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 max-h-[800px] mt-1" : "opacity-0 max-h-0 overflow-hidden"}`}>
                     <div className="space-y-2">
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
@@ -493,11 +371,9 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
                         <div className="text-sm">
-                          {parentProcess.metadata?.assuntos?.map((assunto, index) => (
-                            <p key={index} className="text-gray-700">
+                          {parentProcess.metadata?.assuntos?.map((assunto, index) => <p key={index} className="text-gray-700">
                               {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                            </p>
-                          )) || <p className="text-gray-500">Não informado</p>}
+                            </p>) || <p className="text-gray-500">Não informado</p>}
                         </div>
                       </div>
 
@@ -529,120 +405,53 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
 
                       <TabsContent value="eventos">
                         <div className="space-y-2">
-                          <div className="bg-white rounded-lg p-3 space-y-2">
-                            <h4 className="font-medium text-sm text-gray-900">Filtros</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <Label htmlFor="event-date-start">Data Inicial</Label>
-                                <DatePicker
-                                  selected={eventStartDate}
-                                  onSelect={setEventStartDate}
-                                  className="w-full"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="event-date-end">Data Final</Label>
-                                <DatePicker
-                                  selected={eventEndDate}
-                                  onSelect={setEventEndDate}
-                                  className="w-full"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="event-code">Código</Label>
-                                <Input
-                                  id="event-code"
-                                  placeholder="Ex: 581"
-                                  value={eventCode}
-                                  onChange={(e) => setEventCode(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="event-text">Texto</Label>
-                                <Input
-                                  id="event-text"
-                                  placeholder="Buscar no texto..."
-                                  value={eventText}
-                                  onChange={(e) => setEventText(e.target.value)}
-                                />
-                              </div>
-                            </div>
-                            <Button size="sm" className="mt-2">Filtrar</Button>
-                          </div>
                           
-                          <ProcessMovements
-                            processId={parentProcess.id}
-                            hitId={parentProcess.hits?.[0]?.id}
-                            filter={{
-                              startDate: eventStartDate,
-                              endDate: eventEndDate,
-                              code: eventCode ? eventCode : undefined,
-                              text: eventText
-                            }}
-                          />
+                          
+                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} filter={{
+                        startDate: eventStartDate,
+                        endDate: eventEndDate,
+                        code: eventCode ? eventCode : undefined,
+                        text: eventText
+                      }} />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="intimacoes">
                         <div className="space-y-2">
-                          <ProcessMovements
-                            processId={parentProcess.id}
-                            hitId={parentProcess.hits?.[0]?.id}
-                            filter={{
-                              codes: [12266, 12265]
-                            }}
-                          />
+                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} filter={{
+                        codes: [12266, 12265]
+                      }} />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="documentos">
                         <div className="space-y-2">
-                          <ProcessMovements
-                            processId={parentProcess.id}
-                            hitId={parentProcess.hits?.[0]?.id}
-                            filter={{
-                              codes: [581]
-                            }}
-                          />
+                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} filter={{
+                        codes: [581]
+                      }} />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="decisao">
-                        <ProcessDecisions 
-                          processId={parentProcess.id}
-                          hitId={parentProcess.hits?.[0]?.id}
-                        />
+                        <ProcessDecisions processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} />
                       </TabsContent>
 
                       <TabsContent value="partes">
-                        <ProcessParties 
-                          processId={parentProcess.id}
-                        />
+                        <ProcessParties processId={parentProcess.id} />
                       </TabsContent>
 
                       <TabsContent value="inteiro-teor">
-                        <ProcessDocuments 
-                          processId={parentProcess.id}
-                          hitId={parentProcess.hits?.[0]?.id}
-                        />
+                        <ProcessDocuments processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} />
                       </TabsContent>
                     </Tabs>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        );
-      })}
+          </div>;
+    })}
 
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          className="mt-2"
-        />
-      )}
+      {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-2" />}
 
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
@@ -655,10 +464,7 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setProcessToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => processToDelete && handleDelete(processToDelete)}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogAction onClick={() => processToDelete && handleDelete(processToDelete)} className="bg-red-500 hover:bg-red-600">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -676,23 +482,13 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setBulkAlertOpen(false)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleBulkDelete}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-red-500 hover:bg-red-600">
               Excluir {selectedProcesses.length} processo(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {selectedProcess && (
-        <ProcessReportDialog
-          process={selectedProcess}
-          open={reportDialogOpen}
-          onOpenChange={setReportDialogOpen}
-        />
-      )}
-    </div>
-  );
+      {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
+    </div>;
 }
