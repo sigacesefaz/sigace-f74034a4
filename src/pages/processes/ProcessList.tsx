@@ -270,6 +270,10 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     );
   }
 
+  const applyFilters = () => {
+    // Lógica de filtragem aqui
+  };
+
   return (
     <div className="space-y-2">
       {processes.length > 0 && (
@@ -700,4 +704,3 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     </div>
   );
 }
-

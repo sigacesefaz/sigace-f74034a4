@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { Document } from "@/types/process";
+import { ProcessDocument } from "@/types/process";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,7 @@ interface ProcessDocumentsProps {
 }
 
 export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<ProcessDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState("");
@@ -46,12 +46,12 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<ProcessDocument | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showFilter, setShowFilter] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<ProcessDocument[]>([]);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     setCurrentPage(1);
   };
 
-  const getDocumentUrl = async (document: Document) => {
+  const getDocumentUrl = async (document: ProcessDocument) => {
     try {
       const { data, error } = await supabase.storage
         .from('process-documents')
@@ -273,7 +273,7 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     }
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (document: ProcessDocument) => {
     try {
       const { data, error } = await supabase.storage
         .from('process-documents')
@@ -284,12 +284,12 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       }
       
       if (data?.signedUrl) {
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = data.signedUrl;
         link.download = document.file_name;
-        document.body.appendChild(link);
+        window.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
       }
     } catch (error) {
       console.error("Erro ao baixar documento:", error);

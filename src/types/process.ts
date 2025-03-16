@@ -11,8 +11,8 @@ export type PartyType = {
   personType: PartyPersonType;
 };
 
-// Adicionando a interface Document
-export interface Document {
+// Adicionando a interface Document, renomeada para ProcessDocument para evitar conflito com o tipo DOM Document
+export interface ProcessDocument {
   id: string;
   title: string;
   file_path: string;
