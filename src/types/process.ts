@@ -1,3 +1,4 @@
+
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -125,6 +126,7 @@ export interface ProcessNotification {
 }
 
 export interface ProcessMetadata {
+  numeroProcesso?: string; // Added this field to match example data
   sistema?: {
     codigo: number;
     nome: string;

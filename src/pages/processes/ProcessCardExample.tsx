@@ -258,7 +258,7 @@ const exampleProcesses = [
       }
     ]
   }
-] as Process[];
+] as unknown as Process[];
 
 export default function ProcessCardExample() {
   const [processes, setProcesses] = useState<Process[]>(exampleProcesses);
