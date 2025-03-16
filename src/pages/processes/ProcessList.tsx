@@ -339,9 +339,7 @@ export function ProcessList({
                       <Trash className="h-4 w-4" />
                     </Button>
                     <div className="h-4 w-px bg-gray-200 mx-1" />
-                    <Button size="sm" variant="default" onClick={() => handlePreviousMovement(parentProcess.id)} disabled={!parentProcess.movimentacoes?.length} className="h-7 w-7 p-0 bg-blue-600 hover:bg-blue-700 text-white" title="Movimentação anterior">
-                      
-                    </Button>
+                    
                     
                   </div>
                 </div>
