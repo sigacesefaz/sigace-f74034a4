@@ -10,8 +10,9 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Filters } from "@/components/ui/filters";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface MovementFilter {
   startDate?: Date;
@@ -144,16 +145,16 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
+    <div className="space-y-3 max-h-[60vh] overflow-auto">
+      <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-2">
         <div className="flex-1">
-          {appliedFilter && Object.keys(appliedFilter).length > 0 && (
-            <div className="text-sm text-gray-600 mb-2">
-              Filtros aplicados: {appliedFilter.text ? `Texto: "${appliedFilter.text}"` : ''} 
-              {appliedFilter.code ? ` Código: ${appliedFilter.code}` : ''} 
-              {appliedFilter.startDate ? ` De: ${format(appliedFilter.startDate, 'dd/MM/yyyy')}` : ''} 
-              {appliedFilter.endDate ? ` Até: ${format(appliedFilter.endDate, 'dd/MM/yyyy')}` : ''}
-            </div>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="justify-start"
+            />
           )}
         </div>
         <div className="flex gap-2">
@@ -164,25 +165,91 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
           >
             {showFilter ? "Ocultar Filtros" : "Filtrar"}
           </Button>
-          {appliedFilter && Object.keys(appliedFilter).length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleResetFilter}
-            >
-              Limpar Filtros
-            </Button>
-          )}
         </div>
       </div>
       
-      {showFilter && (
-        <Filters 
-          onFilter={handleApplyFilter}
-          onResetFilter={handleResetFilter}
-          showCodeFilter={true}
-          showDateFilter={true}
-        />
+      <Collapsible
+        open={showFilter}
+        onOpenChange={setShowFilter}
+      >
+        <CollapsibleContent>
+          <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="textFilter">Pesquisar por texto</Label>
+                <Input
+                  id="textFilter"
+                  value={textFilter}
+                  onChange={(e) => setTextFilter(e.target.value)}
+                  placeholder="Buscar por texto..."
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="codeFilter">Código</Label>
+                <Input
+                  id="codeFilter"
+                  value={codeFilter}
+                  onChange={(e) => setCodeFilter(e.target.value)}
+                  placeholder="Filtrar por código..."
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="startDate">Data inicial</Label>
+                <DatePicker
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  className="w-full"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="endDate">Data final</Label>
+                <DatePicker
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleResetFilter}
+              >
+                <X className="mr-2 h-4 w-4" /> Limpar
+              </Button>
+              <Button 
+                onClick={() => handleApplyFilter({
+                  startDate,
+                  endDate,
+                  code: codeFilter,
+                  text: textFilter
+                })}
+              >
+                <Search className="mr-2 h-4 w-4" /> Aplicar
+              </Button>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {appliedFilter && Object.keys(appliedFilter).length > 0 && (
+        <div className="text-sm text-gray-600 mb-2">
+          Filtros aplicados: {appliedFilter.text ? `Texto: "${appliedFilter.text}"` : ''} 
+          {appliedFilter.code ? ` Código: ${appliedFilter.code}` : ''} 
+          {appliedFilter.startDate ? ` De: ${format(appliedFilter.startDate, 'dd/MM/yyyy')}` : ''} 
+          {appliedFilter.endDate ? ` Até: ${format(appliedFilter.endDate, 'dd/MM/yyyy')}` : ''}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleResetFilter}
+            className="ml-2 h-6 px-2 text-xs"
+          >
+            <X className="h-3 w-3 mr-1" /> Limpar
+          </Button>
+        </div>
       )}
 
       {movements.length === 0 ? (
@@ -190,7 +257,7 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
           <p>Nenhuma informação encontrada</p>
         </div>
       ) : (
-        <>
+        <div className="space-y-3 pb-2">
           {movements.map((movement, index) => (
             <div key={index} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
               <div className="flex justify-between items-start">
@@ -222,15 +289,7 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
               )}
             </div>
           ))}
-
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          )}
-        </>
+        </div>
       )}
     </div>
   );

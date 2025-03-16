@@ -7,7 +7,7 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  className?: string; // Adicionando propriedade className opcional
+  className?: string;
 }
 
 export function Pagination({ currentPage, totalPages, onPageChange, className }: PaginationProps) {
@@ -22,20 +22,19 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
     }
   };
 
-  // Renderizar no máximo 5 botões de página
+  // Layout mais minimalista com menos botões
   const renderPageButtons = () => {
     const pageButtons = [];
-    const maxButtons = 5;
-    const halfMaxButtons = Math.floor(maxButtons / 2);
+    const maxButtons = 3; // Reduzindo para estilo mais minimalista
     
-    let startPage = Math.max(1, currentPage - halfMaxButtons);
+    let startPage = Math.max(1, currentPage - 1);
     let endPage = Math.min(totalPages, startPage + maxButtons - 1);
     
     if (endPage - startPage + 1 < maxButtons) {
       startPage = Math.max(1, endPage - maxButtons + 1);
     }
     
-    // Adicionar botão para primeira página
+    // Primeira página
     if (startPage > 1) {
       pageButtons.push(
         <Button
@@ -43,7 +42,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           variant="outline"
           size="sm"
           onClick={() => goToPage(1)}
-          className="w-8 h-8 p-0"
+          className="w-7 h-7 p-0 text-xs"
         >
           1
         </Button>
@@ -51,12 +50,12 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
       
       if (startPage > 2) {
         pageButtons.push(
-          <span key="ellipsis1" className="mx-1">...</span>
+          <span key="ellipsis1" className="mx-1 text-gray-500">...</span>
         );
       }
     }
     
-    // Adicionar botões de páginas
+    // Páginas do meio
     for (let i = startPage; i <= endPage; i++) {
       pageButtons.push(
         <Button
@@ -64,18 +63,18 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           variant={i === currentPage ? "default" : "outline"}
           size="sm"
           onClick={() => goToPage(i)}
-          className="w-8 h-8 p-0"
+          className="w-7 h-7 p-0 text-xs"
         >
           {i}
         </Button>
       );
     }
     
-    // Adicionar botão para última página
+    // Última página
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         pageButtons.push(
-          <span key="ellipsis2" className="mx-1">...</span>
+          <span key="ellipsis2" className="mx-1 text-gray-500">...</span>
         );
       }
       
@@ -85,7 +84,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           variant="outline"
           size="sm"
           onClick={() => goToPage(totalPages)}
-          className="w-8 h-8 p-0"
+          className="w-7 h-7 p-0 text-xs"
         >
           {totalPages}
         </Button>
@@ -96,15 +95,15 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
   };
 
   return (
-    <div className={`flex items-center justify-center space-x-2 mt-4 ${className || ''}`}>
+    <div className={`flex items-center space-x-1 ${className || ''}`}>
       <Button
         variant="outline"
         size="sm"
         onClick={() => goToPage(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-8 h-8 p-0"
+        className="w-7 h-7 p-0"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-3 w-3" />
       </Button>
       
       {renderPageButtons()}
@@ -114,9 +113,9 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
         size="sm"
         onClick={() => goToPage(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-8 h-8 p-0"
+        className="w-7 h-7 p-0"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-3 w-3" />
       </Button>
     </div>
   );

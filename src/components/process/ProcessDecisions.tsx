@@ -12,10 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { 
   Plus, Trash, Edit, Search, X, FileText, 
-  Calendar, User, Tag, Eye 
+  Calendar, User, Tag, Eye, ChevronDown, ChevronUp 
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "@/components/ui/pagination";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -304,8 +305,17 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="font-medium">Decisões Judiciais</h3>
+      <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-2">
+        <div className="flex-1">
+          {filteredDecisions.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="justify-start"
+            />
+          )}
+        </div>
         <div className="flex gap-2 items-center">
           <Button 
             variant="outline" 
@@ -424,34 +434,36 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         </div>
       </div>
       
-      {showFilter && (
-        <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="searchText">Pesquisar</Label>
-              <Input
-                id="searchText"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Buscar por título, descrição ou juiz..."
-              />
+      <Collapsible open={showFilter} onOpenChange={setShowFilter}>
+        <CollapsibleContent>
+          <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="searchText">Pesquisar</Label>
+                <Input
+                  id="searchText"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Buscar por título, descrição ou juiz..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleResetFilter}
+              >
+                <X className="mr-2 h-4 w-4" /> Limpar
+              </Button>
+              <Button 
+                onClick={() => applyFilters()}
+              >
+                <Search className="mr-2 h-4 w-4" /> Aplicar
+              </Button>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleResetFilter}
-            >
-              <X className="mr-2 h-4 w-4" /> Limpar
-            </Button>
-            <Button 
-              onClick={() => applyFilters()}
-            >
-              <Search className="mr-2 h-4 w-4" /> Aplicar
-            </Button>
-          </div>
-        </div>
-      )}
+        </CollapsibleContent>
+      </Collapsible>
 
       {filteredDecisions.length === 0 ? (
         <div className="text-center py-8 border rounded-md">
@@ -461,82 +473,74 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
           </p>
         </div>
       ) : (
-        <>
-          <div className="space-y-3">
-            {paginatedDecisions.map((decision) => (
-              <Card key={decision.id} className="p-4 hover:shadow-sm transition-shadow">
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-medium">{decision.title}</h4>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedDecision(decision);
-                          setDetailDialogOpen(true);
-                        }}
-                        title="Visualizar"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingDecision(decision);
-                          setIsFormOpen(true);
-                        }}
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          setDecisionToDelete(decision.id);
-                          setDeleteDialogOpen(true);
-                        }}
-                        title="Excluir"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
+        <div className="space-y-3 max-h-[50vh] overflow-auto pb-2">
+          {paginatedDecisions.map((decision) => (
+            <Card key={decision.id} className="p-4 hover:shadow-sm transition-shadow">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-medium">{decision.title}</h4>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedDecision(decision);
+                        setDetailDialogOpen(true);
+                      }}
+                      title="Visualizar"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingDecision(decision);
+                        setIsFormOpen(true);
+                      }}
+                      title="Editar"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        setDecisionToDelete(decision.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                      title="Excluir"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
                   </div>
-                  
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
-                      <span>{getDecisionTypeLabel(decision.decision_type)}</span>
-                    </div>
-                    {decision.judge && (
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        <span>{decision.judge}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDecisionDate(decision.decision_date)}</span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {decision.content}
-                  </p>
                 </div>
-              </Card>
-            ))}
-          </div>
-          
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        </>
+                
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Tag className="h-3 w-3" />
+                    <span>{getDecisionTypeLabel(decision.decision_type)}</span>
+                  </div>
+                  {decision.judge && (
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span>{decision.judge}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{formatDecisionDate(decision.decision_date)}</span>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-gray-700 line-clamp-2">
+                  {decision.content}
+                </p>
+              </div>
+            </Card>
+          ))}
+        </div>
       )}
       
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
