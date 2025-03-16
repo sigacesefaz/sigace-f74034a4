@@ -152,6 +152,11 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-2">
                   <TabsTrigger value="info">Informações</TabsTrigger>
+                  <TabsTrigger value="eventos">Eventos</TabsTrigger>
+                  <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
+                  <TabsTrigger value="decisao">Decisão</TabsTrigger>
+                  <TabsTrigger value="partes">Partes</TabsTrigger>
+                  <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="info">
@@ -164,6 +169,41 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         {currentHit.hit_index || `#${internalHitIndex + 1}`}
                       </Badge>
                     </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="eventos">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Eventos do Processo</h4>
+                    <p className="text-sm text-gray-500">Nenhum evento disponível.</p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="intimacoes">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Intimações do Processo</h4>
+                    <p className="text-sm text-gray-500">Nenhuma intimação disponível.</p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="decisao">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Decisões do Processo</h4>
+                    <p className="text-sm text-gray-500">Nenhuma decisão disponível.</p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="partes">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Partes do Processo</h4>
+                    <p className="text-sm text-gray-500">Nenhuma parte disponível.</p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="inteiro-teor">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Inteiro Teor do Processo</h4>
+                    <p className="text-sm text-gray-500">Nenhum documento de inteiro teor disponível.</p>
                   </div>
                 </TabsContent>
               </Tabs>
