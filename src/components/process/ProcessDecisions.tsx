@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -262,7 +261,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                   selected={decisionDate}
                   onSelect={setDecisionDate}
                   className="w-full"
-                  required
+                  placeholder="Selecione a data da decisão"
                 />
               </div>
               

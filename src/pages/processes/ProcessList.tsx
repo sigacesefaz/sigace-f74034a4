@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -54,13 +53,14 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
-  
+  const [showTabsId, setShowTabsId] = useState<string | null>(null);
+
   // Filtros para a aba Eventos
   const [eventStartDate, setEventStartDate] = useState<Date | undefined>(undefined);
   const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
   const [eventCode, setEventCode] = useState<string>("");
   const [eventText, setEventText] = useState<string>("");
-  
+
   const itemsPerPage = 5;
 
   const groupedProcesses = processes.reduce((acc, process) => {
@@ -700,3 +700,4 @@ export function ProcessList({ processes, isLoading, onDelete, onRefresh }: Proce
     </div>
   );
 }
+

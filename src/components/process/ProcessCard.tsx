@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { safeStringValue, getSafeNestedValue } from "@/utils/data";
 import { ProcessTimeline } from "./ProcessTimeline";
-import ProcessParties from "./ProcessParties";
+import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessMovements } from "./ProcessMovements";
 
@@ -59,7 +59,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
-  // Obtém o movimento atual
   const currentMovimento = movimentos[currentMovimentoIndex] || null;
 
   return (
@@ -246,7 +245,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
                   </Badge>
                 </div>
               </div>
-              {/* Renderizar informações do processo relacionado */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-start gap-2">
                   <Calendar className="h-4 w-4 text-gray-500 mt-1" />

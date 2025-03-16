@@ -20,7 +20,7 @@ export interface PartyType {
   id: string;
   name: string;
   document?: string;
-  type: string;
+  type: string; // Alterado para string para compatibilidade
   subtype?: string;
   personType?: string;
 }

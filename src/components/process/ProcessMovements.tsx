@@ -6,6 +6,11 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Search, X } from "lucide-react";
 
 interface MovementFilter {
   startDate?: Date;
@@ -19,18 +24,27 @@ interface ProcessMovementsProps {
   processId: string;
   hitId?: string;
   filter?: MovementFilter;
+  defaultShowFilter?: boolean;
 }
 
-export function ProcessMovements({ processId, hitId, filter }: ProcessMovementsProps) {
+export function ProcessMovements({ processId, hitId, filter, defaultShowFilter = false }: ProcessMovementsProps) {
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showFilter, setShowFilter] = useState(defaultShowFilter);
   const itemsPerPage = 5;
+
+  // Filtros locais
+  const [startDate, setStartDate] = useState<Date | undefined>(filter?.startDate);
+  const [endDate, setEndDate] = useState<Date | undefined>(filter?.endDate);
+  const [codeFilter, setCodeFilter] = useState<string>(filter?.code?.toString() || "");
+  const [textFilter, setTextFilter] = useState<string>(filter?.text || "");
+  const [appliedFilter, setAppliedFilter] = useState<MovementFilter | undefined>(filter);
 
   useEffect(() => {
     fetchMovements();
-  }, [processId, hitId, filter, currentPage]);
+  }, [processId, hitId, appliedFilter, currentPage]);
 
   const fetchMovements = async () => {
     try {
@@ -47,25 +61,25 @@ export function ProcessMovements({ processId, hitId, filter }: ProcessMovementsP
       }
 
       // Aplicar filtros
-      if (filter) {
-        if (filter.startDate) {
-          query = query.gte('data_hora', filter.startDate.toISOString());
+      if (appliedFilter) {
+        if (appliedFilter.startDate) {
+          query = query.gte('data_hora', appliedFilter.startDate.toISOString());
         }
         
-        if (filter.endDate) {
-          query = query.lte('data_hora', filter.endDate.toISOString());
+        if (appliedFilter.endDate) {
+          query = query.lte('data_hora', appliedFilter.endDate.toISOString());
         }
         
-        if (filter.code) {
-          query = query.eq('codigo', filter.code);
+        if (appliedFilter.code) {
+          query = query.eq('codigo', appliedFilter.code);
         }
         
-        if (filter.codes && filter.codes.length > 0) {
-          query = query.in('codigo', filter.codes);
+        if (appliedFilter.codes && appliedFilter.codes.length > 0) {
+          query = query.in('codigo', appliedFilter.codes);
         }
         
-        if (filter.text) {
-          query = query.ilike('nome', `%${filter.text}%`);
+        if (appliedFilter.text) {
+          query = query.ilike('nome', `%${appliedFilter.text}%`);
         }
       }
       
@@ -89,6 +103,27 @@ export function ProcessMovements({ processId, hitId, filter }: ProcessMovementsP
       setLoading(false);
     }
   };
+  
+  const handleApplyFilter = () => {
+    const newFilter: MovementFilter = {};
+    
+    if (startDate) newFilter.startDate = startDate;
+    if (endDate) newFilter.endDate = endDate;
+    if (codeFilter.trim()) newFilter.code = parseInt(codeFilter.trim());
+    if (textFilter.trim()) newFilter.text = textFilter.trim();
+    
+    setAppliedFilter(Object.keys(newFilter).length > 0 ? newFilter : undefined);
+    setCurrentPage(1);
+  };
+  
+  const handleResetFilter = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setCodeFilter("");
+    setTextFilter("");
+    setAppliedFilter(undefined);
+    setCurrentPage(1);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -106,54 +141,142 @@ export function ProcessMovements({ processId, hitId, filter }: ProcessMovementsP
     );
   }
 
-  if (movements.length === 0) {
-    return (
-      <div className="text-center py-4 text-gray-500">
-        <p>Nenhuma informação encontrada</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
-      {movements.map((movement, index) => (
-        <div key={index} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <p className="text-gray-900 font-medium">
-                {movement.nome}
-              </p>
-              <p className="text-gray-600 text-sm">
-                {formatDate(movement.data_hora)}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              {movement.codigo && (
-                <Badge variant="outline" className="text-gray-600">
-                  Código: {movement.codigo}
-                </Badge>
-              )}
-              {movement.tipo && (
-                <Badge variant="secondary" className="bg-gray-100">
-                  {movement.tipo}
-                </Badge>
-              )}
-            </div>
-          </div>
-          {movement.complemento && (
-            <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100 text-sm">
-              {movement.complemento}
+      <div className="flex justify-between items-center">
+        <div className="flex-1">
+          {appliedFilter && Object.keys(appliedFilter).length > 0 && (
+            <div className="text-sm text-gray-600 mb-2">
+              Filtros aplicados: {appliedFilter.text ? `Texto: "${appliedFilter.text}"` : ''} 
+              {appliedFilter.code ? ` Código: ${appliedFilter.code}` : ''} 
+              {appliedFilter.startDate ? ` De: ${format(appliedFilter.startDate, 'dd/MM/yyyy')}` : ''} 
+              {appliedFilter.endDate ? ` Até: ${format(appliedFilter.endDate, 'dd/MM/yyyy')}` : ''}
             </div>
           )}
         </div>
-      ))}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowFilter(!showFilter)}
+          >
+            {showFilter ? "Ocultar Filtros" : "Filtrar"}
+          </Button>
+          {appliedFilter && Object.keys(appliedFilter).length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleResetFilter}
+            >
+              Limpar Filtros
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {showFilter && (
+        <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate">Data inicial</Label>
+              <DatePicker
+                selected={startDate}
+                onSelect={setStartDate}
+                className="w-full"
+                placeholder="Selecione a data inicial"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">Data final</Label>
+              <DatePicker
+                selected={endDate}
+                onSelect={setEndDate}
+                className="w-full"
+                placeholder="Selecione a data final"
+              />
+            </div>
+            <div>
+              <Label htmlFor="codeFilter">Código</Label>
+              <Input
+                id="codeFilter"
+                value={codeFilter}
+                onChange={(e) => setCodeFilter(e.target.value)}
+                type="number"
+                placeholder="Filtrar por código"
+              />
+            </div>
+            <div>
+              <Label htmlFor="textFilter">Texto</Label>
+              <Input
+                id="textFilter"
+                value={textFilter}
+                onChange={(e) => setTextFilter(e.target.value)}
+                placeholder="Filtrar por texto"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleResetFilter}
+            >
+              <X className="mr-2 h-4 w-4" /> Limpar
+            </Button>
+            <Button 
+              onClick={handleApplyFilter}
+            >
+              <Search className="mr-2 h-4 w-4" /> Aplicar
+            </Button>
+          </div>
+        </div>
+      )}
 
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+      {movements.length === 0 ? (
+        <div className="text-center py-4 text-gray-500">
+          <p>Nenhuma informação encontrada</p>
+        </div>
+      ) : (
+        <>
+          {movements.map((movement, index) => (
+            <div key={index} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <p className="text-gray-900 font-medium">
+                    {movement.nome}
+                  </p>
+                  <p className="text-gray-600 text-sm">
+                    {formatDate(movement.data_hora)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {movement.codigo && (
+                    <Badge variant="outline" className="text-gray-600">
+                      Código: {movement.codigo}
+                    </Badge>
+                  )}
+                  {movement.tipo && (
+                    <Badge variant="secondary" className="bg-gray-100">
+                      {movement.tipo}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              {movement.complemento && (
+                <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100 text-sm">
+                  {movement.complemento}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </>
       )}
     </div>
   );

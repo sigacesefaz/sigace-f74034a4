@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash, Edit, Plus, FileText, Download, Eye } from "lucide-react";
+import { Trash, Edit, Plus, FileText, Download, Eye, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -58,27 +58,24 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [textFilter, setTextFilter] = useState("");
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchDocuments();
   }, [processId, hitId]);
 
+  useEffect(() => {
+    applyFilters();
+  }, [documents, textFilter, currentPage]);
+
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      
-      // Verificar se a tabela existe
-      const { data: tableExists, error: tableCheckError } = await supabase
-        .from('process_documents')
-        .select('id')
-        .limit(1);
-      
-      if (tableCheckError) {
-        // Tabela não existe, criar a tabela
-        await createDocumentsTable();
-        setDocuments([]);
-        return;
-      }
       
       let query = supabase
         .from('process_documents')
@@ -105,21 +102,37 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     }
   };
 
-  const createDocumentsTable = async () => {
-    try {
-      // Esta operação deve ser feita pelo administrador do banco de dados
-      console.log("Tabela de documentos não existe, seria necessário criá-la");
-      toast.error("Tabela de documentos não configurada. Entre em contato com o administrador.");
-      return false;
-    } catch (error) {
-      console.error("Erro ao criar tabela de documentos:", error);
-      return false;
+  const applyFilters = () => {
+    let filtered = [...documents];
+    
+    if (textFilter.trim()) {
+      filtered = filtered.filter(doc => 
+        doc.title.toLowerCase().includes(textFilter.toLowerCase()) || 
+        doc.file_name.toLowerCase().includes(textFilter.toLowerCase())
+      );
     }
+    
+    setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+    
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    setFilteredDocuments(filtered.slice(start, end));
   };
 
   const resetForm = () => {
     setTitle("");
     setSelectedFile(null);
+  };
+
+  const handleFilter = () => {
+    setCurrentPage(1);
+    applyFilters();
+  };
+
+  const resetFilter = () => {
+    setTextFilter("");
+    setCurrentPage(1);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,21 +224,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     }
     
     try {
-      // Verificar se o bucket existe e criar se necessário
-      const { error: bucketError } = await supabase
-        .storage
-        .getBucket('process-documents');
-      
-      if (bucketError) {
-        // Criar o bucket se não existir
-        await supabase
-          .storage
-          .createBucket('process-documents', {
-            public: false,
-            fileSizeLimit: 50000000 // 50MB
-          });
-      }
-      
       // Fazer upload do arquivo
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${processId}/${Date.now()}.${fileExt}`;
@@ -299,67 +297,96 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium">Inteiro Teor</h3>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-1" /> Novo Documento
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Documento</DialogTitle>
-              <DialogDescription>
-                Faça upload do documento de inteiro teor do processo
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                />
-              </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowFilter(!showFilter)}
+          >
+            {showFilter ? "Ocultar Filtro" : "Filtrar"}
+          </Button>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-1" /> Novo Documento
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Documento</DialogTitle>
+                <DialogDescription>
+                  Faça upload do documento de inteiro teor do processo
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="space-y-2">
-                <Label htmlFor="file">Arquivo (PDF, DOC, DOCX)</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={handleFileChange}
-                  required
-                />
-                {selectedFile && (
-                  <p className="text-sm text-gray-500">
-                    {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                  </p>
-                )}
-              </div>
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={!selectedFile}>
-                  Salvar
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="file">Arquivo (PDF, DOC, DOCX)</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    required
+                  />
+                  {selectedFile && (
+                    <p className="text-sm text-gray-500">
+                      {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                    </p>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={!selectedFile}>
+                    Salvar
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
-      {documents.length === 0 ? (
+      {showFilter && (
+        <div className="bg-gray-50 p-3 rounded-md border mb-4">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                placeholder="Pesquisar por título ou nome do arquivo"
+                value={textFilter}
+                onChange={(e) => setTextFilter(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" onClick={resetFilter}>
+              <X className="h-4 w-4 mr-1" /> Limpar
+            </Button>
+            <Button onClick={handleFilter}>
+              <Search className="h-4 w-4 mr-1" /> Buscar
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {filteredDocuments.length === 0 ? (
         <div className="text-center py-4 text-gray-500">
           <p>Nenhuma informação encontrada</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {documents.map((doc) => (
+          {filteredDocuments.map((doc) => (
             <div key={doc.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-2">
@@ -403,6 +430,14 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
             </div>
           ))}
         </div>
+      )}
+      
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
       
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
