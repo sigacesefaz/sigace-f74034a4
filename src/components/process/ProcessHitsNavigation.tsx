@@ -126,7 +126,7 @@ export function ProcessHitsNavigation({
               <TabsList className="flex items-center">
                 <TabsTrigger value="info">Informações</TabsTrigger>
                 <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
+                
                 
                 
                 
