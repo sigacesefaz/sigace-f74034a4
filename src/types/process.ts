@@ -50,6 +50,7 @@ export interface Process {
   is_parent?: boolean;
   parent_id?: string | number | null;
   instance?: string;
+  plaintiff?: string;  // Added the plaintiff property
 }
 
 export interface PartyType {
@@ -65,3 +66,41 @@ export interface PartyType {
 export type Party = PartyType;
 
 export type PartyPersonType = "physical" | "legal";
+
+// Add missing types
+export interface Decision {
+  id: string;
+  title: string;
+  content: string;
+  decision_type: string;
+  judge?: string;
+  decision_date: string;
+  process_id: string | number;
+  hit_id?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ProcessDocument {
+  id: string;
+  process_id: string | number;
+  hit_id?: string | null;
+  title: string;
+  file_path: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ProcessNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  process_id?: string | number;
+  created_at: string;
+  read: boolean;
+  user_id?: string;
+}
