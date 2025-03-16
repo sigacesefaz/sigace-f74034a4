@@ -8,6 +8,7 @@ import { Process } from "@/types/process";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ProcessNavigation } from "@/components/process/ProcessNavigation";
 
 interface ProcessListProps {
   processes: Process[];
