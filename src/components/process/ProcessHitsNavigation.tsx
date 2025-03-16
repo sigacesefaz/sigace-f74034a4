@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,7 +20,6 @@ interface ProcessHitsNavigationProps {
 
 export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, onHitSelect }: ProcessHitsNavigationProps) {
   const [internalHitIndex, setInternalHitIndex] = useState(currentHitIndex);
-  const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
 
   const currentHit = hits && hits.length > 0 ? hits[internalHitIndex] : null;
@@ -81,19 +79,11 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
 
   return (
     <div className="w-full">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
+      <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                {isOpen ? "Ocultar Movimentações" : "Ver Movimentações"}
-                <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
-              </Button>
-            </CollapsibleTrigger>
-            <span className="text-sm text-gray-500">
-              {totalHits} movimentações
-            </span>
-          </div>
+          <span className="text-sm text-gray-500">
+            {totalHits} movimentações
+          </span>
           
           <Popover>
             <PopoverTrigger asChild>
@@ -112,7 +102,6 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         className={`p-2 text-sm rounded cursor-pointer ${internalHitIndex === idx ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`}
                         onClick={() => {
                           setInternalHitIndex(idx);
-                          setIsOpen(true);
                           if (onHitSelect) {
                             onHitSelect(idx);
                           }
@@ -131,59 +120,57 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
           </Popover>
         </div>
 
-        <CollapsibleContent className="space-y-2">
-          {totalHits > 0 && (
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm">
-                Movimentação {internalHitIndex + 1} de {totalHits}
-              </span>
-              <div className="flex gap-1">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handlePreviousHit}
-                  className="h-8 w-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleNextHit}
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+        {totalHits > 0 && (
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm">
+              Movimentação {internalHitIndex + 1} de {totalHits}
+            </span>
+            <div className="flex gap-1">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handlePreviousHit}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleNextHit}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
+        )}
 
-          {currentHit && (
-            <Card>
-              <CardContent className="p-4">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="mb-2">
-                    <TabsTrigger value="info">Informações</TabsTrigger>
-                  </TabsList>
+        {currentHit && (
+          <Card>
+            <CardContent className="p-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-2">
+                  <TabsTrigger value="info">Informações</TabsTrigger>
+                </TabsList>
 
-                  <TabsContent value="info">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">
-                          {currentHit.classe?.nome || `Movimentação ${internalHitIndex + 1}`}
-                        </h4>
-                        <Badge variant="outline" className="text-xs">
-                          {currentHit.hit_index || `#${internalHitIndex + 1}`}
-                        </Badge>
-                      </div>
+                <TabsContent value="info">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">
+                        {currentHit.classe?.nome || `Movimentação ${internalHitIndex + 1}`}
+                      </h4>
+                      <Badge variant="outline" className="text-xs">
+                        {currentHit.hit_index || `#${internalHitIndex + 1}`}
+                      </Badge>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
