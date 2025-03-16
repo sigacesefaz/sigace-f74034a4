@@ -54,6 +54,8 @@ export interface Process {
   plaintiff_document?: string;
   movimentacoes?: any[];
   hits?: ProcessHit[];
+  instance?: string; // Added this field
+  lastUpdated?: string; // Added this field
 }
 
 // Process Document interface
@@ -69,31 +71,25 @@ export interface ProcessDocument {
   updated_at?: string;
 }
 
-// Party Type enum
-export enum PartyType {
-  AUTHOR = 'AUTHOR',
-  DEFENDANT = 'DEFENDANT',
-  MP = 'MP',
-  WITNESS = 'WITNESS',
-  OTHER = 'OTHER'
-}
-
 // Party Person Type enum
 export enum PartyPersonType {
   PHYSICAL = 'physical',
   LEGAL = 'legal'
 }
 
-// Party interface - adding properties used in components
+// Party interface - combining both PartyType and Party to resolve conflicts
 export interface Party {
   id: string;
   name: string;
   document?: string;
   type: string;
   subtype?: string;
-  personType?: string;
+  personType?: PartyPersonType | string;
   process_id?: string | number;
 }
+
+// For backwards compatibility with existing code
+export type PartyType = Party;
 
 // Decision interface
 export interface Decision {

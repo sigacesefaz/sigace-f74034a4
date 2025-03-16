@@ -23,9 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Plus, RefreshCw } from "lucide-react";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
-import { ProcessCard } from "@/components/dashboard/ProcessCard";
-import { confirm } from "@/components/ui/confirm-dialog";
+import { useUser } from "@/hooks/useUser";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { updateProcess } from "@/services/processUpdateService";
 
@@ -35,12 +34,12 @@ export default function ProcessListPage() {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const supabase = useSupabaseClient();
-  const session = useSession();
+  const { user } = useUser();
+  const { confirm } = ConfirmDialog;
 
   useEffect(() => {
     fetchProcesses();
-  }, [session]);
+  }, [user]);
 
   const fetchProcesses = async () => {
     setIsLoading(true);
@@ -95,17 +94,16 @@ export default function ProcessListPage() {
           title: "Processo Excluído",
           description: "O processo foi excluído com sucesso.",
         });
-        await fetchProcesses(); // Refresh the list after deletion
+        await fetchProcesses();
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Add this handler for updating processes
   const handleUpdateProcess = async (processId: string | number) => {
     setIsLoading(true);
-    const userId = session?.user?.id;
+    const userId = user?.id;
     if (!userId) {
       toast({
         title: "Erro na atualização",
@@ -118,7 +116,6 @@ export default function ProcessListPage() {
     
     await updateProcess(processId, userId);
     
-    // Refresh the list to show updated data
     await fetchProcesses();
     setIsLoading(false);
   };
@@ -152,7 +149,6 @@ export default function ProcessListPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {/* Update the process cards to include the update button handler */}
         {processes.map((process) => (
           <ProcessCard
             key={process.id}

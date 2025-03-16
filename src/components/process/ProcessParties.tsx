@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
@@ -10,31 +11,35 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPartiesByProcessId, createParty, updateParty, deleteParty } from "@/services/process-parties";
-import { PartyType, PartyPersonType } from "@/types/process";
+import { Party, PartyPersonType } from "@/types/process";
+
 interface ProcessPartiesProps {
   processId: string;
 }
+
 export function ProcessParties({
   processId
 }: ProcessPartiesProps) {
-  const [parties, setParties] = useState<PartyType[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingParty, setEditingParty] = useState<PartyType | null>(null);
+  const [editingParty, setEditingParty] = useState<Party | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [partyToDelete, setPartyToDelete] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [filteredParties, setFilteredParties] = useState<PartyType[]>([]);
+  const [filteredParties, setFilteredParties] = useState<Party[]>([]);
 
   // Form states
   const [name, setName] = useState("");
   const [document, setDocument] = useState("");
   const [type, setType] = useState<"autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito">("autor");
   const [subtype, setSubtype] = useState("");
-  const [personType, setPersonType] = useState<PartyPersonType>("physical");
+  const [personType, setPersonType] = useState<PartyPersonType>(PartyPersonType.PHYSICAL);
+  
   useEffect(() => {
     fetchParties();
   }, [processId]);
+  
   useEffect(() => {
     if (searchText.trim() === "") {
       setFilteredParties(parties);
@@ -43,6 +48,7 @@ export function ProcessParties({
       setFilteredParties(parties.filter(party => party.name.toLowerCase().includes(lowercaseSearch) || party.document?.toLowerCase().includes(lowercaseSearch) || false));
     }
   }, [searchText, parties]);
+  
   const fetchParties = async () => {
     try {
       setLoading(true);
@@ -56,23 +62,26 @@ export function ProcessParties({
       setLoading(false);
     }
   };
+  
   const resetForm = () => {
     setName("");
     setDocument("");
     setType("autor");
     setSubtype("");
-    setPersonType("physical");
+    setPersonType(PartyPersonType.PHYSICAL);
     setEditingParty(null);
   };
-  const handleEdit = (party: PartyType) => {
+  
+  const handleEdit = (party: Party) => {
     setEditingParty(party);
     setName(party.name);
     setDocument(party.document || "");
     setType(party.type as "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito");
     setSubtype(party.subtype || "");
-    setPersonType(party.personType || "physical");
+    setPersonType((party.personType as PartyPersonType) || PartyPersonType.PHYSICAL);
     setIsFormOpen(true);
   };
+  
   const handleDelete = async (id: string) => {
     try {
       await deleteParty(id);
@@ -87,6 +96,7 @@ export function ProcessParties({
       setDeleteDialogOpen(false);
     }
   };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -94,6 +104,7 @@ export function ProcessParties({
         toast.error("Nome e tipo são obrigatórios");
         return;
       }
+      
       if (editingParty) {
         // Update existing party
         const updatedParty = await updateParty(editingParty.id, {
@@ -103,8 +114,15 @@ export function ProcessParties({
           subtype,
           personType
         });
-        setParties(prevParties => prevParties.map(party => party.id === editingParty.id ? updatedParty : party));
-        setFilteredParties(prevParties => prevParties.map(party => party.id === editingParty.id ? updatedParty : party));
+        
+        setParties(prevParties => 
+          prevParties.map(party => party.id === editingParty.id ? updatedParty : party)
+        );
+        
+        setFilteredParties(prevParties => 
+          prevParties.map(party => party.id === editingParty.id ? updatedParty : party)
+        );
+        
         toast.success("Parte atualizada com sucesso");
       } else {
         // Create new party
@@ -116,6 +134,7 @@ export function ProcessParties({
           subtype,
           personType
         });
+        
         setParties(prevParties => [...prevParties, newParty]);
         setFilteredParties(prevParties => [...prevParties, newParty]);
         toast.success("Parte adicionada com sucesso");
@@ -129,16 +148,18 @@ export function ProcessParties({
       toast.error("Não foi possível salvar a parte");
     }
   };
+  
   if (loading) {
     return <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>;
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>;
   }
-  return <div className="space-y-3">
+  
+  return (
+    <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium">Partes do Processo</h3>
         <div className="flex items-center gap-2">
-          
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
               <Button size="sm" onClick={() => resetForm()}>
@@ -161,25 +182,37 @@ export function ProcessParties({
                 
                 <div className="space-y-2">
                   <Label htmlFor="personType">Tipo de Pessoa</Label>
-                  <Select value={personType} onValueChange={(value: PartyPersonType) => setPersonType(value)}>
+                  <Select 
+                    value={personType} 
+                    onValueChange={(value) => setPersonType(value as PartyPersonType)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo de pessoa" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="physical">Física</SelectItem>
-                      <SelectItem value="legal">Jurídica</SelectItem>
+                      <SelectItem value={PartyPersonType.PHYSICAL}>Física</SelectItem>
+                      <SelectItem value={PartyPersonType.LEGAL}>Jurídica</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="document">Documento</Label>
-                  <Input id="document" value={document} onChange={e => setDocument(e.target.value)} placeholder={personType === "physical" ? "CPF" : "CNPJ"} />
+                  <Input 
+                    id="document" 
+                    value={document} 
+                    onChange={e => setDocument(e.target.value)} 
+                    placeholder={personType === PartyPersonType.PHYSICAL ? "CPF" : "CNPJ"} 
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo</Label>
-                  <Select value={type} onValueChange={(value: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito") => setType(value)} required>
+                  <Select 
+                    value={type} 
+                    onValueChange={(value: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito") => setType(value)} 
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
@@ -213,10 +246,14 @@ export function ProcessParties({
         </div>
       </div>
       
-      {filteredParties.length === 0 ? <div className="text-center py-4 text-gray-500">
+      {filteredParties.length === 0 ? (
+        <div className="text-center py-4 text-gray-500">
           <p>Nenhuma informação encontrada</p>
-        </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredParties.map(party => <div key={party.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {filteredParties.map(party => (
+            <div key={party.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-2">
                   <User className="h-5 w-5 text-gray-500 mt-0.5" />
@@ -226,28 +263,37 @@ export function ProcessParties({
                       <Badge variant="outline">{party.type}</Badge>
                       {party.subtype && <Badge variant="secondary">{party.subtype}</Badge>}
                       <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                        {party.personType === "physical" ? "Pessoa Física" : "Pessoa Jurídica"}
+                        {party.personType === PartyPersonType.PHYSICAL ? "Pessoa Física" : "Pessoa Jurídica"}
                       </Badge>
                     </div>
-                    {party.document && <p className="text-sm text-gray-600 mt-1">
+                    {party.document && (
+                      <p className="text-sm text-gray-600 mt-1">
                         Documento: {party.document}
-                      </p>}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(party)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => {
-              setPartyToDelete(party.id);
-              setDeleteDialogOpen(true);
-            }}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-red-500 hover:text-red-700" 
+                    onClick={() => {
+                      setPartyToDelete(party.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            </div>)}
-        </div>}
+            </div>
+          ))}
+        </div>
+      )}
       
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -265,5 +311,6 @@ export function ProcessParties({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>;
+    </div>
+  );
 }

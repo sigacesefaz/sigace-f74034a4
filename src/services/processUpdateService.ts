@@ -61,15 +61,15 @@ export async function getProcessUpdateHistory(processId: string | number): Promi
       return [];
     }
     
-    // Convert data to match ProcessUpdateHistory interface
-    const history = data.map(item => ({
+    // Convert data to match ProcessUpdateHistory interface with proper type casting
+    const history: ProcessUpdateHistory[] = data.map(item => ({
       id: item.id,
       process_id: item.process_id,
       update_type: item.update_type,
       update_date: item.update_date,
       details: item.details,
       user_id: item.user_id
-    })) as ProcessUpdateHistory[];
+    }));
     
     return history;
   } catch (error) {

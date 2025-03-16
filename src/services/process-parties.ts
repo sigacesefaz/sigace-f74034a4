@@ -61,7 +61,7 @@ export async function getPartiesByProcessId(processId: string | number): Promise
     }
 
     // Map database data to Party interface
-    const mappedData = data.map(party => ({
+    const mappedData: Party[] = data.map(party => ({
       id: party.id,
       name: party.name,
       document: party.document,
@@ -69,7 +69,7 @@ export async function getPartiesByProcessId(processId: string | number): Promise
       subtype: party.subtype,
       personType: party.person_type,
       process_id: party.process_id
-    })) as Party[];
+    }));
 
     return mappedData;
   } catch (error) {
@@ -126,11 +126,11 @@ export async function updateParty(id: string, partyData: Partial<Omit<Party, "id
   try {
     // Convert from Party to database format
     const dbData: any = {};
-    if (partyData.name) dbData.name = partyData.name;
-    if (partyData.document) dbData.document = partyData.document;
-    if (partyData.type) dbData.type = partyData.type;
-    if (partyData.subtype) dbData.subtype = partyData.subtype;
-    if (partyData.personType) dbData.person_type = partyData.personType;
+    if (partyData.name !== undefined) dbData.name = partyData.name;
+    if (partyData.document !== undefined) dbData.document = partyData.document;
+    if (partyData.type !== undefined) dbData.type = partyData.type;
+    if (partyData.subtype !== undefined) dbData.subtype = partyData.subtype;
+    if (partyData.personType !== undefined) dbData.person_type = partyData.personType;
 
     const { data, error } = await supabase
       .from("process_parties")
