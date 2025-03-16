@@ -52,7 +52,9 @@ serve(async (req) => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${supabaseServiceKey}`
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          updateType: "automatic"
+        })
       });
       
       const result = await response.json();

@@ -1,3 +1,4 @@
+
 export interface ProcessHit {
   id: string;
   process_id: string;
@@ -30,4 +31,71 @@ export interface ProcessUpdateHistory {
     new_status?: string;
   };
   user_id?: string;
+}
+
+// Basic Process interface
+export interface Process {
+  id: string | number;
+  number: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  court?: string;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
+  metadata?: any;
+}
+
+// Process Document interface
+export interface ProcessDocument {
+  id: string;
+  process_id: string | number;
+  title: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Party Type enum
+export enum PartyType {
+  AUTHOR = 'AUTHOR',
+  DEFENDANT = 'DEFENDANT',
+  MP = 'MP',
+  WITNESS = 'WITNESS',
+  OTHER = 'OTHER'
+}
+
+// Party Person Type enum
+export enum PartyPersonType {
+  PHYSICAL = 'physical',
+  LEGAL = 'legal'
+}
+
+// Decision interface
+export interface Decision {
+  id: string;
+  process_id: string | number;
+  title: string;
+  content?: string;
+  decision_type?: string;
+  judge?: string;
+  decision_date?: string;
+  attachments?: any[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Process Notification interface
+export interface ProcessNotification {
+  id: string;
+  process_id: string | number;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at: string;
 }

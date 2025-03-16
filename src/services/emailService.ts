@@ -1,73 +1,101 @@
 
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
-interface SendEmailParams {
-  to: string;
-  subject: string;
-  html: string;
-  from?: string;
+interface EmailLimitResponse {
+  canSendEmails: boolean;
+  currentCount: number;
+  limit: number;
+  remaining: number;
 }
 
-export async function sendEmail({ to, subject, html, from }: SendEmailParams): Promise<boolean> {
+export async function checkEmailLimit(): Promise<EmailLimitResponse | null> {
   try {
-    // Check if we've hit the monthly limit first
-    const { data: emailStats, error: statsError } = await supabase.functions.invoke("email-tracker", {
-      method: "GET",
-    });
-    
-    if (statsError) {
-      console.error("Error checking email stats:", statsError);
-      toast.error("Erro ao verificar limite de emails");
-      return false;
-    }
-    
-    if (emailStats.limitReached) {
-      toast.error("Limite mensal de emails atingido. O serviço será restaurado no primeiro dia do próximo mês.");
-      return false;
-    }
-    
-    const { data, error } = await supabase.functions.invoke("email-tracker", {
-      method: "POST",
-      body: { to, subject, html, from },
+    const { data, error } = await supabase.functions.invoke('email-tracker', {
+      body: {
+        action: 'check'
+      }
     });
     
     if (error) {
-      console.error("Error sending email:", error);
-      
-      // Check if it's a limit reached error
-      if (error.message?.includes("limit reached")) {
-        toast.error("Limite mensal de emails atingido. O serviço será restaurado no primeiro dia do próximo mês.");
-      } else {
-        toast.error(`Erro ao enviar email: ${error.message}`);
-      }
-      
+      console.error("Error checking email limit:", error);
+      return null;
+    }
+    
+    return data as EmailLimitResponse;
+  } catch (error) {
+    console.error("Error in checkEmailLimit:", error);
+    return null;
+  }
+}
+
+export async function trackEmailSent(): Promise<boolean> {
+  try {
+    // First check if we can send emails
+    const limitCheck = await checkEmailLimit();
+    
+    if (!limitCheck) {
+      console.error("Failed to check email limit");
       return false;
     }
     
-    toast.success("Email enviado com sucesso");
-    return true;
+    if (!limitCheck.canSendEmails) {
+      toast({
+        title: "Limite de e-mails atingido",
+        description: `O limite mensal de ${limitCheck.limit} e-mails foi atingido. O serviço será reativado no próximo mês.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Track this email
+    const { data, error } = await supabase.functions.invoke('email-tracker', {
+      body: {
+        action: 'track'
+      }
+    });
+    
+    if (error) {
+      console.error("Error tracking email:", error);
+      return false;
+    }
+    
+    // If we're getting close to the limit, warn the user
+    if (limitCheck.remaining <= 50) {
+      toast({
+        title: "Alerta de limite de e-mails",
+        description: `Restam apenas ${limitCheck.remaining} e-mails do limite mensal de ${limitCheck.limit}.`,
+        variant: "warning",
+      });
+    }
+    
+    return data.success;
   } catch (error) {
-    console.error("Error in sendEmail:", error);
-    toast.error("Erro ao enviar email");
+    console.error("Error in trackEmailSent:", error);
     return false;
   }
 }
 
-export async function getEmailStats() {
+export async function sendEmail(
+  to: string[], 
+  subject: string, 
+  htmlContent: string
+): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke("email-tracker", {
-      method: "GET",
-    });
+    // Check email limits first
+    const canSend = await trackEmailSent();
     
-    if (error) {
-      console.error("Error getting email stats:", error);
-      throw error;
+    if (!canSend) {
+      return false;
     }
     
-    return data;
+    // TODO: Implement actual email sending via Resend or other service
+    // For now, we'll just simulate sending
+    console.log(`Sending email to ${to.join(', ')} with subject: ${subject}`);
+    
+    return true;
   } catch (error) {
-    console.error("Error in getEmailStats:", error);
-    throw error;
+    console.error("Error sending email:", error);
+    return false;
   }
 }
