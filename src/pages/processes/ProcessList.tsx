@@ -380,67 +380,76 @@ export function ProcessList({
                         </div>
                       </div>
                       
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                        <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
-                      </div>
+                    <div className="bg-white rounded-lg p-3 space-y-2">
+                      <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
+                      <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
                     </div>
-
-                    <Tabs defaultValue="eventos" className="w-full mt-4">
-                      <TabsList className="w-full mb-2">
-                        <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                        <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
-                        <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                        <TabsTrigger value="decisao">Decisão</TabsTrigger>
-                        <TabsTrigger value="partes">Partes</TabsTrigger>
-                        <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="eventos">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        code: eventCode ? eventCode : undefined,
-                        text: eventText
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="intimacoes">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        codes: [12266, 12265]
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="documentos">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        codes: [581]
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="decisao">
-                        <ProcessDecisions processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
-                      </TabsContent>
-
-                      <TabsContent value="partes">
-                        <ProcessParties processId={parentProcess.id} />
-                      </TabsContent>
-
-                      <TabsContent value="inteiro-teor">
-                        <ProcessDocuments processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
-                      </TabsContent>
-                    </Tabs>
                   </div>
+
+                  <Tabs defaultValue="informacoes" className="w-full mt-4">
+                    <TabsList className="w-full mb-2">
+                      <TabsTrigger value="informacoes">Informações</TabsTrigger>
+                      <TabsTrigger value="eventos">Eventos</TabsTrigger>
+                      <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
+                      <TabsTrigger value="decisao">Decisão</TabsTrigger>
+                      <TabsTrigger value="partes">Partes</TabsTrigger>
+                      <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="informacoes">
+                      <div className="space-y-2">
+                        {/* Conteúdo da aba Informações */}
+                        <div className="bg-white rounded-lg p-3 space-y-2">
+                          <p className="text-sm">Informações detalhadas do processo.</p>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="eventos">
+                      <div className="space-y-2">
+                        <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
+                      startDate: eventStartDate,
+                      endDate: eventEndDate,
+                      code: eventCode ? eventCode : undefined,
+                      text: eventText
+                    }} />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="intimacoes">
+                      <div className="space-y-2">
+                        <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
+                      codes: [12266, 12265]
+                    }} />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="documentos">
+                      <div className="space-y-2">
+                        <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
+                      codes: [581]
+                    }} />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="decisao">
+                      <ProcessDecisions processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
+                    </TabsContent>
+
+                    <TabsContent value="partes">
+                      <ProcessParties processId={parentProcess.id} />
+                    </TabsContent>
+
+                    <TabsContent value="inteiro-teor">
+                      <ProcessDocuments processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
+                    </TabsContent>
+                  </Tabs>
                 </div>
-              </CardContent>
-            </Card>
-          </div>;
-    })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>;
+      })}
 
       {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-2" />}
 
