@@ -180,7 +180,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       
       const decisionData = {
         title: title.trim(),
-        description: description.trim(),
+        content: description.trim(),
         judge: judge.trim(),
         decision_type: decisionType,
         decision_date: decisionDate.toISOString(),

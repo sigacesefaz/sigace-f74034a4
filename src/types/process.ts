@@ -29,7 +29,7 @@ export interface ProcessDocument {
 export interface Decision {
   id: string;
   title: string;
-  description: string;
+  content: string; // Changed from description to content to match DB schema
   decision_type: string;
   judge: string;
   decision_date: string;
