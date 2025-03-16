@@ -1,356 +1,332 @@
+
 import { useState } from "react";
+import { Eye, Trash, Printer, Share2, RefreshCw, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { 
-  Card, 
-  CardContent 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Printer, 
-  Share2, 
-  Eye, 
-  Trash2, 
-  Calendar,
-  Info,
-  Building2,
-  ShieldAlert,
-  FileText,
-  Users,
-  PenSquare,
-  Plus,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Process } from "@/types/process";
 import { formatProcessNumber } from "@/utils/format";
-import { safeStringValue } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-import { ProcessNavigation } from "@/components/process/ProcessNavigation";
-
-// Função para formatar datas de forma segura
-const formatDate = (dateString: string) => {
-  if (!dateString) return "Não informado";
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Data inválida";
-    return format(date, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
-  } catch (error) {
-    console.error("Erro ao formatar data:", error);
-    return "Data inválida";
-  }
-};
-
-// Função para obter valor seguro de um objeto aninhado
-const getSafeNestedValue = (obj: any, path: string, defaultValue: any = "Não informado") => {
-  try {
-    const parts = path.split('.');
-    let result = obj;
-    
-    for (const part of parts) {
-      if (result === null || result === undefined || typeof result !== 'object') {
-        return defaultValue;
-      }
-      result = result[part];
-    }
-    
-    return result !== null && result !== undefined ? result : defaultValue;
-  } catch (error) {
-    console.error(`Erro ao acessar caminho ${path}:`, error);
-    return defaultValue;
-  }
-};
+import { ProcessHitsNavigation } from "@/components/process/ProcessHitsNavigation";
 
 interface ProcessCardProps {
-  process: {
-    id: string;
-    number: string;
-    title?: string;
-    created_at?: string;
-    updated_at?: string;
-    metadata?: any;
-  };
-  relatedHits?: Array<{
-    id: string;
-    number: string;
-    title?: string;
-    created_at?: string;
-    updated_at?: string;
-    metadata?: any;
-  }>;
+  process: Process;
   onDelete?: (id: string) => void;
+  onRefresh?: (id: string) => void;
   onView?: (id: string) => void;
+  onShare?: (process: Process) => void;
+  onPrint?: (process: Process) => void;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  isLoading?: boolean;
+  relatedHits?: Process[];
 }
 
-export function ProcessCard({ process, relatedHits = [], onDelete, onView }: ProcessCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [currentTab, setCurrentTab] = useState("dados");
-  const [currentHitIndex, setCurrentHitIndex] = useState(0);
-  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
-  const { toast } = useToast();
+export function ProcessCard({
+  process,
+  onDelete,
+  onRefresh,
+  onView,
+  onShare,
+  onPrint,
+  isSelected,
+  onToggleSelect,
+  isLoading,
+  relatedHits = []
+}: ProcessCardProps) {
+  const [showDetails, setShowDetails] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
 
-  // Validar que o processo é um objeto válido
-  if (!process || typeof process !== 'object') {
-    console.error("Processo inválido:", process);
-    return (
-      <Card className="mb-4 w-full shadow-sm p-4">
-        <div className="text-red-500">Erro: dados do processo inválidos</div>
-      </Card>
-    );
-  }
-
-  const handleDelete = () => {
-    if (onDelete) {
-      onDelete(process.id);
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Não informada";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Data inválida";
+      return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
+    } catch {
+      return "Data inválida";
     }
   };
 
-  const handleView = () => {
-    if (onView) {
-      onView(process.id);
-    }
-  };
+  // Extract key information from process
+  const processNumber = formatProcessNumber(process.number);
+  const title = process.title || `Processo ${processNumber}`;
+  const status = process.status || "Em andamento";
+  const court = process.court || "Não informado";
+  const createdAt = formatDate(process.created_at);
+  const updatedAt = formatDate(process.updated_at);
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
+  // Extract subject information if available
+  const mainSubject = process.metadata?.assuntos?.[0];
+  const subjectName = mainSubject?.nome || "Assunto não informado";
+  const subjectCode = mainSubject?.codigo;
 
-  // Navegação entre movimentos processuais
-  const handleNextMovimento = () => {
-    if (movimentos.length > 0) {
-      setCurrentMovimentoIndex((prev) => 
-        prev < movimentos.length - 1 ? prev + 1 : prev
-      );
-    }
-  };
+  // Extract class information if available
+  const processClass = process.metadata?.classe?.nome || "Não informado";
+  const processClassCode = process.metadata?.classe?.codigo;
 
-  const handlePrevMovimento = () => {
-    if (movimentos.length > 0) {
-      setCurrentMovimentoIndex((prev) => 
-        prev > 0 ? prev - 1 : prev
-      );
-    }
-  };
-
-  // Obtém o hit atual ou o processo principal se não houver hits ou o índice atual for 0
-  const currentProcess = currentHitIndex === 0 || relatedHits.length === 0 
-    ? process 
-    : relatedHits[currentHitIndex - 1];
-
-  // Extrair informações do processo com tratamento de segurança
-  const metadata = currentProcess.metadata || {};
-  
-  // Extrair valores básicos com tratamento de segurança
-  const processNumber = formatProcessNumber(currentProcess.number);
-  const lastUpdate = currentProcess.updated_at 
-    ? formatDate(currentProcess.updated_at) 
-    : "Não informado";
-  
-  // Informações básicas com tratamento seguro
-  const title = safeStringValue(currentProcess.title || getSafeNestedValue(metadata, 'classe.nome'), "Mandado de Segurança Cível");
-  const dataAjuizamento = safeStringValue(getSafeNestedValue(metadata, 'dataAjuizamento', ''));
-  const sistema = safeStringValue(getSafeNestedValue(metadata, 'sistema.nome', 'Inválido'));
-  const grau = safeStringValue(getSafeNestedValue(metadata, 'grau', 'G1'));
-  const orgaoJulgador = safeStringValue(getSafeNestedValue(metadata, 'orgaoJulgador.nome', 'Não informado'));
-  const nivelSigilo = safeStringValue(getSafeNestedValue(metadata, 'nivelSigilo', 'Público'));
-  
-  // Assuntos com tratamento seguro
-  const assuntos = Array.isArray(metadata.assuntos) ? metadata.assuntos : [];
-  const assuntoPrincipal = assuntos.length > 0 ? safeStringValue(assuntos[0]?.nome, "Não informado") : "ICMS / Incidência Sobre o Ativo Fixo";
-
-  // Movimentações com tratamento seguro
-  const movimentos = Array.isArray(metadata.movimentos) ? metadata.movimentos : [];
-  const totalMovimentos = movimentos.length;
-
-  // Obtém o movimento atual
-  const currentMovimento = movimentos[currentMovimentoIndex] || null;
-  
   return (
-    <Card className="mb-4 w-full shadow-sm">
-      <div className="p-4">
-        {/* Cabeçalho do card */}
-        <div className="flex items-center justify-between mb-2">
-          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-none">
-            {currentHitIndex === 0 ? "PROCESSO PRINCIPAL" : "PROCESSO RELACIONADO"}
-          </Badge>
-          <span className="text-gray-500 text-xs">Última atualização: {lastUpdate}</span>
-        </div>
-
-        {/* Informações principais */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">{formatProcessNumber(process.number)}</h2>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-blue-600">{processNumber}</div>
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-              {sistema}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Botões de ação */}
-        <div className="flex items-center justify-between mt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleExpand}
-            className="text-xs text-gray-500 hover:text-gray-700"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-3 w-3 mr-1" />
-                Ver menos
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3 w-3 mr-1" />
-                Ver mais
-              </>
+    <Card className="overflow-hidden border-gray-200 shadow-sm transition-all hover:shadow-md">
+      <CardHeader className="bg-gray-50 p-2">
+        <div className="flex flex-wrap items-start justify-between gap-1">
+          <div className="flex items-start gap-1">
+            {onToggleSelect && (
+              <Checkbox 
+                checked={isSelected} 
+                onCheckedChange={() => onToggleSelect(process.id)} 
+                className="mt-1"
+              />
             )}
-          </Button>
+            <div>
+              <CardTitle className="text-lg font-medium text-gray-900">
+                {title}
+              </CardTitle>
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-baseline gap-1">
+                  <Badge variant={status === "Em andamento" ? "secondary" : "outline"}>
+                    {status}
+                  </Badge>
+                  <span className="text-sm text-gray-500">
+                    {processNumber}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <Badge 
+                    variant="default" 
+                    className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white"
+                    title={`${subjectName}${subjectCode ? ` (${subjectCode})` : ''}`}
+                  >
+                    {subjectName}
+                    {subjectCode && (
+                      <span className="ml-1 opacity-90">({subjectCode})</span>
+                    )}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline">
+                      Data Ajuizamento: {formatDate(process.metadata?.dataAjuizamento)}
+                    </Badge>
+                    <Badge variant="outline">
+                      Tribunal: {court}
+                    </Badge>
+                    <Badge variant="outline">
+                      Grau: {process.metadata?.grau || "G1"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {onRefresh && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRefresh(process.id);
+                }}
+                disabled={isLoading}
+                className="h-7 px-2 text-blue-500 hover:bg-blue-50 hover:text-blue-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            )}
+            
+            {onPrint && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrint(process);
+                }}
+                className="h-7 px-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                title="Imprimir processo"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+            )}
+            
             {onView && (
-              <Button variant="outline" size="sm" onClick={handleView}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView(process.id);
+                }}
+                className="h-7 px-2 text-green-500 hover:bg-green-50 hover:text-green-700"
+                title="Visualizar processo"
+              >
                 <Eye className="h-4 w-4" />
               </Button>
             )}
+            
+            {onShare && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(process);
+                }}
+                className="h-7 px-2 text-orange-500 hover:bg-orange-50 hover:text-orange-700"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
+            
             {onDelete && (
-              <Button variant="outline" size="sm" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4" />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(process.id);
+                }}
+                disabled={isLoading}
+                className="h-7 px-2 text-red-500 hover:bg-red-50 hover:text-red-700"
+              >
+                <Trash className="h-4 w-4" />
               </Button>
             )}
           </div>
         </div>
-
-        {/* Seção expansível */}
-        {isExpanded && (
-          <div className="mt-6">
-            <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className="w-full">
-                <TabsTrigger value="dados">Dados do Processo</TabsTrigger>
-                <TabsTrigger value="movimentacao">
-                  Movimentação Processual
-                  {movimentos.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
-                      {movimentos.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="dados" className="mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-start gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <div className="text-sm text-gray-500">Data do Ajuizamento</div>
-                      <div className="text-sm">{formatDate(dataAjuizamento)}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <div className="text-sm text-gray-500">Órgão Julgador</div>
-                      <div className="text-sm">{orgaoJulgador}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <div className="text-sm text-gray-500">Grau</div>
-                      <div className="text-sm">{grau}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <ShieldAlert className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <div className="text-sm text-gray-500">Nível de Sigilo</div>
-                      <div className="text-sm">{nivelSigilo}</div>
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="flex items-start gap-2">
-                      <FileText className="h-4 w-4 text-gray-500 mt-1" />
+      </CardHeader>
+      
+      <CardContent className="p-2">
+        <div>
+          <div className="flex justify-between text-sm text-gray-600">
+            <div>
+              <span className="font-medium">Criado em:</span> {createdAt}
+            </div>
+            <div>
+              <span className="font-medium">Atualizado em:</span> {updatedAt}
+            </div>
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowDetails(!showDetails)}
+            className="mt-2 w-full justify-start px-0 text-left"
+          >
+            <ChevronRight className={`h-4 w-4 transition-transform ${showDetails ? "rotate-90" : ""}`} />
+            <span className="ml-1">Detalhes do processo</span>
+          </Button>
+          
+          {showDetails && (
+            <div className="mt-2 rounded border p-3">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="info">Informações</TabsTrigger>
+                  <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
+                  <TabsTrigger value="partes">Partes</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="info" className="mt-2 space-y-3">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <div className="text-sm text-gray-500">Assuntos</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {assuntos.map((assunto: any, index: number) => (
-                            <Badge 
-                              key={index}
-                              variant="secondary" 
-                              className="bg-yellow-50 text-yellow-800"
-                            >
-                              {assunto.nome}
-                            </Badge>
-                          ))}
-                        </div>
+                        <p className="text-xs text-gray-500">Número do Processo</p>
+                        <p className="font-medium">{processNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Classe</p>
+                        <p className="font-medium">
+                          {processClass}
+                          {processClassCode && <span className="text-sm text-gray-500"> ({processClassCode})</span>}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Tribunal</p>
+                        <p className="font-medium">{court}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Órgão Julgador</p>
+                        <p className="font-medium">{process.metadata?.orgaoJulgador?.nome || "Não informado"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Grau</p>
+                        <p className="font-medium">{process.metadata?.grau || "G1"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Sistema</p>
+                        <p className="font-medium">{process.metadata?.sistema?.nome || "PJe"}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="movimentacao" className="mt-4">
-                {movimentos.length > 0 ? (
-                  <div className="space-y-4">
-                    <ProcessNavigation
-                      currentMovimentoIndex={currentMovimentoIndex}
-                      totalMovimentos={movimentos.length}
-                      handlePrevMovimento={handlePrevMovimento}
-                      handleNextMovimento={handleNextMovimento}
-                    />
-                    
-                    {currentMovimento && (
-                      <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="font-medium text-gray-900">
-                              {currentMovimento.nome}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {formatDate(currentMovimento.dataHora)}
-                            </div>
-                          </div>
-                          {currentMovimento.codigo && (
-                            <Badge variant="outline" className="text-gray-600">
-                              Código: {currentMovimento.codigo}
-                            </Badge>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500">Assuntos</p>
+                    <div className="space-y-1 pt-1">
+                      {process.metadata?.assuntos?.map((assunto, index) => (
+                        <p key={index} className="text-sm">
+                          {assunto.nome}
+                          <span className="ml-1 text-xs text-gray-500">({assunto.codigo})</span>
+                        </p>
+                      )) || <p className="text-sm text-gray-500">Nenhum assunto informado</p>}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="movimentacoes" className="mt-2">
+                  <ProcessHitsNavigation 
+                    processId={process.id} 
+                    hits={process.hits || []} 
+                  />
+                </TabsContent>
+                
+                <TabsContent value="partes" className="mt-2">
+                  <div className="space-y-2">
+                    {process.metadata?.partes?.map((parte, index) => (
+                      <div key={index} className="rounded border p-2">
+                        <p className="font-medium">{parte.nome}</p>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">{parte.papel}</span>
+                          {parte.documento && (
+                            <span className="text-sm text-gray-500">{parte.documento}</span>
                           )}
                         </div>
-                        
-                        {currentMovimento.complemento && (
-                          <div className="text-sm text-gray-700 bg-white p-3 rounded border">
-                            {currentMovimento.complemento}
-                          </div>
-                        )}
-                        
-                        {currentMovimento.tipo && (
-                          <div className="text-sm text-gray-500">
-                            Tipo: {currentMovimento.tipo}
+                        {parte.advogados && parte.advogados.length > 0 && (
+                          <div className="mt-1 border-t pt-1">
+                            <p className="text-xs text-gray-500">Advogados:</p>
+                            {parte.advogados.map((adv, i) => (
+                              <p key={i} className="text-sm">
+                                {adv.nome} - <span className="text-xs text-gray-500">{adv.inscricao}</span>
+                              </p>
+                            ))}
                           </div>
                         )}
                       </div>
-                    )}
+                    )) || <p className="text-gray-500">Nenhuma parte registrada</p>}
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Nenhuma movimentação processual encontrada
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+
+          {/* Hits relacionados, se houverem */}
+          {relatedHits.length > 0 && (
+            <div className="mt-3 border-t pt-2">
+              <p className="text-sm font-medium">Processos relacionados ({relatedHits.length})</p>
+              <div className="mt-2 space-y-1">
+                {relatedHits.map((hit) => (
+                  <div key={hit.id} className="flex justify-between rounded bg-gray-50 p-2 text-sm">
+                    <span>{formatProcessNumber(hit.number)}</span>
+                    <span className="text-gray-500">{formatDate(hit.created_at)}</span>
                   </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 }
