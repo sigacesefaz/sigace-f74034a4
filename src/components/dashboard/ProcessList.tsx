@@ -7,7 +7,6 @@ import { ProcessParties } from "@/components/process/ProcessParties";
 import { Process } from "@/types/process";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ProcessNavigation } from "@/components/process/ProcessNavigation";
 
 interface ProcessListProps {
@@ -146,11 +145,11 @@ export function ProcessList({ processes }: ProcessListProps) {
                           currentMovimentoIndex={currentMovementIndex[process.id] || 0}
                           totalMovimentos={process.movimentacoes.length}
                           handlePrevMovimento={(e) => {
-                            e.stopPropagation();
+                            e?.stopPropagation();
                             handlePreviousMovement(process.id);
                           }}
                           handleNextMovimento={(e) => {
-                            e.stopPropagation();
+                            e?.stopPropagation();
                             handleNextMovement(process.id);
                           }}
                         />
@@ -186,44 +185,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                   </div>
                 )}
 
-                {/* Navegação de movimentos do processo (fora dos detalhes) */}
-                {process.movimentacoes && process.movimentacoes.length > 0 && (
-                  <div className="mt-4 border-t pt-3">
-                    <ProcessNavigation
-                      currentMovimentoIndex={currentMovementIndex[process.id] || 0}
-                      totalMovimentos={process.movimentacoes.length}
-                      handlePrevMovimento={() => handlePreviousMovement(process.id)}
-                      handleNextMovimento={() => handleNextMovement(process.id)}
-                    />
-
-                    {getCurrentMovement(process.id) && (
-                      <div 
-                        className="p-3 bg-gray-50 rounded text-sm" 
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="font-medium">
-                          {getCurrentMovement(process.id)?.nome || "Sem descrição"}
-                        </div>
-                        {getCurrentMovement(process.id)?.data_hora && (
-                          <div className="text-gray-500 text-xs mt-1">
-                            {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        )}
-                        {getCurrentMovement(process.id)?.complemento && (
-                          <div className="mt-2 text-xs bg-white p-2 rounded border">
-                            {getCurrentMovement(process.id)?.complemento}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Removendo a duplicação de navegação de movimentos fora dos detalhes */}
               </Card>
             ))
           ) : (
@@ -280,11 +242,11 @@ export function ProcessList({ processes }: ProcessListProps) {
                             currentMovimentoIndex={currentMovementIndex[process.id] || 0}
                             totalMovimentos={process.movimentacoes.length}
                             handlePrevMovimento={(e) => {
-                              e.stopPropagation();
+                              e?.stopPropagation();
                               handlePreviousMovement(process.id);
                             }}
                             handleNextMovimento={(e) => {
-                              e.stopPropagation();
+                              e?.stopPropagation();
                               handleNextMovement(process.id);
                             }}
                           />
@@ -320,44 +282,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                     </div>
                   )}
 
-                  {/* Navegação de movimentos do processo (fora dos detalhes) */}
-                  {process.movimentacoes && process.movimentacoes.length > 0 && (
-                    <div className="mt-4 border-t pt-3">
-                      <ProcessNavigation
-                        currentMovimentoIndex={currentMovementIndex[process.id] || 0}
-                        totalMovimentos={process.movimentacoes.length}
-                        handlePrevMovimento={() => handlePreviousMovement(process.id)}
-                        handleNextMovimento={() => handleNextMovement(process.id)}
-                      />
-
-                      {getCurrentMovement(process.id) && (
-                        <div 
-                          className="p-3 bg-gray-50 rounded text-sm" 
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="font-medium">
-                            {getCurrentMovement(process.id)?.nome || "Sem descrição"}
-                          </div>
-                          {getCurrentMovement(process.id)?.data_hora && (
-                            <div className="text-gray-500 text-xs mt-1">
-                              {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          )}
-                          {getCurrentMovement(process.id)?.complemento && (
-                            <div className="mt-2 text-xs bg-white p-2 rounded border">
-                              {getCurrentMovement(process.id)?.complemento}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Removendo a duplicação de navegação de movimentos fora dos detalhes */}
                 </Card>
               ))}
             </div>

@@ -19,7 +19,7 @@ export function ProcessNavigation({
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="text-sm text-gray-500">
-        {totalMovimentos > 1 ? (
+        {totalMovimentos > 0 ? (
           <span>Movimento {currentMovimentoIndex + 1} de {totalMovimentos}</span>
         ) : (
           <span>Detalhes do Processo</span>
