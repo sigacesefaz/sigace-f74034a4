@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -93,7 +94,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
   useEffect(() => {
     if (editingDecision) {
       setTitle(editingDecision.title);
-      setDescription(editingDecision.description);
+      setDescription(editingDecision.content);
       setJudge(editingDecision.judge);
       setDecisionType(editingDecision.decision_type);
       setDecisionDate(new Date(editingDecision.decision_date));
@@ -148,7 +149,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(dec => 
         dec.title.toLowerCase().includes(searchLower) || 
-        dec.description.toLowerCase().includes(searchLower) ||
+        dec.content.toLowerCase().includes(searchLower) ||
         dec.judge.toLowerCase().includes(searchLower)
       );
     }
@@ -501,7 +502,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                   </div>
                   
                   <p className="text-sm text-gray-700 line-clamp-2">
-                    {decision.description}
+                    {decision.content}
                   </p>
                 </div>
               </Card>
@@ -539,7 +540,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
           </DialogHeader>
           
           <div className="border rounded-md p-4 max-h-[60vh] overflow-y-auto bg-gray-50">
-            <p className="whitespace-pre-wrap">{selectedDecision?.description}</p>
+            <p className="whitespace-pre-wrap">{selectedDecision?.content}</p>
           </div>
         </DialogContent>
       </Dialog>
