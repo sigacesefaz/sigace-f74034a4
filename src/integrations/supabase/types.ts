@@ -455,6 +455,7 @@ export type Database = {
           id: string
           judge: string | null
           process_id: number | null
+          title: string
           updated_at: string | null
           user_id: string | null
         }
@@ -468,6 +469,7 @@ export type Database = {
           id?: string
           judge?: string | null
           process_id?: number | null
+          title?: string
           updated_at?: string | null
           user_id?: string | null
         }
@@ -481,6 +483,7 @@ export type Database = {
           id?: string
           judge?: string | null
           process_id?: number | null
+          title?: string
           updated_at?: string | null
           user_id?: string | null
         }
