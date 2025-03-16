@@ -6,6 +6,7 @@ import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessInformation } from "./ProcessInformation";
 import { ProcessPartiesList } from "./ProcessPartiesList";
 import { ProcessMovements } from "./ProcessMovements";
+import { ProcessDecisions } from "./ProcessDecisions";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Save, ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
