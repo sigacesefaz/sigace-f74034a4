@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -86,6 +87,7 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       const { data, error } = await query;
       
       if (error) {
+        console.error("Erro detalhado ao buscar documentos:", error);
         throw error;
       }
       
@@ -129,9 +131,10 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     try {
       const { data, error } = await supabase.storage
         .from('process-documents')
-        .createSignedUrl(document.file_path, 3600); // URL válida por 1 hora
+        .createSignedUrl(document.file_path, 3600);
       
       if (error) {
+        console.error("Erro ao criar URL assinada:", error);
         throw error;
       }
       
@@ -178,13 +181,18 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       const fileName = `${processId}_${Date.now()}.${fileExt}`;
       const filePath = `${processId}/${fileName}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log(`Enviando arquivo para o bucket 'process-documents', caminho: ${filePath}`);
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('process-documents')
         .upload(filePath, file);
       
       if (uploadError) {
+        console.error("Erro detalhado ao fazer upload:", uploadError);
         throw uploadError;
       }
+      
+      console.log("Upload realizado com sucesso:", uploadData);
       
       const newDocument = {
         process_id: processId,
@@ -196,17 +204,26 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         file_size: file.size
       };
       
-      const { error: dbError } = await supabase
+      console.log("Inserindo registro na tabela process_documents:", newDocument);
+      
+      const { error: dbError, data: insertedData } = await supabase
         .from('process_documents')
-        .insert(newDocument);
+        .insert(newDocument)
+        .select('*')
+        .single();
       
       if (dbError) {
+        console.error("Erro detalhado ao inserir no banco:", dbError);
+        
+        // Se houve erro no banco, tenta remover o arquivo que foi enviado
         await supabase.storage
           .from('process-documents')
           .remove([filePath]);
         
         throw dbError;
       }
+      
+      console.log("Documento inserido com sucesso:", insertedData);
       
       await fetchDocuments();
       
@@ -215,9 +232,9 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       setShowUploadDialog(false);
       
       toast.success("Documento enviado com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao enviar documento:", error);
-      toast.error("Não foi possível enviar o documento. Por favor, tente novamente.");
+      toast.error(`Erro ao enviar documento: ${error.message || 'Tente novamente'}`);
     } finally {
       setUploading(false);
     }
@@ -277,7 +294,7 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     try {
       const { data, error } = await supabase.storage
         .from('process-documents')
-        .createSignedUrl(document.file_path, 60); // URL válida por 1 minuto
+        .createSignedUrl(document.file_path, 60);
       
       if (error) {
         throw error;
