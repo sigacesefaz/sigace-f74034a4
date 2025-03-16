@@ -24,14 +24,12 @@ import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessDocuments } from "@/components/process/ProcessDocuments";
 import { ProcessHitsNavigation } from "@/components/process/ProcessHitsNavigation";
-
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
-
 export function ProcessList({
   processes,
   isLoading,
@@ -57,7 +55,6 @@ export function ProcessList({
   const [eventCode, setEventCode] = useState<string>("");
   const [eventText, setEventText] = useState<string>("");
   const itemsPerPage = 5;
-
   const groupedProcesses = processes.reduce<Record<string, {
     parent: Process | null;
     children: Process[];
@@ -83,10 +80,8 @@ export function ProcessList({
     }
     return acc;
   }, {});
-
   const paginatedGroups = Object.entries(groupedProcesses).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
-
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -104,7 +99,6 @@ export function ProcessList({
       }
     }
   };
-
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
@@ -125,7 +119,6 @@ export function ProcessList({
       setBulkAlertOpen(false);
     }
   };
-
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -140,17 +133,14 @@ export function ProcessList({
       }
     }
   };
-
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleShare = async (process: Process) => {
     const formatProcessNumber = (number: string) => {
       if (!number) return "";
@@ -174,7 +164,6 @@ export function ProcessList({
       toast.error("Não foi possível compartilhar o processo");
     }
   };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -187,11 +176,9 @@ export function ProcessList({
       return "Data inválida";
     }
   };
-
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
-
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
@@ -200,14 +187,12 @@ export function ProcessList({
       setSelectedProcesses(allParentIds);
     }
   };
-
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({
       ...prev,
       [processId]: value
     }));
   };
-
   const handlePreviousMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -224,7 +209,6 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   const handleNextMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -241,14 +225,12 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   const handleHitSelect = (processId: string, hitIndex: number) => {
     setSelectedHitIndex(prev => ({
       ...prev,
       [processId]: hitIndex
     }));
   };
-
   if (isLoading) {
     return <div className="space-y-2">
         {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
@@ -259,7 +241,6 @@ export function ProcessList({
           </Card>)}
       </div>;
   }
-
   if (processes.length === 0) {
     return <Card className="text-center py-6">
         <CardContent>
@@ -270,11 +251,9 @@ export function ProcessList({
         </CardContent>
       </Card>;
   }
-
   const applyFilters = () => {
     // Lógica de filtragem aqui
   };
-
   return <div className="space-y-2">
       {processes.length > 0 && <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-1">
@@ -380,16 +359,7 @@ export function ProcessList({
                   </button>
                   <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 max-h-[800px] mt-1" : "opacity-0 max-h-0 overflow-hidden"}`}>
                     <div className="space-y-2">
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
-                          <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                          <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                          <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                          <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
-                        </div>
-                      </div>
+                      
 
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
@@ -417,12 +387,7 @@ export function ProcessList({
                       
                       <div className="bg-white rounded-lg p-3 space-y-2">
                         <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                        <ProcessHitsNavigation 
-                          processId={parentProcess.id} 
-                          hits={parentProcess.hits || []} 
-                          currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
-                          onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
-                        />
+                        <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
                       </div>
                     </div>
 
