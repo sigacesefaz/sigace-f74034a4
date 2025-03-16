@@ -153,9 +153,9 @@ export function ProcessList({ processes }: ProcessListProps) {
                         <div className="font-medium">
                           {getCurrentMovement(process.id)?.nome || "Sem descrição"}
                         </div>
-                        {getCurrentMovement(process.id)?.dataHora && (
+                        {getCurrentMovement(process.id)?.data_hora && (
                           <div className="text-gray-500 text-xs mt-1">
-                            {new Date(getCurrentMovement(process.id)?.dataHora || "").toLocaleDateString('pt-BR', {
+                            {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
                               day: '2-digit',
                               month: '2-digit',
                               year: 'numeric',
@@ -245,9 +245,9 @@ export function ProcessList({ processes }: ProcessListProps) {
                           <div className="font-medium">
                             {getCurrentMovement(process.id)?.nome || "Sem descrição"}
                           </div>
-                          {getCurrentMovement(process.id)?.dataHora && (
+                          {getCurrentMovement(process.id)?.data_hora && (
                             <div className="text-gray-500 text-xs mt-1">
-                              {new Date(getCurrentMovement(process.id)?.dataHora || "").toLocaleDateString('pt-BR', {
+                              {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric',
