@@ -81,7 +81,7 @@ export function ProcessList({
   }, {} as Record<string, {
     parent: Process | null;
     children: Process[];
-  }]);
+  }>);
 
   const paginatedGroups = Object.entries(groupedProcesses).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
@@ -424,8 +424,6 @@ export function ProcessList({
 
                       <TabsContent value="eventos">
                         <div className="space-y-2">
-                          
-                          
                           <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[0]?.id} filter={{
                         startDate: eventStartDate,
                         endDate: eventEndDate,
@@ -511,4 +509,3 @@ export function ProcessList({
       {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
     </div>;
 }
-
