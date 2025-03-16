@@ -365,13 +365,7 @@ export function ProcessList({
 
                       
 
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                          <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
-                        </div>
-                      </div>
+                      
                       
                     <div className="bg-white rounded-lg p-3 space-y-2">
                       <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
