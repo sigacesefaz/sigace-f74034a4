@@ -95,7 +95,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
     if (editingDecision) {
       setTitle(editingDecision.title);
       setDescription(editingDecision.content);
-      setJudge(editingDecision.judge);
+      setJudge(editingDecision.judge || "");
       setDecisionType(editingDecision.decision_type);
       setDecisionDate(new Date(editingDecision.decision_date));
     } else {
@@ -150,7 +150,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       filtered = filtered.filter(dec => 
         dec.title.toLowerCase().includes(searchLower) || 
         dec.content.toLowerCase().includes(searchLower) ||
-        dec.judge.toLowerCase().includes(searchLower)
+        (dec.judge && dec.judge.toLowerCase().includes(searchLower))
       );
     }
     
@@ -171,7 +171,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim() || !description.trim() || !judge.trim() || !decisionType || !decisionDate) {
+    if (!title.trim() || !description.trim() || !decisionType || !decisionDate) {
       toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
@@ -182,7 +182,7 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       const decisionData = {
         title: title.trim(),
         content: description.trim(),
-        judge: judge.trim(),
+        judge: judge.trim() || null, // Tornando o campo opcional
         decision_type: decisionType,
         decision_date: decisionDate.toISOString(),
         process_id: processId,
@@ -330,12 +330,17 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                 
                 <div className="space-y-2">
                   <Label htmlFor="decisionType">Tipo de Decisão *</Label>
-                  <Select value={decisionType} onValueChange={setDecisionType} required>
-                    <SelectTrigger>
+                  <Select 
+                    value={decisionType} 
+                    onValueChange={(value) => {
+                      setDecisionType(value);
+                    }}
+                  >
+                    <SelectTrigger id="decisionType">
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {decisionTypes.map(type => (
+                      {decisionTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -345,13 +350,12 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="judge">Juiz/Órgão Julgador *</Label>
+                  <Label htmlFor="judge">Juiz/Órgão Julgador</Label>
                   <Input
                     id="judge"
                     value={judge}
                     onChange={(e) => setJudge(e.target.value)}
                     placeholder="Nome do juiz ou órgão julgador"
-                    required
                   />
                 </div>
                 
@@ -491,10 +495,12 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                       <Tag className="h-3 w-3" />
                       <span>{getDecisionTypeLabel(decision.decision_type)}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      <span>{decision.judge}</span>
-                    </div>
+                    {decision.judge && (
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span>{decision.judge}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       <span>{formatDecisionDate(decision.decision_date)}</span>
@@ -527,10 +533,12 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
                   <Tag className="h-3 w-3" />
                   <span>{selectedDecision?.decision_type && getDecisionTypeLabel(selectedDecision.decision_type)}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span>{selectedDecision?.judge}</span>
-                </div>
+                {selectedDecision?.judge && (
+                  <div className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    <span>{selectedDecision.judge}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   <span>{selectedDecision?.decision_date && formatDecisionDate(selectedDecision.decision_date)}</span>

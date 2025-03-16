@@ -31,7 +31,7 @@ export interface Decision {
   title: string;
   content: string; // Changed from description to content to match DB schema
   decision_type: string;
-  judge: string;
+  judge?: string; // Tornando o campo judge opcional
   decision_date: string;
   created_at: string;
   updated_at?: string;
