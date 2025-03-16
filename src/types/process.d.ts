@@ -1,3 +1,4 @@
+
 export interface Process {
   id: string;
   number: string;
@@ -20,7 +21,7 @@ export interface PartyType {
   id: string;
   name: string;
   document?: string;
-  type: string; // Alterado para string para compatibilidade
+  type: string;
   subtype?: string;
   personType?: string;
 }

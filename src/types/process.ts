@@ -68,17 +68,29 @@ export interface ProcessHit {
   sistema?: any;
   classe?: {
     nome?: string;
-    codigo?: string;
+    codigo?: string | number; // Updated to accept both string and number
   };
   orgao_julgador?: {
     nome?: string;
-    codigo?: string;
+    codigo?: string | number; // Updated to accept both string and number
   };
   data_hora_ultima_atualizacao?: string;
   valor_causa?: number;
   situacao?: any;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface ProcessUpdateHistory {
+  id: string;
+  process_id: string;
+  update_date: string;
+  update_type: string;
+  previous_status?: string;
+  new_status?: string;
+  details?: any;
+  user_id?: string;
+  created_at: string;
 }
 
 export interface Process {
