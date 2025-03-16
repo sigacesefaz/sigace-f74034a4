@@ -18,6 +18,7 @@ export function ProcessList({ processes }: ProcessListProps) {
   const [activeTab, setActiveTab] = useState("atual");
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
+  const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
 
   // Separate current and previous processes
   const currentProcesses = processes.filter(process => !process.parent_id);
@@ -78,6 +79,13 @@ export function ProcessList({ processes }: ProcessListProps) {
     return movements[index] || null;
   };
 
+  const toggleDetails = (processId: string) => {
+    setShowDetails(prev => ({
+      ...prev,
+      [processId]: !prev[processId]
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="atual" value={activeTab} onValueChange={setActiveTab}>
@@ -113,7 +121,72 @@ export function ProcessList({ processes }: ProcessListProps) {
                   {new Date(process.created_at).toLocaleDateString('pt-BR')}
                 </p>
 
-                {/* Navegação de movimentos do processo */}
+                {/* Botão para exibir detalhes do processo */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDetails(process.id);
+                  }}
+                >
+                  {showDetails[process.id] ? "Ocultar Detalhes" : "Detalhes do Processo"}
+                </Button>
+
+                {/* Detalhes do Processo - Expandível */}
+                {showDetails[process.id] && (
+                  <div className="mt-4 border-t pt-3">
+                    <h4 className="font-medium mb-2">Detalhes do Processo</h4>
+                    
+                    {/* Navegação de movimentos do processo */}
+                    {process.movimentacoes && process.movimentacoes.length > 0 && (
+                      <div className="mt-2">
+                        <ProcessNavigation
+                          currentMovimentoIndex={currentMovementIndex[process.id] || 0}
+                          totalMovimentos={process.movimentacoes.length}
+                          handlePrevMovimento={(e) => {
+                            e.stopPropagation();
+                            handlePreviousMovement(process.id);
+                          }}
+                          handleNextMovimento={(e) => {
+                            e.stopPropagation();
+                            handleNextMovement(process.id);
+                          }}
+                        />
+
+                        {getCurrentMovement(process.id) && (
+                          <div 
+                            className="p-3 bg-gray-50 rounded text-sm mt-2" 
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="font-medium">
+                              {getCurrentMovement(process.id)?.nome || "Sem descrição"}
+                            </div>
+                            {getCurrentMovement(process.id)?.data_hora && (
+                              <div className="text-gray-500 text-xs mt-1">
+                                {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                            {getCurrentMovement(process.id)?.complemento && (
+                              <div className="mt-2 text-xs bg-white p-2 rounded border">
+                                {getCurrentMovement(process.id)?.complemento}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Navegação de movimentos do processo (fora dos detalhes) */}
                 {process.movimentacoes && process.movimentacoes.length > 0 && (
                   <div className="mt-4 border-t pt-3">
                     <ProcessNavigation
@@ -182,7 +255,72 @@ export function ProcessList({ processes }: ProcessListProps) {
                     {new Date(process.created_at).toLocaleDateString('pt-BR')}
                   </p>
 
-                  {/* Navegação de movimentos do processo */}
+                  {/* Botão para exibir detalhes do processo */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDetails(process.id);
+                    }}
+                  >
+                    {showDetails[process.id] ? "Ocultar Detalhes" : "Detalhes do Processo"}
+                  </Button>
+
+                  {/* Detalhes do Processo - Expandível */}
+                  {showDetails[process.id] && (
+                    <div className="mt-4 border-t pt-3">
+                      <h4 className="font-medium mb-2">Detalhes do Processo</h4>
+                      
+                      {/* Navegação de movimentos do processo */}
+                      {process.movimentacoes && process.movimentacoes.length > 0 && (
+                        <div className="mt-2">
+                          <ProcessNavigation
+                            currentMovimentoIndex={currentMovementIndex[process.id] || 0}
+                            totalMovimentos={process.movimentacoes.length}
+                            handlePrevMovimento={(e) => {
+                              e.stopPropagation();
+                              handlePreviousMovement(process.id);
+                            }}
+                            handleNextMovimento={(e) => {
+                              e.stopPropagation();
+                              handleNextMovement(process.id);
+                            }}
+                          />
+
+                          {getCurrentMovement(process.id) && (
+                            <div 
+                              className="p-3 bg-gray-50 rounded text-sm mt-2" 
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="font-medium">
+                                {getCurrentMovement(process.id)?.nome || "Sem descrição"}
+                              </div>
+                              {getCurrentMovement(process.id)?.data_hora && (
+                                <div className="text-gray-500 text-xs mt-1">
+                                  {new Date(getCurrentMovement(process.id)?.data_hora || "").toLocaleDateString('pt-BR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
+                              {getCurrentMovement(process.id)?.complemento && (
+                                <div className="mt-2 text-xs bg-white p-2 rounded border">
+                                  {getCurrentMovement(process.id)?.complemento}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Navegação de movimentos do processo (fora dos detalhes) */}
                   {process.movimentacoes && process.movimentacoes.length > 0 && (
                     <div className="mt-4 border-t pt-3">
                       <ProcessNavigation
