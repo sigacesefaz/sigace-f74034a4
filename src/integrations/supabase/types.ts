@@ -195,53 +195,6 @@ export type Database = {
         }
         Relationships: []
       }
-      process_decisions: {
-        Row: {
-          attachments: Json | null
-          created_at: string | null
-          decision_date: string | null
-          decision_type: string | null
-          description: string
-          id: number
-          judge: string | null
-          process_id: number
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          attachments?: Json | null
-          created_at?: string | null
-          decision_date?: string | null
-          decision_type?: string | null
-          description: string
-          id?: number
-          judge?: string | null
-          process_id: number
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          attachments?: Json | null
-          created_at?: string | null
-          decision_date?: string | null
-          decision_type?: string | null
-          description?: string
-          id?: number
-          judge?: string | null
-          process_id?: number
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "process_decisions_process_id_fkey"
-            columns: ["process_id"]
-            isOneToOne: false
-            referencedRelation: "processes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       process_details: {
         Row: {
           assuntos: Json | null

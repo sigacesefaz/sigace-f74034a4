@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 
 // Função para verificar se uma tabela existe
@@ -132,6 +133,55 @@ export async function setupRequiredTables() {
         console.error('Erro ao criar a tabela process_subjects:', createError);
       } else {
         console.log('Tabela process_subjects criada com sucesso!');
+      }
+    }
+    
+    // Verificar e criar a tabela process_judicial_decisions se necessário
+    const processJudicialDecisionsExists = await tableExists('process_judicial_decisions');
+    if (!processJudicialDecisionsExists) {
+      console.log('Criando tabela process_judicial_decisions...');
+      
+      const { error: createError } = await supabase.rpc('exec_sql', {
+        sql_query: `
+          CREATE TABLE IF NOT EXISTS process_judicial_decisions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            process_id INTEGER,
+            title TEXT NOT NULL DEFAULT 'Decisão Judicial',
+            content TEXT,
+            decision_type VARCHAR,
+            judge VARCHAR,
+            decision_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            hit_id UUID,
+            user_id UUID,
+            attachments JSONB DEFAULT '[]'::JSONB,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          
+          CREATE INDEX IF NOT EXISTS idx_judicial_decisions_process_id ON process_judicial_decisions(process_id);
+          
+          -- Criar trigger para atualizar o campo updated_at
+          CREATE OR REPLACE FUNCTION update_updated_at_column()
+          RETURNS TRIGGER AS $$
+          BEGIN
+            NEW.updated_at = NOW();
+            RETURN NEW;
+          END;
+          $$ LANGUAGE plpgsql;
+          
+          DROP TRIGGER IF EXISTS update_process_judicial_decisions_updated_at 
+          ON process_judicial_decisions;
+          
+          CREATE TRIGGER update_process_judicial_decisions_updated_at
+          BEFORE UPDATE ON process_judicial_decisions
+          FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+        `
+      });
+      
+      if (createError) {
+        console.error('Erro ao criar a tabela process_judicial_decisions:', createError);
+      } else {
+        console.log('Tabela process_judicial_decisions criada com sucesso!');
       }
     }
     
