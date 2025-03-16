@@ -201,9 +201,13 @@ export default function ProcessListPage() {
   const handleRefreshProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Refreshing process with ID: ${processId}`);
-      // Here you would implement the logic to refresh process data
-      // For now, just show success
-      toast.success("Processo atualizado com sucesso!");
+      
+      const success = await updateProcess(processId);
+      
+      if (success) {
+        // Refetch the data to update the UI
+        refetch();
+      }
     } catch (error) {
       console.error("Error refreshing process:", error);
       toast.error("Erro ao atualizar o processo");
