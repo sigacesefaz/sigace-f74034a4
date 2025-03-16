@@ -125,7 +125,7 @@ export function ProcessHitsNavigation({
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="flex items-center">
                 <TabsTrigger value="info">Informações</TabsTrigger>
-                <TabsTrigger value="eventos">Eventos</TabsTrigger>
+                
                 
                 
                 
