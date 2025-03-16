@@ -127,7 +127,7 @@ export function ProcessHitsNavigation({
                 <TabsTrigger value="info">Informações</TabsTrigger>
                 <TabsTrigger value="eventos">Eventos</TabsTrigger>
                 <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
-                <TabsTrigger value="decisao">Decisão</TabsTrigger>
+                
                 
                 
               </TabsList>
