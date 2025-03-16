@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -163,11 +164,10 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="mb-2">
                     <TabsTrigger value="info">Informações</TabsTrigger>
-                    <TabsTrigger value="details">Detalhes</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="info">
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium">
                           {currentHit.classe?.nome || `Movimentação ${internalHitIndex + 1}`}
@@ -177,29 +177,73 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-500">Tribunal:</span> {currentHit.tribunal || "Não informado"}
+                      <div className="space-y-3">
+                        <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                          <p className="font-semibold text-indigo-800 mb-2 text-sm">Número do Processo</p>
+                          <p className="text-sm text-indigo-700">{currentHit.numero_processo || "Não informado"}</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Número:</span> {currentHit.numero_processo || "Não informado"}
+                        
+                        <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                          <p className="font-semibold text-purple-800 mb-2 text-sm">Classe</p>
+                          <p className="text-sm text-purple-700">
+                            {currentHit.classe?.nome || "Não informado"}
+                            {currentHit.classe?.codigo && ` (${currentHit.classe.codigo})`}
+                          </p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Data:</span> {formatDate(currentHit.data_hora_ultima_atualizacao || currentHit.data_ajuizamento)}
+                        
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                          <p className="font-semibold text-blue-800 mb-2 text-sm">Tribunal</p>
+                          <p className="text-sm text-blue-700">{currentHit.tribunal || "Não informado"}</p>
                         </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Órgão:</span> {currentHit.orgao_julgador?.nome || "Não informado"}
+                        
+                        <div className="bg-cyan-50 p-3 rounded-lg border border-cyan-100">
+                          <p className="font-semibold text-cyan-800 mb-2 text-sm">Grau</p>
+                          <p className="text-sm text-cyan-700">{currentHit.grau || "Não informado"}</p>
+                        </div>
+                        
+                        <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                          <p className="font-semibold text-green-800 mb-2 text-sm">Assuntos</p>
+                          <div className="text-sm text-green-700">
+                            {currentHit.assuntos ? (
+                              <ul className="list-disc pl-5">
+                                {currentHit.assuntos.map((assunto, idx) => (
+                                  <li key={idx}>{assunto.nome} ({assunto.codigo})</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              "Não informado"
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                          <p className="font-semibold text-amber-800 mb-2 text-sm">Data de Ajuizamento</p>
+                          <p className="text-sm text-amber-700">{formatDate(currentHit.data_ajuizamento)}</p>
+                        </div>
+                        
+                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                          <p className="font-semibold text-orange-800 mb-2 text-sm">Última Atualização</p>
+                          <p className="text-sm text-orange-700">{formatDate(currentHit.data_hora_ultima_atualizacao)}</p>
+                        </div>
+                        
+                        <div className="bg-rose-50 p-3 rounded-lg border border-rose-100">
+                          <p className="font-semibold text-rose-800 mb-2 text-sm">Órgão Julgador</p>
+                          <p className="text-sm text-rose-700">
+                            {currentHit.orgao_julgador?.nome || "Não informado"}
+                            {currentHit.orgao_julgador?.codigo && ` (${currentHit.orgao_julgador.codigo})`}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-fuchsia-50 p-3 rounded-lg border border-fuchsia-100">
+                          <p className="font-semibold text-fuchsia-800 mb-2 text-sm">Sistema</p>
+                          <p className="text-sm text-fuchsia-700">{currentHit.sistema?.nome || "Não informado"}</p>
+                        </div>
+                        
+                        <div className="bg-violet-50 p-3 rounded-lg border border-violet-100">
+                          <p className="font-semibold text-violet-800 mb-2 text-sm">Formato</p>
+                          <p className="text-sm text-violet-700">{currentHit.formato?.nome || "Não informado"}</p>
                         </div>
                       </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="details">
-                    <div className="text-sm space-y-2">
-                      <p className="text-gray-600">ID: {currentHit.id}</p>
-                      <p className="text-gray-600">Hit ID: {currentHit.hit_id || "Não informado"}</p>
-                      <p className="text-gray-600">Data de Ajuizamento: {formatDate(currentHit.data_ajuizamento)}</p>
-                      <p className="text-gray-600">Última Atualização: {formatDate(currentHit.data_hora_ultima_atualizacao)}</p>
                     </div>
                   </TabsContent>
                 </Tabs>
