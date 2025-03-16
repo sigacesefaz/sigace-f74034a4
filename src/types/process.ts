@@ -1,3 +1,4 @@
+
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -83,6 +84,7 @@ export interface ProcessHit {
     codigo?: number | string;
     nome?: string;
   }>;  // Added the assuntos property
+  metadata?: ProcessMetadata; // Add this property to access all the nested data
 }
 
 export interface ProcessUpdateHistory {

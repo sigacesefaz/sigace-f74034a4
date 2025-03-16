@@ -199,9 +199,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <TabsContent value="eventos" className="mt-4">
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Eventos do Processo</h4>
-                    {currentHit && currentHit.movimentos ? (
+                    {currentHit && currentHit.metadata?.movimentos ? (
                       <div className="space-y-2">
-                        {currentHit.movimentos.map((movimento, idx) => (
+                        {currentHit.metadata.movimentos.map((movimento, idx) => (
                           <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                             <p className="font-medium text-sm">{movimento.descricao}</p>
                             <p className="text-xs text-gray-500">{formatDate(movimento.data)}</p>
@@ -217,9 +217,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <TabsContent value="intimacoes" className="mt-4">
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Intimações do Processo</h4>
-                    {currentHit && currentHit.intimacoes ? (
+                    {currentHit && currentHit.metadata?.intimacoes ? (
                       <div className="space-y-2">
-                        {currentHit.intimacoes.map((intimacao, idx) => (
+                        {currentHit.metadata.intimacoes.map((intimacao, idx) => (
                           <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                             <p className="font-medium text-sm">{intimacao.descricao}</p>
                             <p className="text-xs text-gray-500">{formatDate(intimacao.data)}</p>
@@ -235,9 +235,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <TabsContent value="decisao" className="mt-4">
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Decisões do Processo</h4>
-                    {currentHit && currentHit.decisoes ? (
+                    {currentHit && currentHit.metadata?.decisoes ? (
                       <div className="space-y-2">
-                        {currentHit.decisoes.map((decisao, idx) => (
+                        {currentHit.metadata.decisoes.map((decisao, idx) => (
                           <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                             <p className="font-medium text-sm">{decisao.descricao}</p>
                             <p className="text-xs text-gray-500">{formatDate(decisao.data)}</p>
@@ -253,9 +253,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <TabsContent value="partes" className="mt-4">
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Partes do Processo</h4>
-                    {currentHit && currentHit.partes ? (
+                    {currentHit && currentHit.metadata?.partes ? (
                       <div className="space-y-2">
-                        {currentHit.partes.map((parte, idx) => (
+                        {currentHit.metadata.partes.map((parte, idx) => (
                           <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                             <p className="font-medium text-sm">{parte.nome}</p>
                             <p className="text-xs text-gray-500">{parte.papel || "Não especificado"}</p>
@@ -274,9 +274,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 <TabsContent value="inteiro-teor" className="mt-4">
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Inteiro Teor do Processo</h4>
-                    {currentHit && currentHit.documentos ? (
+                    {currentHit && currentHit.metadata?.documentos ? (
                       <div className="space-y-2">
-                        {currentHit.documentos.map((documento, idx) => (
+                        {currentHit.metadata.documentos.map((documento, idx) => (
                           <div key={idx} className="border-l-2 border-gray-200 pl-2 pb-2">
                             <p className="font-medium text-sm">{documento.descricao}</p>
                             <p className="text-xs text-gray-500">{formatDate(documento.data)}</p>
