@@ -50,7 +50,7 @@ export const ConfirmDialogProvider: React.FC<{ children: React.ReactNode }> = ({
     description: '',
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
-    variant: 'destructive' as const, // Fixed the type here
+    variant: 'destructive' as 'destructive' | 'default',  // Fixed the type here
   });
 
   const confirm = (options: {
@@ -140,4 +140,3 @@ ConfirmDialog.confirm = async (options) => {
   console.warn('ConfirmDialog.confirm called outside of ConfirmDialogProvider');
   return false;
 };
-
