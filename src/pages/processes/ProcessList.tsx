@@ -361,14 +361,7 @@ export function ProcessList({
                     <div className="space-y-2">
                       
 
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                        <div className="text-sm">
-                          {parentProcess.metadata?.assuntos?.map((assunto, index) => <p key={index} className="text-gray-700">
-                              {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                            </p>) || <p className="text-gray-500">Não informado</p>}
-                        </div>
-                      </div>
+                      
 
                       
 
@@ -408,27 +401,27 @@ export function ProcessList({
                     <TabsContent value="eventos">
                       <div className="space-y-2">
                         <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                      startDate: eventStartDate,
-                      endDate: eventEndDate,
-                      code: eventCode ? eventCode : undefined,
-                      text: eventText
-                    }} />
+                        startDate: eventStartDate,
+                        endDate: eventEndDate,
+                        code: eventCode ? eventCode : undefined,
+                        text: eventText
+                      }} />
                       </div>
                     </TabsContent>
 
                     <TabsContent value="intimacoes">
                       <div className="space-y-2">
                         <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                      codes: [12266, 12265]
-                    }} />
+                        codes: [12266, 12265]
+                      }} />
                       </div>
                     </TabsContent>
 
                     <TabsContent value="documentos">
                       <div className="space-y-2">
                         <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                      codes: [581]
-                    }} />
+                        codes: [581]
+                      }} />
                       </div>
                     </TabsContent>
 
@@ -449,7 +442,7 @@ export function ProcessList({
             </CardContent>
           </Card>
         </div>;
-      })}
+    })}
 
       {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-2" />}
 
