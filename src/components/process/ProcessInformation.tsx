@@ -1,3 +1,4 @@
+
 import React from "react";
 import { DatajudProcess } from "@/types/datajud";
 import { formatDate } from "@/lib/utils";
@@ -9,39 +10,39 @@ interface ProcessInformationProps {
 
 export function ProcessInformation({ currentProcess }: ProcessInformationProps) {
   return (
-    <div className="grid grid-cols-2 gap-8 mt-8">
+    <div className="grid grid-cols-2 gap-4 mt-2">
       {/* Coluna da esquerda */}
-      <div className="space-y-6">
+      <div className="space-y-2">
         <div>
-          <h3 className="font-semibold mb-2">Dados do Processo</h3>
-          <div className="space-y-2 text-sm">
-            <div>
+          <h3 className="font-semibold text-sm mb-1">Dados do Processo</h3>
+          <div className="space-y-1 text-xs">
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Número do Processo:</span>
-              <p>{formatProcessNumber(currentProcess.numeroProcesso)}</p>
+              <span>{formatProcessNumber(currentProcess.numeroProcesso)}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Classe:</span>
-              <p>{currentProcess.classe?.nome || "Não informado"}</p>
+              <span>{currentProcess.classe?.nome || "Não informado"}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Data de Ajuizamento:</span>
-              <p>{formatDate(currentProcess.dataAjuizamento)}</p>
+              <span>{formatDate(currentProcess.dataAjuizamento)}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Tribunal:</span>
-              <p>{currentProcess.tribunal || "Não informado"}</p>
+              <span>{currentProcess.tribunal || "Não informado"}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Grau:</span>
-              <p>{currentProcess.grau || "Não informado"}</p>
+              <span>{currentProcess.grau || "Não informado"}</span>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2">Assuntos</h3>
+          <h3 className="font-semibold text-sm mb-1">Assuntos</h3>
           {currentProcess.assuntos && currentProcess.assuntos.length > 0 ? (
-            <ul className="list-disc pl-5 space-y-1 text-sm">
+            <ul className="list-disc pl-4 space-y-0.5 text-xs">
               {currentProcess.assuntos.map((assunto, index) => (
                 <li key={index}>
                   {assunto.nome} (Código: {assunto.codigo})
@@ -49,37 +50,37 @@ export function ProcessInformation({ currentProcess }: ProcessInformationProps) 
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500">Nenhum assunto encontrado</p>
+            <p className="text-xs text-gray-500">Nenhum assunto encontrado</p>
           )}
         </div>
       </div>
 
       {/* Coluna da direita */}
-      <div className="space-y-6">
+      <div className="space-y-2">
         <div>
-          <h3 className="font-semibold mb-2">Órgão Julgador</h3>
-          <div className="space-y-2 text-sm">
-            <div>
+          <h3 className="font-semibold text-sm mb-1">Órgão Julgador</h3>
+          <div className="space-y-1 text-xs">
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Nome:</span>
-              <p>{currentProcess.orgaoJulgador?.nome || "Não informado"}</p>
+              <span>{currentProcess.orgaoJulgador?.nome || "Não informado"}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Código:</span>
-              <p>{currentProcess.orgaoJulgador?.codigo || "Não informado"}</p>
+              <span>{currentProcess.orgaoJulgador?.codigo || "Não informado"}</span>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2">Sistema</h3>
-          <div className="space-y-2 text-sm">
-            <div>
+          <h3 className="font-semibold text-sm mb-1">Sistema</h3>
+          <div className="space-y-1 text-xs">
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Nome:</span>
-              <p>{currentProcess.sistema?.nome || "Não informado"}</p>
+              <span>{currentProcess.sistema?.nome || "Não informado"}</span>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-1">
               <span className="text-gray-600">Formato:</span>
-              <p>{currentProcess.formato?.nome || "Não informado"}</p>
+              <span>{currentProcess.formato?.nome || "Não informado"}</span>
             </div>
           </div>
         </div>

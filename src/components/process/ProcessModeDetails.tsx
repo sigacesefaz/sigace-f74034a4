@@ -72,9 +72,9 @@ export function ProcessModeDetails({
   return (
     <>
       {importProgress > 0 && importProgress < 100 && (
-        <div className="mb-6">
+        <div className="mb-4">
           <Progress value={importProgress} className="w-full" />
-          <p className="text-sm text-gray-500 mt-2 text-center">
+          <p className="text-sm text-gray-500 mt-1 text-center">
             Importando processo... {importProgress}%
           </p>
         </div>

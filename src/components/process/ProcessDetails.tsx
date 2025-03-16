@@ -116,8 +116,8 @@ export function ProcessDetails({
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <ProcessHeader 
           currentProcess={currentProcess} 
           importProgress={importProgress}
@@ -129,13 +129,14 @@ export function ProcessDetails({
           <Button 
             onClick={handleImportProcess}
             disabled={isLoading}
-            className="bg-primary text-white ml-4"
+            className="bg-primary text-white ml-2"
+            size="sm"
           >
             {isLoading ? (
               <>Importando...</>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" /> 
+                <Save className="w-3 h-3 mr-1" /> 
                 Importar Processo
               </>
             )}
@@ -152,48 +153,48 @@ export function ProcessDetails({
 
       <ProcessInformation currentProcess={currentProcess} />
       
-      <div className="mt-8 border-t pt-4">
+      <div className="border-t pt-2">
         <Collapsible
           open={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
           className="w-full"
         >
-          <CollapsibleTrigger className="w-full flex justify-between items-center py-2 hover:bg-gray-100 px-2 rounded-md">
+          <CollapsibleTrigger className="w-full flex justify-between items-center py-1 hover:bg-gray-100 px-2 rounded-md">
             <span className="font-semibold">Detalhes do Processo</span>
             {isDetailsOpen ? (
-              <ChevronUp className="h-5 w-5" />
+              <ChevronUp className="h-4 w-4" />
             ) : (
-              <ChevronDown className="h-5 w-5" />
+              <ChevronDown className="h-4 w-4" />
             )}
           </CollapsibleTrigger>
           
-          <CollapsibleContent className="mt-4">
+          <CollapsibleContent className="mt-2">
             <Tabs defaultValue="eventos" className="w-full">
               <TabsList className="w-full grid grid-cols-6">
-                <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
-                <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                <TabsTrigger value="decisao">Decisão</TabsTrigger>
-                <TabsTrigger value="partes">Partes</TabsTrigger>
-                <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
+                <TabsTrigger value="eventos" className="text-xs py-1">Eventos</TabsTrigger>
+                <TabsTrigger value="intimacoes" className="text-xs py-1">Intimações</TabsTrigger>
+                <TabsTrigger value="documentos" className="text-xs py-1">Documentos</TabsTrigger>
+                <TabsTrigger value="decisao" className="text-xs py-1">Decisão</TabsTrigger>
+                <TabsTrigger value="partes" className="text-xs py-1">Partes</TabsTrigger>
+                <TabsTrigger value="inteiro-teor" className="text-xs py-1">Inteiro Teor</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="eventos" className="mt-4">
+              <TabsContent value="eventos" className="mt-2">
                 {allEventsSorted.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {currentPageEvents.map((movimento, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                      <div key={index} className="p-2 bg-gray-50 rounded-lg">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="font-semibold">
+                            <div className="font-semibold text-sm">
                               #{index + 1 + (currentEventPage-1) * itemsPerPage} {movimento.nome}
                               {movimento.codigo && 
-                                <span className="ml-2 text-sm text-gray-500">
+                                <span className="ml-1 text-xs text-gray-500">
                                   (Código: {movimento.codigo})
                                 </span>
                               }
                             </div>
-                            <div className="text-sm text-gray-600 mt-1">
+                            <div className="text-xs text-gray-600">
                               {formatEventDate(movimento.dataHora)}
                             </div>
                           </div>
@@ -208,28 +209,28 @@ export function ProcessDetails({
                     />
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-2 text-center text-gray-500 text-sm">
                     Nenhuma informação encontrada
                   </div>
                 )}
               </TabsContent>
               
-              <TabsContent value="intimacoes" className="mt-4">
+              <TabsContent value="intimacoes" className="mt-2">
                 {intimationEvents.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {currentPageIntimations.map((movimento, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                      <div key={index} className="p-2 bg-gray-50 rounded-lg">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="font-semibold">
+                            <div className="font-semibold text-sm">
                               #{index + 1 + (currentIntimationPage-1) * itemsPerPage} {movimento.nome}
                               {movimento.codigo && 
-                                <span className="ml-2 text-sm text-gray-500">
+                                <span className="ml-1 text-xs text-gray-500">
                                   (Código: {movimento.codigo})
                                 </span>
                               }
                             </div>
-                            <div className="text-sm text-gray-600 mt-1">
+                            <div className="text-xs text-gray-600">
                               {formatEventDate(movimento.dataHora)}
                             </div>
                           </div>
@@ -244,28 +245,28 @@ export function ProcessDetails({
                     />
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-2 text-center text-gray-500 text-sm">
                     Nenhuma informação encontrada
                   </div>
                 )}
               </TabsContent>
               
-              <TabsContent value="documentos" className="mt-4">
+              <TabsContent value="documentos" className="mt-2">
                 {documentEvents.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {currentPageDocuments.map((movimento, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                      <div key={index} className="p-2 bg-gray-50 rounded-lg">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="font-semibold">
+                            <div className="font-semibold text-sm">
                               #{index + 1 + (currentDocumentPage-1) * itemsPerPage} {movimento.nome}
                               {movimento.codigo && 
-                                <span className="ml-2 text-sm text-gray-500">
+                                <span className="ml-1 text-xs text-gray-500">
                                   (Código: {movimento.codigo})
                                 </span>
                               }
                             </div>
-                            <div className="text-sm text-gray-600 mt-1">
+                            <div className="text-xs text-gray-600">
                               {formatEventDate(movimento.dataHora)}
                             </div>
                           </div>
@@ -280,30 +281,30 @@ export function ProcessDetails({
                     />
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-2 text-center text-gray-500 text-sm">
                     Nenhuma informação encontrada
                   </div>
                 )}
               </TabsContent>
               
-              <TabsContent value="decisao" className="mt-4">
-                <div className="p-4 text-center text-gray-500">
+              <TabsContent value="decisao" className="mt-2">
+                <div className="p-2 text-center text-gray-500 text-sm">
                   Nenhuma informação encontrada
                 </div>
               </TabsContent>
               
-              <TabsContent value="partes" className="mt-4">
+              <TabsContent value="partes" className="mt-2">
                 {partiesData.length > 0 ? (
                   <ProcessPartiesList parties={partiesData} />
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-2 text-center text-gray-500 text-sm">
                     Nenhuma informação encontrada
                   </div>
                 )}
               </TabsContent>
               
-              <TabsContent value="inteiro-teor" className="mt-4">
-                <div className="p-4 text-center text-gray-500">
+              <TabsContent value="inteiro-teor" className="mt-2">
+                <div className="p-2 text-center text-gray-500 text-sm">
                   Nenhuma informação encontrada
                 </div>
               </TabsContent>
@@ -313,19 +314,17 @@ export function ProcessDetails({
       </div>
       
       {mainProcess.assuntos && mainProcess.assuntos.length === 0 && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
-          <AlertCircle className="text-yellow-500 w-5 h-5 mr-2 mt-0.5" />
-          <div>
-            <p className="text-sm text-yellow-700">
-              Este processo não possui assuntos cadastrados no DataJud. 
-              Você poderá adicionar assuntos manualmente após a importação.
-            </p>
-          </div>
+        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
+          <AlertCircle className="text-yellow-500 w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-yellow-700">
+            Este processo não possui assuntos cadastrados no DataJud. 
+            Você poderá adicionar assuntos manualmente após a importação.
+          </p>
         </div>
       )}
       
       {isPublicView && (
-        <p className="mt-4 text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-500 text-center">
           Esta consulta pública é fornecida apenas para fins informativos.
           Os dados são provenientes da API DataJud e podem estar incompletos ou desatualizados.
         </p>
