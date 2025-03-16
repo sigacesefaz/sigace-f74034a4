@@ -16,7 +16,7 @@ import { Filters } from "@/components/ui/filters";
 interface MovementFilter {
   startDate?: Date;
   endDate?: Date;
-  code?: number;
+  code?: string; // Alterado para string para compatibilidade
   codes?: number[];
   text?: string;
 }
@@ -39,7 +39,7 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
   // Filtros locais
   const [startDate, setStartDate] = useState<Date | undefined>(filter?.startDate);
   const [endDate, setEndDate] = useState<Date | undefined>(filter?.endDate);
-  const [codeFilter, setCodeFilter] = useState<string>(filter?.code?.toString() || "");
+  const [codeFilter, setCodeFilter] = useState<string>(filter?.code || "");
   const [textFilter, setTextFilter] = useState<string>(filter?.text || "");
   const [appliedFilter, setAppliedFilter] = useState<MovementFilter | undefined>(undefined);
 
@@ -72,7 +72,11 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
         }
         
         if (appliedFilter.code) {
-          query = query.eq('codigo', appliedFilter.code);
+          // Converter para número se possível
+          const codeNum = parseInt(appliedFilter.code);
+          if (!isNaN(codeNum)) {
+            query = query.eq('codigo', codeNum);
+          }
         }
         
         if (appliedFilter.codes && appliedFilter.codes.length > 0) {
@@ -105,7 +109,15 @@ export function ProcessMovements({ processId, hitId, filter, defaultShowFilter =
     }
   };
   
-  const handleApplyFilter = (newFilter: MovementFilter) => {
+  const handleApplyFilter = (filters: { startDate?: Date; endDate?: Date; code?: string; text?: string; }) => {
+    // Converter o filtro recebido para o formato MovementFilter
+    const newFilter: MovementFilter = {};
+    
+    if (filters.startDate) newFilter.startDate = filters.startDate;
+    if (filters.endDate) newFilter.endDate = filters.endDate;
+    if (filters.code) newFilter.code = filters.code;
+    if (filters.text) newFilter.text = filters.text;
+    
     setAppliedFilter(Object.keys(newFilter).length > 0 ? newFilter : undefined);
     setCurrentPage(1);
   };

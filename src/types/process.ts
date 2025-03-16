@@ -6,10 +6,38 @@ export type PartyType = {
   id: string;
   document: string;
   name: string;
-  type: "AUTHOR" | "DEFENDANT" | "MP";
+  type: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito" | "AUTHOR" | "DEFENDANT" | "MP";
   subtype: string;
   personType: PartyPersonType;
 };
+
+// Adicionando a interface Document
+export interface Document {
+  id: string;
+  title: string;
+  file_path: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+  updated_at?: string;
+  process_id: string;
+  hit_id?: string;
+}
+
+// Adicionando a interface Decision
+export interface Decision {
+  id: string;
+  title: string;
+  description: string;
+  decision_type: string;
+  judge: string;
+  decision_date: string;
+  created_at: string;
+  updated_at?: string;
+  process_id: string;
+  hit_id?: string;
+}
 
 // Add other types needed from the process
 export interface Movement {

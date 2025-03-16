@@ -7,9 +7,10 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  className?: string; // Adicionando propriedade className opcional
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export function Pagination({ currentPage, totalPages, onPageChange, className }: PaginationProps) {
   // Não exibir paginação se só houver uma página
   if (totalPages <= 1) {
     return null;
@@ -95,7 +96,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
   };
 
   return (
-    <div className="flex items-center justify-center space-x-2 mt-4">
+    <div className={`flex items-center justify-center space-x-2 mt-4 ${className || ''}`}>
       <Button
         variant="outline"
         size="sm"

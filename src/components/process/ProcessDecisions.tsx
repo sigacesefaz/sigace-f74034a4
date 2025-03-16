@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -192,7 +191,6 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
       let result;
       
       if (editingDecision) {
-        // Atualizar decisão existente
         const { data, error } = await supabase
           .from('process_judicial_decisions')
           .update(decisionData)
@@ -209,7 +207,6 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         
         toast.success("Decisão atualizada com sucesso!");
       } else {
-        // Criar nova decisão
         const { data, error } = await supabase
           .from('process_judicial_decisions')
           .insert(decisionData)
@@ -519,7 +516,6 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         </>
       )}
       
-      {/* Diálogo de visualização detalhada */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -548,7 +544,6 @@ export function ProcessDecisions({ processId, hitId }: ProcessDecisionsProps) {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo de confirmação de exclusão */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

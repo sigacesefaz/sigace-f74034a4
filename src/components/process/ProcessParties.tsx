@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getPartiesByProcessId, createParty, updateParty, deleteParty } from "@/services/process-parties";
-import { PartyType } from "@/types/process";
+import { PartyType, PartyPersonType } from "@/types/process";
 
 interface ProcessPartiesProps {
   processId: string;
@@ -53,9 +53,9 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
   // Form states
   const [name, setName] = useState("");
   const [document, setDocument] = useState("");
-  const [type, setType] = useState("");
+  const [type, setType] = useState<"autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito">("autor");
   const [subtype, setSubtype] = useState("");
-  const [personType, setPersonType] = useState("physical");
+  const [personType, setPersonType] = useState<PartyPersonType>("physical");
 
   useEffect(() => {
     fetchParties();
@@ -93,7 +93,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
   const resetForm = () => {
     setName("");
     setDocument("");
-    setType("");
+    setType("autor");
     setSubtype("");
     setPersonType("physical");
     setEditingParty(null);
@@ -103,7 +103,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     setEditingParty(party);
     setName(party.name);
     setDocument(party.document || "");
-    setType(party.type);
+    setType(party.type as "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito");
     setSubtype(party.subtype || "");
     setPersonType(party.personType || "physical");
     setIsFormOpen(true);
@@ -128,17 +128,20 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
     e.preventDefault();
     
     try {
-      const partyData: Partial<PartyType> & { process_id?: string } = {
-        name,
-        document,
-        type,
-        subtype,
-        personType
-      };
-      
+      if (!name || !type) {
+        toast.error("Nome e tipo são obrigatórios");
+        return;
+      }
+
       if (editingParty) {
         // Update existing party
-        const updatedParty = await updateParty(editingParty.id, partyData);
+        const updatedParty = await updateParty(editingParty.id, {
+          name,
+          document,
+          type,
+          subtype,
+          personType
+        });
         setParties(prevParties => 
           prevParties.map(party => 
             party.id === editingParty.id ? updatedParty : party
@@ -152,11 +155,14 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
         toast.success("Parte atualizada com sucesso");
       } else {
         // Create new party
-        const newPartyData = {
-          ...partyData,
-          process_id: processId
-        };
-        const newParty = await createParty(newPartyData);
+        const newParty = await createParty({
+          process_id: processId,
+          name,
+          document,
+          type,
+          subtype,
+          personType
+        });
         setParties(prevParties => [...prevParties, newParty]);
         setFilteredParties(prevParties => [...prevParties, newParty]);
         toast.success("Parte adicionada com sucesso");
@@ -217,7 +223,7 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
                 
                 <div className="space-y-2">
                   <Label htmlFor="personType">Tipo de Pessoa</Label>
-                  <Select value={personType} onValueChange={setPersonType}>
+                  <Select value={personType} onValueChange={(value: PartyPersonType) => setPersonType(value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo de pessoa" />
                     </SelectTrigger>
@@ -240,7 +246,11 @@ export function ProcessParties({ processId }: ProcessPartiesProps) {
                 
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo</Label>
-                  <Select value={type} onValueChange={setType} required>
+                  <Select 
+                    value={type} 
+                    onValueChange={(value: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito") => setType(value)} 
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>

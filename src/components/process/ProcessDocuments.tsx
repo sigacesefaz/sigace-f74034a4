@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
@@ -147,7 +146,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Verificar tipo de arquivo
       const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(selectedFile.type)) {
         toast.error("Tipo de arquivo não permitido. Por favor, selecione um arquivo PDF ou Word.");
@@ -155,7 +153,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         return;
       }
       
-      // Verificar tamanho do arquivo (max 50MB)
       if (selectedFile.size > 50 * 1024 * 1024) {
         toast.error("O arquivo é muito grande. O tamanho máximo permitido é 50MB.");
         e.target.value = '';
@@ -177,7 +174,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     try {
       setUploading(true);
       
-      // 1. Fazer upload do arquivo para o Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${processId}_${Date.now()}.${fileExt}`;
       const filePath = `${processId}/${fileName}`;
@@ -190,7 +186,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         throw uploadError;
       }
       
-      // 2. Salvar os metadados do documento no banco de dados
       const newDocument = {
         process_id: processId,
         hit_id: hitId || null,
@@ -206,7 +201,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         .insert(newDocument);
       
       if (dbError) {
-        // Se houve erro ao salvar no banco, excluir o arquivo do Storage
         await supabase.storage
           .from('process-documents')
           .remove([filePath]);
@@ -214,10 +208,8 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         throw dbError;
       }
       
-      // Atualizar a lista de documentos
       await fetchDocuments();
       
-      // Limpar o formulário
       setTitle("");
       setFile(null);
       setShowUploadDialog(false);
@@ -235,7 +227,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
     if (!documentToDelete) return;
     
     try {
-      // 1. Buscar o documento para obter o file_path
       const { data, error: fetchError } = await supabase
         .from('process_documents')
         .select('file_path')
@@ -246,7 +237,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         throw fetchError;
       }
       
-      // 2. Excluir o arquivo do Storage
       if (data?.file_path) {
         const { error: storageError } = await supabase.storage
           .from('process-documents')
@@ -254,11 +244,9 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         
         if (storageError) {
           console.error("Erro ao excluir arquivo do storage:", storageError);
-          // Continuar mesmo com erro no storage
         }
       }
       
-      // 3. Excluir o registro do banco de dados
       const { error: dbError } = await supabase
         .from('process_documents')
         .delete()
@@ -268,7 +256,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         throw dbError;
       }
       
-      // Atualizar a lista de documentos
       setDocuments(prevDocuments => 
         prevDocuments.filter(doc => doc.id !== documentToDelete)
       );
@@ -297,7 +284,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
       }
       
       if (data?.signedUrl) {
-        // Criar um link temporário e simular o clique para download
         const link = document.createElement('a');
         link.href = data.signedUrl;
         link.download = document.file_name;
@@ -494,7 +480,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         </>
       )}
       
-      {/* Visualização do documento */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -536,7 +521,6 @@ export function ProcessDocuments({ processId, hitId }: ProcessDocumentsProps) {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo de confirmação de exclusão */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
