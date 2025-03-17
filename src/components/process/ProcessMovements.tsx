@@ -187,39 +187,39 @@ export function ProcessMovements({
         </CollapsibleContent>
       </Collapsible>
 
-      {appliedFilter && Object.keys(appliedFilter).length > 0 && <div className="text-sm text-gray-600 mb-2">
+      {appliedFilter && Object.keys(appliedFilter).length > 0 && <div className="text-xs text-gray-600 mb-1">
           Filtros aplicados: {appliedFilter.text ? `Texto: "${appliedFilter.text}"` : ''} 
           {appliedFilter.code ? ` Código: ${appliedFilter.code}` : ''} 
           {appliedFilter.startDate ? ` De: ${format(appliedFilter.startDate, 'dd/MM/yyyy')}` : ''} 
           {appliedFilter.endDate ? ` Até: ${format(appliedFilter.endDate, 'dd/MM/yyyy')}` : ''}
-          <Button variant="ghost" size="sm" onClick={handleResetFilter} className="ml-2 h-6 px-2 text-xs">
+          <Button variant="ghost" size="sm" onClick={handleResetFilter} className="ml-2 h-5 px-2 text-xs">
             <X className="h-3 w-3 mr-1" /> Limpar
           </Button>
         </div>}
 
-      {movements.length === 0 ? <div className="text-center py-4 text-gray-500">
+      {movements.length === 0 ? <div className="text-center py-2 text-gray-500 text-xs">
           <p>Nenhuma informação encontrada</p>
-        </div> : <div className="space-y-3 pb-2">
-          {movements.map((movement, index) => <div key={index} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
+        </div> : <div className="space-y-2 pb-1">
+          {movements.map((movement, index) => <div key={index} className="bg-white rounded-lg p-2 space-y-1 border border-gray-100">
               <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-gray-900 font-medium">
+                <div className="space-y-0.5">
+                  <p className="text-gray-900 font-medium text-xs">
                     {movement.nome}
                   </p>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 text-xs">
                     {formatDate(movement.data_hora)}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  {movement.codigo && <Badge variant="outline" className="text-gray-600">
+                <div className="flex flex-col items-end gap-0.5">
+                  {movement.codigo && <Badge variant="outline" className="text-gray-600 text-xs h-5 px-1">
                       Código: {movement.codigo}
                     </Badge>}
-                  {movement.tipo && <Badge variant="secondary" className="bg-gray-100">
+                  {movement.tipo && <Badge variant="secondary" className="bg-gray-100 text-xs h-5 px-1">
                       {movement.tipo}
                     </Badge>}
                 </div>
               </div>
-              {movement.complemento && <div className="bg-gray-50 p-3 rounded-md text-gray-700 border border-gray-100 text-sm">
+              {movement.complemento && <div className="bg-gray-50 p-2 rounded-md text-gray-700 border border-gray-100 text-xs">
                   {movement.complemento}
                 </div>}
             </div>)}

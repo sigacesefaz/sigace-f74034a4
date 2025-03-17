@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { ProcessDetails } from "@/components/process/ProcessDetails";
@@ -19,7 +18,7 @@ interface ProcessModeDetailsProps {
   processMovimentos: DatajudMovimentoProcessual[];
   importProgress: number;
   importComplete?: boolean;
-  onSave: () => Promise<boolean>;
+  onSave: () => Promise<boolean | 'PROCESS_EXISTS'>;
   onCancel: () => void;
   onImportAnother?: () => void;
   handleProcessSelect: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
@@ -62,11 +61,11 @@ export function ProcessModeDetails({
   };
 
   const handleSaveClick = async () => {
-    const success = await onSave();
-    if (success) {
+    const result = await onSave();
+    if (result === true) {
       setShowCompletionDialog(true);
     }
-    return success;
+    return result === true;
   };
 
   return (

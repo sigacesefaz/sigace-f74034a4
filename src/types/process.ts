@@ -79,6 +79,11 @@ export interface ProcessHit {
   situacao?: any;
   created_at?: string;
   updated_at?: string;
+  status?: string;
+  assuntos?: Array<{
+    codigo?: string | number;
+    nome: string;
+  }>;
 }
 
 export interface Process {

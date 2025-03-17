@@ -5,11 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ProcessHit } from "@/types/process";
+import { ProcessMovements } from "@/components/process/ProcessMovements";
+import { ProcessDecisions } from "@/components/process/ProcessDecisions";
+import { ProcessParties } from "@/components/process/ProcessParties";
+import { ProcessDocuments } from "@/components/process/ProcessDocuments";
 
 interface ProcessHitsNavigationProps {
   processId: string;
@@ -20,8 +23,7 @@ interface ProcessHitsNavigationProps {
 
 export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, onHitSelect }: ProcessHitsNavigationProps) {
   const [internalHitIndex, setInternalHitIndex] = useState(currentHitIndex);
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("info");
+  const [activeTab, setActiveTab] = useState("eventos");
 
   const currentHit = hits && hits.length > 0 ? hits[internalHitIndex] : null;
   const totalHits = hits?.length || 0;
@@ -80,18 +82,36 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
 
   return (
     <div className="w-full">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-        <div className="flex items-center justify-between mb-2">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                {isOpen ? "Ocultar Movimentações" : "Ver Movimentações"}
-                <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
-              </Button>
-            </CollapsibleTrigger>
             <span className="text-sm text-gray-500">
               {totalHits} movimentações
             </span>
+            
+            {totalHits > 0 && (
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handlePreviousHit}
+                  className="h-8 w-8"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm mx-2">
+                  {internalHitIndex + 1} / {totalHits}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleNextHit}
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
           
           <Popover>
@@ -111,7 +131,6 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         className={`p-2 text-sm rounded cursor-pointer ${internalHitIndex === idx ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}`}
                         onClick={() => {
                           setInternalHitIndex(idx);
-                          setIsOpen(true);
                           if (onHitSelect) {
                             onHitSelect(idx);
                           }
@@ -130,84 +149,140 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
           </Popover>
         </div>
 
-        <CollapsibleContent className="space-y-2">
-          {totalHits > 0 && (
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm">
-                Movimentação {internalHitIndex + 1} de {totalHits}
-              </span>
-              <div className="flex gap-1">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handlePreviousHit}
-                  className="h-8 w-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleNextHit}
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+        {currentHit && (
+          <div className="bg-white rounded-lg p-3 space-y-3 mb-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-sm text-gray-900">Detalhes do Movimento Processual</h4>
+              <Badge variant="outline" className="text-xs">
+                {currentHit.hit_index || `#${internalHitIndex + 1}`}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="space-y-2">
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Número do Processo</h5>
+                  <p className="text-sm font-medium">{currentHit.numero_processo || "Não informado"}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Classe</h5>
+                  <p className="text-sm">{currentHit.classe?.nome || "Não informado"}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Órgão Julgador</h5>
+                  <p className="text-sm">{currentHit.orgao_julgador?.nome || "Não informado"}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Tribunal</h5>
+                  <p className="text-sm">{currentHit.tribunal || "Não informado"}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Data de Ajuizamento</h5>
+                  <p className="text-sm">{formatDate(currentHit.data_ajuizamento)}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Status</h5>
+                  <p className="text-sm">{currentHit.status || "Não informado"}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Grau</h5>
+                  <p className="text-sm">{currentHit.grau || "G1"}</p>
+                </div>
+                
+                <div>
+                  <h5 className="text-xs font-medium text-gray-500">Última Atualização</h5>
+                  <p className="text-sm">{formatDate(currentHit.data_hora_ultima_atualizacao)}</p>
+                </div>
               </div>
             </div>
-          )}
 
-          {currentHit && (
-            <Card>
-              <CardContent className="p-4">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="mb-2">
-                    <TabsTrigger value="info">Informações</TabsTrigger>
-                    <TabsTrigger value="details">Detalhes</TabsTrigger>
-                  </TabsList>
+            {currentHit.assuntos && currentHit.assuntos.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <h5 className="text-xs font-medium text-gray-500 mb-2">Assuntos</h5>
+                <div className="flex flex-wrap gap-2">
+                  {currentHit.assuntos.map((assunto, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {assunto.nome}
+                      {assunto.codigo && <span className="ml-1 opacity-75">({assunto.codigo})</span>}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-                  <TabsContent value="info">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">
-                          {currentHit.classe?.nome || `Movimentação ${internalHitIndex + 1}`}
-                        </h4>
-                        <Badge variant="outline" className="text-xs">
-                          {currentHit.hit_index || `#${internalHitIndex + 1}`}
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-500">Tribunal:</span> {currentHit.tribunal || "Não informado"}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Número:</span> {currentHit.numero_processo || "Não informado"}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Data:</span> {formatDate(currentHit.data_hora_ultima_atualizacao || currentHit.data_ajuizamento)}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-500">Órgão:</span> {currentHit.orgao_julgador?.nome || "Não informado"}
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
+        {currentHit && (
+          <div>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-1 w-full h-8">
+                <TabsTrigger value="eventos" className="text-xs px-2 py-1 h-6">Eventos</TabsTrigger>
+                <TabsTrigger value="intimacoes" className="text-xs px-2 py-1 h-6">Intimações</TabsTrigger>
+                <TabsTrigger value="documentos" className="text-xs px-2 py-1 h-6">Documentos</TabsTrigger>
+                <TabsTrigger value="decisao" className="text-xs px-2 py-1 h-6">Decisão</TabsTrigger>
+                <TabsTrigger value="partes" className="text-xs px-2 py-1 h-6">Partes</TabsTrigger>
+                <TabsTrigger value="inteiro-teor" className="text-xs px-2 py-1 h-6">Inteiro Teor</TabsTrigger>
+              </TabsList>
 
-                  <TabsContent value="details">
-                    <div className="text-sm space-y-2">
-                      <p className="text-gray-600">ID: {currentHit.id}</p>
-                      <p className="text-gray-600">Hit ID: {currentHit.hit_id || "Não informado"}</p>
-                      <p className="text-gray-600">Data de Ajuizamento: {formatDate(currentHit.data_ajuizamento)}</p>
-                      <p className="text-gray-600">Última Atualização: {formatDate(currentHit.data_hora_ultima_atualizacao)}</p>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+              <div className="border rounded-md p-2 mt-1 bg-white">
+                <TabsContent value="eventos" className="mt-0 pt-0">
+                  <ProcessMovements 
+                    processId={processId} 
+                    hitId={currentHit.id} 
+                    filter={{}} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="intimacoes" className="mt-0 pt-0">
+                  <ProcessMovements 
+                    processId={processId} 
+                    hitId={currentHit.id} 
+                    filter={{
+                      codes: [12266, 12265]
+                    }} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="documentos" className="mt-0 pt-0">
+                  <ProcessMovements 
+                    processId={processId} 
+                    hitId={currentHit.id} 
+                    filter={{
+                      codes: [581]
+                    }} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="decisao" className="mt-0 pt-0">
+                  <ProcessDecisions 
+                    processId={processId} 
+                    hitId={currentHit.id} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="partes" className="mt-0 pt-0">
+                  <ProcessParties processId={processId} />
+                </TabsContent>
+
+                <TabsContent value="inteiro-teor" className="mt-0 pt-0">
+                  <ProcessDocuments 
+                    processId={processId} 
+                    hitId={currentHit.id} 
+                  />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

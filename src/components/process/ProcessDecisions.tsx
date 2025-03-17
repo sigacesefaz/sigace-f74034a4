@@ -341,54 +341,54 @@ export function ProcessDecisions({
         </CollapsibleContent>
       </Collapsible>
 
-      {filteredDecisions.length === 0 ? <div className="text-center py-8 border rounded-md">
-          <FileText className="h-12 w-12 mx-auto text-gray-300" />
-          <p className="mt-2 text-gray-500">
-            Nenhuma decisão encontrada. Clique em "Nova Decisão" para adicionar.
+      {filteredDecisions.length === 0 ? <div className="text-center py-4 border rounded-md">
+          <FileText className="h-8 w-8 mx-auto text-gray-300" />
+          <p className="mt-1 text-gray-500 text-xs">
+            Nenhuma decisão encontrada.
           </p>
-        </div> : <div className="space-y-3 max-h-[50vh] overflow-auto pb-2">
-          {paginatedDecisions.map(decision => <Card key={decision.id} className="p-4 hover:shadow-sm transition-shadow">
-              <div className="flex flex-col gap-2">
+        </div> : <div className="space-y-2 max-h-[40vh] overflow-auto pb-1">
+          {paginatedDecisions.map(decision => <Card key={decision.id} className="p-2 hover:shadow-sm transition-shadow">
+              <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium">{decision.title}</h4>
-                  <div className="flex gap-1">
+                  <h4 className="font-medium text-xs">{decision.title}</h4>
+                  <div className="flex gap-0.5">
                     <Button variant="ghost" size="icon" onClick={() => {
                 setSelectedDecision(decision);
                 setDetailDialogOpen(true);
-              }} title="Visualizar">
-                      <Eye className="h-4 w-4" />
+              }} title="Visualizar" className="h-6 w-6">
+                      <Eye className="h-3 w-3" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
                 setEditingDecision(decision);
                 setIsFormOpen(true);
-              }} title="Editar">
-                      <Edit className="h-4 w-4" />
+              }} title="Editar" className="h-6 w-6">
+                      <Edit className="h-3 w-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => {
+                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 h-6 w-6" onClick={() => {
                 setDecisionToDelete(decision.id);
                 setDeleteDialogOpen(true);
               }} title="Excluir">
-                      <Trash className="h-4 w-4" />
+                      <Trash className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
+                <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                  <div className="flex items-center gap-0.5">
                     <Tag className="h-3 w-3" />
                     <span>{getDecisionTypeLabel(decision.decision_type)}</span>
                   </div>
-                  {decision.judge && <div className="flex items-center gap-1">
+                  {decision.judge && <div className="flex items-center gap-0.5">
                       <User className="h-3 w-3" />
                       <span>{decision.judge}</span>
                     </div>}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
                     <Calendar className="h-3 w-3" />
                     <span>{formatDecisionDate(decision.decision_date)}</span>
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-700 line-clamp-2">
+                <p className="text-xs text-gray-700 line-clamp-1">
                   {decision.content}
                 </p>
               </div>

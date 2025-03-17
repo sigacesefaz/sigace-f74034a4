@@ -213,36 +213,34 @@ export function ProcessParties({
         </div>
       </div>
       
-      {filteredParties.length === 0 ? <div className="text-center py-4 text-gray-500">
+      {filteredParties.length === 0 ? <div className="text-center py-2 text-gray-500 text-xs">
           <p>Nenhuma informação encontrada</p>
-        </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredParties.map(party => <div key={party.id} className="bg-white rounded-lg p-3 space-y-2 border border-gray-100">
+        </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {filteredParties.map(party => <div key={party.id} className="bg-white rounded-lg p-2 space-y-1 border border-gray-100">
               <div className="flex justify-between items-start">
-                <div className="flex items-start gap-2">
-                  <User className="h-5 w-5 text-gray-500 mt-0.5" />
+                <div className="flex items-start gap-1">
+                  <User className="h-4 w-4 text-gray-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium">{party.name}</h4>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge variant="outline">{party.type}</Badge>
-                      {party.subtype && <Badge variant="secondary">{party.subtype}</Badge>}
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                    <h4 className="font-medium text-xs">{party.name}</h4>
+                    <div className="flex flex-wrap gap-0.5 mt-0.5">
+                      <Badge variant="outline" className="text-xs h-5 px-1">{party.type}</Badge>
+                      {party.subtype && <Badge variant="secondary" className="text-xs h-5 px-1">{party.subtype}</Badge>}
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 text-xs h-5 px-1">
                         {party.personType === "physical" ? "Pessoa Física" : "Pessoa Jurídica"}
                       </Badge>
                     </div>
-                    {party.document && <p className="text-sm text-gray-600 mt-1">
-                        Documento: {party.document}
-                      </p>}
+                    {party.document && <p className="text-xs text-gray-500 mt-0.5">Documento: {party.document}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(party)}>
-                    <Edit className="h-4 w-4" />
+                <div className="flex gap-0.5">
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(party)} className="h-6 w-6">
+                    <Edit className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => {
-              setPartyToDelete(party.id);
-              setDeleteDialogOpen(true);
-            }}>
-                    <Trash className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 h-6 w-6" onClick={() => {
+                    setPartyToDelete(party.id);
+                    setDeleteDialogOpen(true);
+                  }}>
+                    <Trash className="h-3 w-3" />
                   </Button>
                 </div>
               </div>

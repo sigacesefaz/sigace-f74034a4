@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
@@ -7,7 +6,7 @@ import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
 
-export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean> {
+export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean | 'PROCESS_EXISTS'> {
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
     toast.error("Dados do processo incompletos");
     return false;
@@ -41,7 +40,7 @@ export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[
     if (existingProcess) {
       toast.error("Este processo já foi cadastrado anteriormente");
       setImportProgress(0);
-      return false;
+      return 'PROCESS_EXISTS';
     }
     
     setImportProgress(15);

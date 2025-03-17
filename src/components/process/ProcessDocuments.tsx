@@ -245,11 +245,11 @@ export function ProcessDocuments({
   };
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) {
-      return <File className="h-10 w-10 text-red-500" />;
+      return <File className="h-6 w-6 text-red-500" />;
     } else if (fileType.includes('word') || fileType.includes('msword')) {
-      return <File className="h-10 w-10 text-blue-500" />;
+      return <File className="h-6 w-6 text-blue-500" />;
     } else {
-      return <File className="h-10 w-10 text-gray-500" />;
+      return <File className="h-6 w-6 text-gray-500" />;
     }
   };
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -309,41 +309,41 @@ export function ProcessDocuments({
       text: searchText
     }} />}
 
-      {filteredDocuments.length === 0 ? <div className="text-center py-8 border rounded-md">
-          <File className="h-12 w-12 mx-auto text-gray-300" />
-          <p className="mt-2 text-gray-500">
-            Nenhum documento encontrado. Clique em "Adicionar Documento" para enviar um novo.
+      {filteredDocuments.length === 0 ? <div className="text-center py-4 border rounded-md">
+          <File className="h-8 w-8 mx-auto text-gray-300" />
+          <p className="mt-1 text-gray-500 text-xs">
+            Nenhum documento encontrado.
           </p>
         </div> : <>
-          <div className="space-y-3">
-            {paginatedDocuments.map(document => <Card key={document.id} className="p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center gap-4">
+          <div className="space-y-2">
+            {paginatedDocuments.map(document => <Card key={document.id} className="p-2 hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-2">
                   {getFileIcon(document.file_type)}
                   
                   <div className="flex-1">
-                    <h4 className="font-medium">{document.title}</h4>
-                    <p className="text-sm text-gray-500">{document.file_name}</p>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <h4 className="font-medium text-xs">{document.title}</h4>
+                    <p className="text-xs text-gray-500">{document.file_name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
                       <span>{formatFileSize(document.file_size)}</span>
                       <span>{format(new Date(document.created_at), 'dd/MM/yyyy HH:mm')}</span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5">
                     <Button variant="ghost" size="icon" onClick={() => {
                 setPreviewDocument(document);
                 setShowPreviewDialog(true);
-              }} title="Visualizar">
-                      <Eye className="h-4 w-4" />
+              }} title="Visualizar" className="h-6 w-6">
+                      <Eye className="h-3 w-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownload(document)} title="Baixar">
-                      <Download className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={() => handleDownload(document)} title="Baixar" className="h-6 w-6">
+                      <Download className="h-3 w-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => {
+                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 h-6 w-6" onClick={() => {
                 setDocumentToDelete(document.id);
                 setShowDeleteDialog(true);
               }} title="Excluir">
-                      <Trash className="h-4 w-4" />
+                      <Trash className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,9 @@ import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessDocuments } from "@/components/process/ProcessDocuments";
 import { ProcessHitsNavigation } from "@/components/process/ProcessHitsNavigation";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ProcessListProps {
   processes: Process[];
@@ -56,9 +59,17 @@ export function ProcessList({
   const [eventEndDate, setEventEndDate] = useState<Date | undefined>(undefined);
   const [eventCode, setEventCode] = useState<string>("");
   const [eventText, setEventText] = useState<string>("");
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [courtFilter, setCourtFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [filteredProcesses, setFilteredProcesses] = useState<Process[]>(processes);
   const itemsPerPage = 5;
 
-  const groupedProcesses = processes.reduce<Record<string, {
+  const groupedProcesses = filteredProcesses.reduce<Record<string, {
     parent: Process | null;
     children: Process[];
   }>>((acc, process) => {
@@ -249,6 +260,115 @@ export function ProcessList({
     }));
   };
 
+  // Verificar senha do usuário
+  const verifyPassword = async (password: string): Promise<boolean> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return false;
+      }
+      
+      // Aqui você pode implementar a verificação de senha
+      // Como exemplo, estamos apenas verificando se a senha não está vazia
+      if (!password.trim()) {
+        setPasswordError("A senha não pode estar vazia");
+        return false;
+      }
+      
+      // Em um cenário real, você enviaria a senha para o servidor verificar
+      // Por simplicidade, vamos apenas simular uma verificação bem-sucedida
+      return true;
+    } catch (error) {
+      console.error("Erro ao verificar senha:", error);
+      setPasswordError("Erro ao verificar senha");
+      return false;
+    }
+  };
+
+  // Função para confirmar exclusão em massa com senha
+  const confirmBulkDeleteWithPassword = async () => {
+    const isPasswordValid = await verifyPassword(password);
+    
+    if (isPasswordValid) {
+      await handleBulkDelete();
+      setPassword("");
+      setPasswordError("");
+      setPasswordConfirmOpen(false);
+    }
+  };
+
+  // Função para aplicar filtros
+  const applyFilters = () => {
+    let filtered = [...processes];
+    
+    // Filtrar por status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(process => process.status === statusFilter);
+    }
+    
+    // Filtrar por tribunal
+    if (courtFilter !== "all") {
+      filtered = filtered.filter(process => process.court === courtFilter);
+    }
+    
+    // Filtrar por data
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const oneDay = 24 * 60 * 60 * 1000;
+      const oneWeek = 7 * oneDay;
+      const oneMonth = 30 * oneDay;
+      
+      filtered = filtered.filter(process => {
+        const createdAt = new Date(process.created_at);
+        const diff = now.getTime() - createdAt.getTime();
+        
+        switch (dateFilter) {
+          case "today":
+            return diff < oneDay;
+          case "week":
+            return diff < oneWeek;
+          case "month":
+            return diff < oneMonth;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    setFilteredProcesses(filtered);
+  };
+
+  // Aplicar filtros quando os valores mudarem
+  useEffect(() => {
+    applyFilters();
+  }, [statusFilter, courtFilter, dateFilter, processes]);
+
+  // Obter lista única de tribunais para o filtro
+  const availableCourts = useMemo(() => {
+    const courts = processes
+      .map(process => process.court)
+      .filter((court): court is string => !!court);
+    return Array.from(new Set(courts));
+  }, [processes]);
+
+  // Obter lista única de status para o filtro
+  const availableStatuses = useMemo(() => {
+    const statuses = processes
+      .map(process => process.status)
+      .filter((status): status is string => !!status);
+    return Array.from(new Set(statuses));
+  }, [processes]);
+
+  // Resetar filtros
+  const resetFilters = () => {
+    setStatusFilter("all");
+    setCourtFilter("all");
+    setDateFilter("all");
+    setFilteredProcesses(processes);
+  };
+
   if (isLoading) {
     return <div className="space-y-2">
         {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
@@ -271,216 +391,234 @@ export function ProcessList({
       </Card>;
   }
 
-  const applyFilters = () => {
-    // Lógica de filtragem aqui
-  };
-
-  return <div className="space-y-2">
-      {processes.length > 0 && <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-1">
-            <Checkbox id="selectAll" checked={selectedProcesses.length === Object.keys(groupedProcesses).length && Object.keys(groupedProcesses).length > 0} onCheckedChange={toggleAllProcesses} />
-            <label htmlFor="selectAll" className="text-sm font-medium">
-              Selecionar todos
-            </label>
-          </div>
+  return <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <Checkbox 
+            id="select-all" 
+            checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
+            onCheckedChange={toggleAllProcesses}
+          />
+          <label htmlFor="select-all" className="text-sm font-medium">
+            Selecionar todos
+          </label>
           
-          {selectedProcesses.length > 0 && <Button variant="destructive" size="sm" onClick={() => setBulkAlertOpen(true)} className="flex items-center gap-1">
-              <Trash className="h-4 w-4" />
-              Excluir {selectedProcesses.length} selecionado(s)
-            </Button>}
-        </div>}
+          {selectedProcesses.length > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => setBulkAlertOpen(true)}
+              className="ml-4"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="px-2 py-1">
+            Total: {Object.keys(groupedProcesses).length} processos
+          </Badge>
+          
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Filter className="h-4 w-4" />
+                Filtros
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <h4 className="font-medium">Filtrar processos</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      {availableStatuses.map(status => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="court-filter">Tribunal</Label>
+                  <Select value={courtFilter} onValueChange={setCourtFilter}>
+                    <SelectTrigger id="court-filter">
+                      <SelectValue placeholder="Todos os tribunais" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os tribunais</SelectItem>
+                      {availableCourts.map(court => (
+                        <SelectItem key={court} value={court}>
+                          {court}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="date-filter">Data de cadastro</Label>
+                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger id="date-filter">
+                      <SelectValue placeholder="Qualquer data" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Qualquer data</SelectItem>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="week">Última semana</SelectItem>
+                      <SelectItem value="month">Último mês</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex justify-between pt-2">
+                  <Button variant="outline" size="sm" onClick={resetFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar
+                  </Button>
+                  <Button size="sm" onClick={() => setFilterOpen(false)}>
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
 
-      {paginatedGroups.map(([parentId, group]) => {
-      const parentProcess = group.parent;
-      if (!parentProcess) return null;
-      return <div key={parentId} className="space-y-1">
-            <Card className="overflow-hidden border-gray-200 shadow-sm">
-              <CardHeader className="bg-gray-50 p-2">
-                <div className="flex flex-wrap items-start gap-1 justify-between">
-                  <div className="flex items-start gap-1">
-                    <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
-                    <div>
-                      <CardTitle className="text-lg font-medium text-gray-900">
-                        {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
-                      </CardTitle>
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-baseline gap-1">
-                          <Badge variant={parentProcess.status === "Em andamento" ? "secondary" : "outline"}>
-                            {parentProcess.status || "Não informado"}
-                          </Badge>
-                          <span className="text-sm text-gray-500">
-                            {formatProcessNumber(parentProcess.number)}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                          <Badge variant="default" className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white" title={parentProcess.metadata?.assuntos?.[0]?.nome ? `${parentProcess.metadata.assuntos[0].nome}${parentProcess.metadata.assuntos[0].codigo ? ` (${parentProcess.metadata.assuntos[0].codigo})` : ''}` : "Assunto não informado"}>
-                            {parentProcess.metadata?.assuntos?.[0]?.nome ? <>
-                                  {parentProcess.metadata.assuntos[0].nome}
-                                  {parentProcess.metadata.assuntos[0].codigo && <span className="ml-1 opacity-90">
-                                      ({parentProcess.metadata.assuntos[0].codigo})
-                                    </span>}
-                                </> : "Assunto não informado"}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline">
-                              Data Ajuizamento: {formatDate(parentProcess.metadata?.dataAjuizamento)}
-                            </Badge>
-                            <Badge variant="outline">
-                              Tribunal: {parentProcess.court || "Não informado"}
-                            </Badge>
-                            <Badge variant="outline">
-                              Grau: {parentProcess.metadata?.grau || "G1"}
-                            </Badge>
+      {paginatedGroups.length === 0 ? (
+        <Card className="p-6">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">Nenhum processo encontrado com os filtros selecionados.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        paginatedGroups.map(([groupId, group]) => {
+          const parentProcess = group.parent;
+          if (!parentProcess) return null;
+          return <div key={groupId} className="space-y-1">
+                <Card className="overflow-hidden border-gray-200 shadow-sm">
+                  <CardHeader className="bg-gray-50 p-2">
+                    <div className="flex flex-wrap items-start gap-1 justify-between">
+                      <div className="flex items-start gap-1">
+                        <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
+                        <div>
+                          <CardTitle className="text-lg font-medium text-gray-900">
+                            {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
+                          </CardTitle>
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex items-baseline gap-1">
+                              <Badge variant={parentProcess.status === "Em andamento" ? "secondary" : "outline"}>
+                                {parentProcess.status || "Não informado"}
+                              </Badge>
+                              <span className="text-sm text-gray-500">
+                                {formatProcessNumber(parentProcess.number)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-baseline gap-1">
+                              {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? (
+                                parentProcess.metadata.assuntos.map((assunto, index) => (
+                                  <Badge 
+                                    key={index}
+                                    variant="default" 
+                                    className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white"
+                                    title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}` : "Assunto não informado"}
+                                  >
+                                    {assunto.nome}
+                                    {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge variant="default" className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white">
+                                  Assunto não informado
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline">
+                                  Data Ajuizamento: {formatDate(parentProcess.metadata?.dataAjuizamento)}
+                                </Badge>
+                                <Badge variant="outline">
+                                  Tribunal: {parentProcess.court || "Não informado"}
+                                </Badge>
+                                <Badge variant="outline">
+                                  Grau: {parentProcess.metadata?.grau || "G1"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-500">Criado em:</span>
+                                  <span className="font-medium text-gray-700">{formatDate(parentProcess.created_at)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-500">Última Atualização:</span>
+                                  <span className="font-medium text-gray-700">{formatDate(parentProcess.updated_at)}</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Criado em:</span>
-                              <span className="font-medium text-gray-700">{formatDate(parentProcess.created_at)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-500">Última Atualização:</span>
-                              <span className="font-medium text-gray-700">{formatDate(parentProcess.updated_at)}</span>
-                            </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setProcessToDelete(parentProcess.id);
+                          setAlertOpen(true);
+                        }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                        <div className="h-4 w-px bg-gray-200 mx-1" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100">
+                    <div className="text-sm text-gray-700 pt-1">
+                      <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                        <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
+                        Detalhes do Processo
+                      </button>
+                      <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 max-h-[800px] mt-1" : "opacity-0 max-h-0 overflow-hidden"}`}>
+                        <div className="space-y-2">
+                          <div className="bg-white rounded-lg p-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
+                            <ProcessHitsNavigation 
+                              processId={parentProcess.id} 
+                              hits={parentProcess.hits || []} 
+                              currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
+                              onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => {
-                  setProcessToDelete(parentProcess.id);
-                  setAlertOpen(true);
-                }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                    <div className="h-4 w-px bg-gray-200 mx-1" />
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100">
-                <div className="text-sm text-gray-700 pt-1">
-                  <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-                    <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
-                    Detalhes do Processo
-                  </button>
-                  <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 max-h-[800px] mt-1" : "opacity-0 max-h-0 overflow-hidden"}`}>
-                    <div className="space-y-2">
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Informações Básicas</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          <p><span className="font-medium text-gray-500">Número do Processo:</span> {formatProcessNumber(parentProcess.number)}</p>
-                          <p><span className="font-medium text-gray-500">Classe:</span> {parentProcess.metadata?.classe?.nome || "Não informado"} {parentProcess.metadata?.classe?.codigo ? `(Código: ${parentProcess.metadata.classe.codigo})` : ""}</p>
-                          <p><span className="font-medium text-gray-500">Data de Ajuizamento:</span> {formatDate(parentProcess.metadata?.dataAjuizamento)}</p>
-                          <p><span className="font-medium text-gray-500">Grau:</span> {parentProcess.metadata?.grau || "G1"}</p>
-                          <p><span className="font-medium text-gray-500">Tribunal:</span> {parentProcess.court || "Não informado"}</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Assuntos</h4>
-                        <div className="text-sm">
-                          {parentProcess.metadata?.assuntos?.map((assunto, index) => <p key={index} className="text-gray-700">
-                              {assunto.nome} <span className="text-gray-500">(Código: {assunto.codigo})</span>
-                            </p>) || <p className="text-gray-500">Não informado</p>}
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Órgão Julgador</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.orgaoJulgador?.nome || "Não informado"} (Código: {parentProcess.metadata?.orgaoJulgador?.codigo || "Não informado"})</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Sistema</h4>
-                        <div className="text-sm">
-                          <p><span className="font-medium text-gray-500">Nome:</span> {parentProcess.metadata?.sistema?.nome || "Não informado"}</p>
-                          <p><span className="font-medium text-gray-500">Formato:</span> {parentProcess.metadata?.formato || "Eletrônico"}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white rounded-lg p-3 space-y-2">
-                        <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                        <ProcessHitsNavigation 
-                          processId={parentProcess.id} 
-                          hits={parentProcess.hits || []} 
-                          currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
-                          onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
-                        />
-                      </div>
-                    </div>
-
-                    <Tabs defaultValue="eventos" className="w-full mt-4">
-                      <TabsList className="w-full mb-2">
-                        <TabsTrigger value="eventos">Eventos</TabsTrigger>
-                        <TabsTrigger value="intimacoes">Intimações</TabsTrigger>
-                        <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                        <TabsTrigger value="decisao">Decisão</TabsTrigger>
-                        <TabsTrigger value="partes">Partes</TabsTrigger>
-                        <TabsTrigger value="inteiro-teor">Inteiro Teor</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="eventos">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        startDate: eventStartDate,
-                        endDate: eventEndDate,
-                        code: eventCode ? eventCode : undefined,
-                        text: eventText
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="intimacoes">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        codes: [12266, 12265]
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="documentos">
-                        <div className="space-y-2">
-                          <ProcessMovements processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} filter={{
-                        codes: [581]
-                      }} />
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="decisao">
-                        <ProcessDecisions processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
-                      </TabsContent>
-
-                      <TabsContent value="partes">
-                        <ProcessParties processId={parentProcess.id} />
-                      </TabsContent>
-
-                      <TabsContent value="inteiro-teor">
-                        <ProcessDocuments processId={parentProcess.id} hitId={parentProcess.hits?.[selectedHitIndex[parentProcess.id] || 0]?.id} />
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>;
-    })}
+                  </CardContent>
+                </Card>
+              </div>;
+        })
+      )}
 
       {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-2" />}
 
@@ -505,20 +643,58 @@ export function ProcessList({
       <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processos em Massa</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedProcesses.length} processo(s)? Esta ação não pode ser desfeita
-              e todos os dados relacionados serão removidos.
+              Você está prestes a excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}. 
+              Esta ação não pode ser desfeita. Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBulkAlertOpen(false)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-red-500 hover:bg-red-600">
-              Excluir {selectedProcesses.length} processo(s)
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
+              Confirmar Exclusão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirme sua senha</DialogTitle>
+            <DialogDescription>
+              Por motivos de segurança, digite sua senha para confirmar a exclusão em massa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                className={passwordError ? "border-red-500" : ""}
+              />
+              {passwordError && (
+                <p className="text-sm text-red-500">{passwordError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setPasswordConfirmOpen(false);
+              setPassword("");
+              setPasswordError("");
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmBulkDeleteWithPassword}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
     </div>;

@@ -238,7 +238,7 @@ export function ProcessDetails({
               
               <TabsContent value="decisao" className="mt-2 max-h-[60vh] overflow-auto">
                 <div className="p-2 text-center text-gray-500 text-sm">
-                  <ProcessDecisions processId={currentProcess.numeroProcesso} />
+                  Nenhuma informação encontrada
                 </div>
               </TabsContent>
               

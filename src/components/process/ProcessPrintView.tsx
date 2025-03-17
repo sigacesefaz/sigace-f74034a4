@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,7 +33,7 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
       {/* Cabeçalho */}
       <header className="border-b-2 border-gray-200 pb-4 mb-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Sistema de Gestão e Acompanhamento de Causas e Eventos</h1>
+          <h1 className="text-2xl font-bold">Sistema de Gestão de Ações Contra o Estado</h1>
           <h2 className="text-xl mt-2">Relatório do Processo</h2>
           <p className="text-sm text-gray-500 mt-1">Data de Impressão: {formatDate(new Date().toISOString())}</p>
         </div>
@@ -102,7 +101,7 @@ export function ProcessPrintView({ process }: ProcessPrintViewProps) {
       {/* Rodapé */}
       <footer className="border-t-2 border-gray-200 pt-4 mt-auto">
         <div className="text-center text-sm text-gray-500">
-          <p>SIGACE - Sistema de Gestão e Acompanhamento de Causas e Eventos</p>
+          <p>SIGACE - Sistema de Gestão de Ações Contra o Estado</p>
           <p>Página 1</p>
         </div>
       </footer>

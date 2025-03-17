@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { getProcessById } from "@/services/datajud";
 import { saveProcess } from "@/services/processService";
@@ -45,7 +44,7 @@ export function useProcessImport() {
     }
   };
 
-  const handleSaveProcess = async (): Promise<boolean> => {
+  const handleSaveProcess = async (): Promise<boolean | 'PROCESS_EXISTS'> => {
     if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
       toast.error("Dados do processo incompletos");
       return false;
@@ -55,7 +54,7 @@ export function useProcessImport() {
     try {
       const result = await saveProcess(processMovimentos, selectedCourt, setImportProgress);
       
-      if (result) {
+      if (result === true) {
         setImportComplete(true);
       }
       
