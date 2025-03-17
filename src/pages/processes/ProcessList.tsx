@@ -385,6 +385,14 @@ export function ProcessList({
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
 
+  // Função para definir a cor do badge com base no status
+  const getStatusBadgeVariant = (status?: string): string => {
+    if (status === "Baixado") {
+      return "destructive";  // Para status "Baixado" usamos a variante destructive (vermelho)
+    } 
+    return "secondary";  // Para todos os outros status (incluindo "Em andamento") usamos secondary
+  };
+
   // Função para carregar o status dos processos
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
@@ -488,7 +496,9 @@ export function ProcessList({
                           </CardTitle>
                           <div className="flex flex-col space-y-1">
                             <div className="flex flex-wrap items-baseline gap-1">
-                              <Badge variant={processStatuses[parentProcess.id] === "Baixado" ? "destructive" : "secondary"}>
+                              <Badge 
+                                variant={getStatusBadgeVariant(processStatuses[parentProcess.id])}
+                              >
                                 {processStatuses[parentProcess.id] || "Em andamento"}
                               </Badge>
                               <span className="text-sm text-gray-500 break-all">

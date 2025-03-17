@@ -1,4 +1,3 @@
-
 export interface Process {
   id: string | number;
   number: string;
@@ -14,6 +13,8 @@ export interface Process {
   parent_id?: string | number | null;
   is_parent?: boolean;
   metadata?: any;
+  hits?: ProcessHit[];
+  movimentacoes?: ProcessMovement[];
 }
 
 export interface ProcessMovement {
@@ -75,6 +76,7 @@ export interface ProcessHit {
   user_id?: string;
   created_at?: string;
   updated_at?: string;
+  movimentos?: any[];
 }
 
 export interface ProcessDetail {
@@ -134,6 +136,18 @@ export interface ProcessNotification {
   read?: boolean;
   process_id?: string;
   user_id?: string;
+}
+
+export interface ProcessUpdateHistory {
+  id: string;
+  process_id: string | number;
+  update_type: string;
+  previous_status?: string;
+  new_status?: string;
+  details?: any;
+  user_id?: string;
+  created_at?: string;
+  update_date?: string;
 }
 
 export type PartyPersonType = "physical" | "legal" | "other";

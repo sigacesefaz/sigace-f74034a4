@@ -50,6 +50,28 @@ export function useProcessImport() {
     }
   };
 
+  // Função para verificar se o processo possui os códigos 22 ou 848 nos movimentos
+  const checkProcessStatus = (movimentos: DatajudMovimentoProcessual[]): string => {
+    // Pega o último (mais recente) hit
+    if (!movimentos || movimentos.length === 0) {
+      return "Em andamento";
+    }
+    
+    const latestHit = movimentos[movimentos.length - 1];
+    
+    // Verifica se o hit tem movimentos e se é um array
+    if (!latestHit.process?.movimentos || !Array.isArray(latestHit.process.movimentos)) {
+      return "Em andamento";
+    }
+    
+    // Verifica se existe algum movimento com código 22 ou 848
+    const hasBaixaMovement = latestHit.process.movimentos.some(
+      movimento => movimento.codigo === 22 || movimento.codigo === 848
+    );
+    
+    return hasBaixaMovement ? "Baixado" : "Em andamento";
+  };
+
   const handleSaveProcess = async () => {
     try {
       if (!processMovimentos || processMovimentos.length === 0) {
@@ -71,8 +93,11 @@ export function useProcessImport() {
         return 'PROCESS_EXISTS';
       }
 
-      // Use the saveProcess function from processService
-      const result = await saveProcess(processMovimentos, selectedCourt || '', setImportProgress);
+      // Determinar o status do processo com base nos movimentos
+      const processStatus = checkProcessStatus(processMovimentos);
+      
+      // Use the saveProcess function from processService, passing the determined status
+      const result = await saveProcess(processMovimentos, selectedCourt || '', processStatus, setImportProgress);
       
       if (result === true) {
         setImportComplete(true);
@@ -108,6 +133,7 @@ export function useProcessImport() {
     setProcessMovimentos,
     handleProcessSelect,
     handleSaveProcess,
-    resetImportState
+    resetImportState,
+    checkProcessStatus
   };
 }

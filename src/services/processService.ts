@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
@@ -7,7 +6,12 @@ import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
 
-export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean | 'PROCESS_EXISTS'> {
+export async function saveProcess(
+  processMovimentos: DatajudMovimentoProcessual[], 
+  selectedCourt: string, 
+  processStatus: string = "Em andamento",
+  setImportProgress: (progress: number) => void
+): Promise<boolean | 'PROCESS_EXISTS'> {
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
     toast.error("Dados do processo incompletos");
     return false;
@@ -50,7 +54,7 @@ export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[
       number: numeroProcesso,
       title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-      status: mainProcess.situacao?.nome || "Em andamento",
+      status: processStatus, // Use the status determined by checkProcessStatus
       court: mainProcess.tribunal,
       user_id: user.id,
       plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
@@ -64,7 +68,7 @@ export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[
         number: numeroProcesso,
         title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
         description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-        status: mainProcess.situacao?.nome || "Em andamento",
+        status: processStatus, // Use the status determined by checkProcessStatus
         court: mainProcess.tribunal,
         user_id: user.id,
         created_at: new Date().toISOString(),
