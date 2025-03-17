@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
@@ -251,6 +252,11 @@ export async function createManualProcess(processData: any) {
     if (existingProcess) {
       toast.error("Este processo já foi cadastrado anteriormente");
       return false;
+    }
+    
+    // Remove any type field if it exists in the processData
+    if ('type' in processData) {
+      delete processData.type;
     }
     
     const {

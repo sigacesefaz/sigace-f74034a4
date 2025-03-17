@@ -1,79 +1,139 @@
 
 export interface Process {
-  id: string;
+  id: string | number;
   number: string;
-  title: string;
+  title?: string;
   description?: string;
-  status: string;
+  status?: string;
   court?: string;
-  instance?: string;
-  created_at: string;
-  updated_at: string;
-  metadata?: any;
-  hits?: any[];
+  plaintiff?: string;
+  plaintiff_document?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  parent_id?: string | number | null;
   is_parent?: boolean;
-  parent_id?: string;
-  movimentacoes?: any[];
-  lastUpdated?: string;
+  metadata?: any;
 }
 
-export interface PartyType {
+export interface ProcessMovement {
   id: string;
+  process_id?: string;
+  hit_id?: string;
+  codigo?: number;
+  nome?: string;
+  data_hora?: string;
+  tipo?: string;
+  complemento?: string;
+  complementos_tabelados?: any[];
+  orgao_julgador?: any;
+  user_id?: string;
+  created_at?: string;
+}
+
+export interface ProcessSubject {
+  id: string;
+  process_id?: string;
+  hit_id?: string;
+  codigo?: number;
+  nome?: string;
+  principal?: boolean;
+  user_id?: string;
+  created_at?: string;
+}
+
+export interface ProcessParty {
+  id: string;
+  process_id?: string;
   name: string;
-  document?: string;
   type: string;
+  person_type?: string;
+  document?: string;
   subtype?: string;
-  personType?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProcessHit {
+  id: string;
+  process_id?: string;
+  hit_id?: string;
+  hit_score?: number;
+  tribunal?: string;
+  numero_processo?: string;
+  data_ajuizamento?: string;
+  grau?: string;
+  nivel_sigilo?: number;
+  formato?: any;
+  sistema?: any;
+  classe?: any;
+  orgao_julgador?: any;
+  data_hora_ultima_atualizacao?: string;
+  valor_causa?: number;
+  situacao?: any;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProcessDetail {
+  id: string;
+  process_id?: string;
+  tribunal?: string;
+  data_ajuizamento?: string;
+  grau?: string;
+  nivel_sigilo?: number;
+  formato?: any;
+  sistema?: any;
+  classe?: any;
+  assuntos?: any[];
+  movimentos?: any[];
+  partes?: any[];
+  data_hora_ultima_atualizacao?: string;
+  json_completo?: any;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProcessDocument {
+  id: string;
+  process_id?: string;
+  hit_id?: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Decision {
   id: string;
+  process_id?: string;
+  hit_id?: string;
+  decision_type?: string;
+  decision_date?: string;
+  judge?: string;
+  content?: string;
+  attachments?: any[];
+  title: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProcessNotification {
+  id: string;
   title: string;
   description: string;
-  decision_type: string;
-  judge: string;
-  decision_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Document {
-  id: string;
-  title: string;
-  file_path: string;
-  file_name: string;
-  file_type: string;
-  file_size: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SystemConfiguration {
-  id: string;
-  update_processes_day: number;
-  email_monthly_limit: number;
-  google_auth_client_id?: string;
-  google_auth_client_secret?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface EmailTracking {
-  id: string;
-  month: number;
-  year: number;
-  count: number;
-  updated_at: string;
-}
-
-export interface ProcessUpdateHistory {
-  id: string;
-  process_id: string;
-  update_date: string;
-  update_type: string;
-  previous_status?: string;
-  new_status?: string;
-  details?: any;
+  date: string;
+  type: string;
+  read?: boolean;
+  process_id?: string;
   user_id?: string;
-  created_at: string;
 }
+
+export type PartyPersonType = "physical" | "legal" | "other";
