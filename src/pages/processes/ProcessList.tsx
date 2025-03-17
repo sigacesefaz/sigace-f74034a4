@@ -257,7 +257,6 @@ export function ProcessList({
     }));
   };
 
-  // Verificar senha do usuário
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
@@ -281,7 +280,6 @@ export function ProcessList({
     }
   };
 
-  // Função para confirmar exclusão em massa com senha
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
     
@@ -293,21 +291,17 @@ export function ProcessList({
     }
   };
 
-  // Função para aplicar filtros
   const applyFilters = () => {
     let filtered = [...processes];
     
-    // Filtrar por status
     if (statusFilter !== "all") {
       filtered = filtered.filter(process => process.status === statusFilter);
     }
     
-    // Filtrar por tribunal
     if (courtFilter !== "all") {
       filtered = filtered.filter(process => process.court === courtFilter);
     }
     
-    // Filtrar por data
     if (dateFilter !== "all") {
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
@@ -334,12 +328,10 @@ export function ProcessList({
     setFilteredProcesses(filtered);
   };
 
-  // Aplicar filtros quando os valores mudarem
   useEffect(() => {
     applyFilters();
   }, [statusFilter, courtFilter, dateFilter, processes]);
 
-  // Obter lista única de tribunais para o filtro
   const availableCourts = useMemo(() => {
     const courts = processes
       .map(process => process.court)
@@ -347,7 +339,6 @@ export function ProcessList({
     return Array.from(new Set(courts));
   }, [processes]);
 
-  // Obter lista única de status para o filtro
   const availableStatuses = useMemo(() => {
     const statuses = processes
       .map(process => process.status)
@@ -355,7 +346,6 @@ export function ProcessList({
     return Array.from(new Set(statuses));
   }, [processes]);
 
-  // Resetar filtros
   const resetFilters = () => {
     setStatusFilter("all");
     setCourtFilter("all");
@@ -364,20 +354,16 @@ export function ProcessList({
   };
 
   const getProcessStatus = (process: Process): string => {
-    // Verifica se o processo tem hits
     if (!process.hits || process.hits.length === 0) {
       return "Em andamento";
     }
 
-    // Pega o hit mais recente (último do array)
     const latestHit = process.hits[process.hits.length - 1];
     
-    // Verifica se o hit tem movimentos
     if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
       return "Em andamento";
     }
 
-    // Verifica se existe algum movimento com código 22 ou 848
     const hasBaixaMovement = latestHit.movimentos.some(
       movimento => movimento.codigo === 22 || movimento.codigo === 848
     );
@@ -385,18 +371,15 @@ export function ProcessList({
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
 
-  // Função para definir a cor do badge com base no status
   const getStatusBadgeVariant = (status?: string): string => {
     if (status === "Baixado") {
-      return "destructive";  // Para status "Baixado" usamos a variante destructive (vermelho)
+      return "destructive";
     } 
-    return "secondary";  // Para todos os outros status (incluindo "Em andamento") usamos secondary
+    return "secondary";
   };
 
-  // Função para carregar o status dos processos
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
-      // Filtra apenas processos com IDs válidos (não nulos e não vazios)
       const validProcesses = processes.filter(process => 
         process?.id && typeof process.id === 'string' && process.id.trim() !== ''
       );
@@ -413,7 +396,6 @@ export function ProcessList({
     }
   };
 
-  // Carregar status quando os processos mudarem
   useEffect(() => {
     if (processes.length > 0) {
       loadProcessStatuses(processes);
@@ -498,6 +480,9 @@ export function ProcessList({
                             <div className="flex flex-wrap items-baseline gap-1">
                               <Badge 
                                 variant={getStatusBadgeVariant(processStatuses[parentProcess.id])}
+                                className={cn(
+                                  processStatuses[parentProcess.id] === "Baixado" && "bg-red-600 text-white"
+                                )}
                               >
                                 {processStatuses[parentProcess.id] || "Em andamento"}
                               </Badge>

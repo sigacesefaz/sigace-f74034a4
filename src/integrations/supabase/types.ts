@@ -820,7 +820,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_process_status_based_on_movements: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       court_instance: "primeira" | "segunda" | "superior" | "supremo"
