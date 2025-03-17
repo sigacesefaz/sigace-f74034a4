@@ -8,6 +8,7 @@ import { Process } from "@/types/process";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import { ProcessNavigation } from "@/components/process/ProcessNavigation";
+import { ProcessDocumentsList } from "@/components/process/ProcessDocumentsList";
 
 interface ProcessListProps {
   processes: Process[];
@@ -25,6 +26,8 @@ export function ProcessList({ processes }: ProcessListProps) {
 
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
+      case "Baixado":
+        return "bg-red-500 text-white";
       case "active":
         return "bg-sage-500 text-white";
       case "pending":
@@ -94,6 +97,7 @@ export function ProcessList({ processes }: ProcessListProps) {
             Anteriores <Badge className="ml-2">{previousHits.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="partes">Partes</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
         
         <TabsContent value="atual" className="space-y-4 mt-4">
@@ -302,6 +306,20 @@ export function ProcessList({ processes }: ProcessListProps) {
               <p className="text-lg font-medium">Selecione um processo</p>
               <p className="text-muted-foreground">
                 Para visualizar ou gerenciar as partes, selecione um processo nas abas "Atual" ou "Anteriores"
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="documentos" className="mt-4">
+          {selectedProcessId ? (
+            <ProcessDocumentsList processId={selectedProcessId} />
+          ) : (
+            <div className="text-center p-8 border rounded-md flex flex-col items-center gap-3">
+              <ExclamationTriangleIcon className="h-10 w-10 text-amber-500" />
+              <p className="text-lg font-medium">Selecione um processo</p>
+              <p className="text-muted-foreground">
+                Para visualizar ou gerenciar os documentos, selecione um processo nas abas "Atual" ou "Anteriores"
               </p>
             </div>
           )}
