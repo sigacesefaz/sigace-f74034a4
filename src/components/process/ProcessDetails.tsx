@@ -1,491 +1,274 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
+import { DatajudMovimentoProcessual, DatajudProcess, DatajudMovement } from "@/types/datajud";
+import { ProcessHeader } from "./ProcessHeader";
+import { ProcessNavigation } from "./ProcessNavigation";
+import { ProcessInformation } from "./ProcessInformation";
+import { ProcessPartiesList } from "./ProcessPartiesList";
+import { ProcessMovements } from "./ProcessMovements";
+import { ProcessDecisions } from "./ProcessDecisions";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { DatajudProcess } from "@/types/datajud";
-import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { 
-  Calendar, 
-  UserCircle, 
-  GavelIcon, 
-  FileText, 
-  Bookmark, 
-  AlertCircle, 
-  Users, 
-  Clock,
-  Bell,
-  File
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNextButton,
-  PaginationPrevButton
-} from "@/components/ui/pagination";
-
+import { AlertCircle, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Pagination } from "@/components/ui/pagination";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 interface ProcessDetailsProps {
-  process: DatajudProcess;
-  onSave: () => void;
+  processMovimentos: DatajudMovimentoProcessual[];
+  mainProcess: DatajudProcess;
+  onSave: () => Promise<boolean>;
   onCancel: () => void;
+  isImport?: boolean;
+  importProgress?: number;
+  isPublicView?: boolean;
+  isLoading?: boolean;
+  handleProcessSelect?: (processNumber: string, courtEndpoint: string) => Promise<boolean>;
 }
+export function ProcessDetails({
+  processMovimentos,
+  mainProcess,
+  isImport = false,
+  onSave,
+  onCancel,
+  importProgress = 0,
+  isPublicView = false,
+  isLoading = false,
+  handleProcessSelect
+}: ProcessDetailsProps) {
+  const [currentMovimentoIndex, setCurrentMovimentoIndex] = useState(0);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentEventPage, setCurrentEventPage] = useState(1);
+  const [currentIntimationPage, setCurrentIntimationPage] = useState(1);
+  const [currentDocumentPage, setCurrentDocumentPage] = useState(1);
+  const [showEventFilter, setShowEventFilter] = useState(false);
 
-export function ProcessDetails({ process, onSave, onCancel }: ProcessDetailsProps) {
-  const [currentEventsPage, setCurrentEventsPage] = useState(1);
-  const [currentIntimationsPage, setCurrentIntimationsPage] = useState(1);
-  const [currentDocumentsPage, setCurrentDocumentsPage] = useState(1);
-  const itemsPerPage = 10;
-  
-  // Formatação do número do processo com máscara
-  const formatProcessNumber = (number: string) => {
-    if (!number) return "";
-    
-    // Remove caracteres não numéricos
-    const numericOnly = number.replace(/\D/g, '');
-    
-    if (numericOnly.length !== 20) return number; // Se não tiver 20 dígitos, retorna o original
-    
-    // Aplica a máscara 0000000-00.0000.0.00.0000
-    return `${numericOnly.substring(0, 7)}-${numericOnly.substring(7, 9)}.${numericOnly.substring(9, 13)}.${numericOnly.substring(13, 14)}.${numericOnly.substring(14, 16)}.${numericOnly.substring(16, 20)}`;
-  };
-  
-  // Formatação de data brasileira
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Data não informada";
-    try {
-      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch (e) {
-      return "Data inválida";
+  // Se não existirem movimentos processuais múltiplos, utilizar o principal
+  const currentMovimento = processMovimentos[currentMovimentoIndex] || processMovimentos[0];
+  const currentProcess = currentMovimento.process;
+  const totalMovimentos = processMovimentos.length;
+  const handleNextMovimento = () => {
+    if (currentMovimentoIndex < totalMovimentos - 1) {
+      setCurrentMovimentoIndex(currentMovimentoIndex + 1);
     }
   };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return "Data não informada";
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch (e) {
-      return "Data inválida";
+  const handlePrevMovimento = () => {
+    if (currentMovimentoIndex > 0) {
+      setCurrentMovimentoIndex(currentMovimentoIndex - 1);
     }
   };
-
-  // Filtrar eventos específicos
-  const isIntimationEvent = (evento: any) => {
-    // Códigos específicos para intimações
-    const intimationCodes = [12265, 12266];
-    return intimationCodes.includes(evento.codigo);
+  const handleImportProcess = async () => {
+    return await onSave();
   };
 
-  const isDocumentEvent = (evento: any) => {
-    // Código específico para documentos
-    return evento.codigo === 581;
+  // Filter events by code for each tab
+  const allEvents = currentProcess.movimentos || [];
+
+  // Pagination configuration
+  const itemsPerPage = 5;
+
+  // All events for the Events tab
+  const paginateEvents = (events: DatajudMovement[], page: number) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return events.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  // Ordenar eventos por data (mais recentes primeiro)
-  const sortEventsByDate = (events: any[]) => {
-    return [...events].sort((a, b) => {
-      const dateA = new Date(a.dataHora).getTime();
-      const dateB = new Date(b.dataHora).getTime();
-      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+  // Total pages calculation for pagination
+  const getTotalPages = (items: any[]) => {
+    return Math.ceil(items.length / itemsPerPage);
+  };
+
+  // Events for different tabs
+  const allEventsSorted = [...allEvents].sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+
+  // Intimations - filter by codes 12266 and 12265
+  const intimationEvents = allEventsSorted.filter(event => event.codigo === 12266 || event.codigo === 12265);
+
+  // Documents - filter by code 581
+  const documentEvents = allEventsSorted.filter(event => event.codigo === 581);
+
+  // Current page events
+  const currentPageEvents = paginateEvents(allEventsSorted, currentEventPage);
+  const currentPageIntimations = paginateEvents(intimationEvents, currentIntimationPage);
+  const currentPageDocuments = paginateEvents(documentEvents, currentDocumentPage);
+
+  // Parties data
+  const partiesData = currentProcess.partes || [];
+
+  // Format date for displaying
+  const formatEventDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
-
-  // Aplicar ordenação e filtros
-  const sortedEvents = process.movimentos ? sortEventsByDate(process.movimentos) : [];
-  const intimationEvents = sortedEvents.filter(isIntimationEvent);
-  const documentEvents = sortedEvents.filter(isDocumentEvent);
-
-  // Paginação de eventos
-  const totalEventPages = Math.ceil(sortedEvents.length / itemsPerPage);
-  const totalIntimationPages = Math.ceil(intimationEvents.length / itemsPerPage);
-  const totalDocumentPages = Math.ceil(documentEvents.length / itemsPerPage);
-  
-  const paginatedEvents = sortedEvents.slice(
-    (currentEventsPage - 1) * itemsPerPage, 
-    currentEventsPage * itemsPerPage
-  );
-  
-  const paginatedIntimations = intimationEvents.slice(
-    (currentIntimationsPage - 1) * itemsPerPage, 
-    currentIntimationsPage * itemsPerPage
-  );
-  
-  const paginatedDocuments = documentEvents.slice(
-    (currentDocumentsPage - 1) * itemsPerPage, 
-    currentDocumentsPage * itemsPerPage
-  );
-
-  // Componente reutilizável para paginação
-  const PaginationComponent = ({ 
-    currentPage, 
-    totalPages, 
-    onPageChange 
-  }: { 
-    currentPage: number, 
-    totalPages: number, 
-    onPageChange: (page: number) => void 
-  }) => (
-    <div className="flex justify-center mt-6">
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevButton
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            />
-          </PaginationItem>
-          
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const page = i + 1;
-            // Mostrar apenas as páginas próximas à atual
-            if (
-              page === 1 || 
-              page === totalPages ||
-              (page >= currentPage - 1 && page <= currentPage + 1)
-            ) {
-              return (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    isActive={page === currentPage}
-                    onClick={() => onPageChange(page)}
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            }
-            // Adicionar ellipsis para indicar páginas omitidas
-            if (page === currentPage - 2 || page === currentPage + 2) {
-              return (
-                <PaginationItem key={`ellipsis-${page}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              );
-            }
-            return null;
-          })}
-          
-          <PaginationItem>
-            <PaginationNextButton
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
-  );
-
-  // Componente de informações adicionais
-  const AdditionalInfo = () => (
-    <div className="space-y-6 mt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <Calendar className="h-4 w-4" /> Data de Ajuizamento
-            </h3>
-            <p className="mt-1">{formatDate(process.dataAjuizamento)}</p>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <UserCircle className="h-4 w-4" /> Órgão Julgador
-            </h3>
-            <p className="mt-1">{process.orgaoJulgador?.nome || "Não informado"}</p>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <GavelIcon className="h-4 w-4" /> Grau
-            </h3>
-            <p className="mt-1">{process.grau || "Não informado"}</p>
-          </div>
-        </div>
+  return <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <ProcessHeader currentProcess={currentProcess} importProgress={importProgress} isImporting={isLoading} isPublicView={isPublicView} />
         
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Sistema
-            </h3>
-            <p className="mt-1">{process.sistema?.nome || "Não informado"}</p>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <Bookmark className="h-4 w-4" /> Assuntos
-            </h3>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {process.assuntos && process.assuntos.length > 0 ? (
-                process.assuntos.map((assunto, index) => (
-                  <Badge key={index} variant="secondary" className="bg-secondary/10 text-secondary-dark border-0">
-                    {assunto.nome}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-gray-500">Nenhum assunto informado</span>
-              )}
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" /> Nível de Sigilo
-            </h3>
-            <p className="mt-1">{process.nivelSigilo || "Não informado"}</p>
-          </div>
-        </div>
+        {isImport && !isPublicView && <Button onClick={handleImportProcess} disabled={isLoading} className="bg-primary text-white ml-2" size="sm">
+            {isLoading ? <>Importando...</> : <>
+                <Save className="w-3 h-3 mr-1" /> 
+                Importar Processo
+              </>}
+          </Button>}
       </div>
       
-      {/* Última atualização */}
-      {process.dataHoraUltimaAtualizacao && (
-        <div className="text-xs text-gray-500">
-          Última atualização: {formatDate(process.dataHoraUltimaAtualizacao)}
-        </div>
-      )}
-    </div>
-  );
+      <ProcessNavigation currentMovimentoIndex={currentMovimentoIndex} totalMovimentos={totalMovimentos} handlePrevMovimento={handlePrevMovimento} handleNextMovimento={handleNextMovimento} />
 
-  return (
-    <Card className="p-6 bg-white border-t-4 border-t-primary">
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{process.classe?.nome || "Sem classe"}</h2>
-            <p className="text-primary font-mono">{formatProcessNumber(process.numeroProcesso)}</p>
-          </div>
-          <Badge variant="outline" className="bg-primary/10 text-primary border-0 h-7 px-3">
-            {process.tribunal}
-          </Badge>
-        </div>
-
-        {/* Adicionar as informações abaixo do número do processo */}
-        <AdditionalInfo />
-
-        <Tabs defaultValue="parties" className="w-full">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="parties">Partes</TabsTrigger>
-            <TabsTrigger value="events">Eventos</TabsTrigger>
-            <TabsTrigger value="intimations">Intimações</TabsTrigger>
-            <TabsTrigger value="documents">Documentos</TabsTrigger>
-          </TabsList>
+      <ProcessInformation currentProcess={currentProcess} />
+      
+      <div className="border-t pt-2">
+        <Collapsible open={isDetailsOpen} onOpenChange={setIsDetailsOpen} className="w-full">
+          <CollapsibleTrigger className="w-full flex justify-between items-center py-1 hover:bg-gray-100 px-2 rounded-md">
+            <span className="font-semibold">Detalhes do Processo</span>
+            {isDetailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </CollapsibleTrigger>
           
-          {/* Aba de Partes */}
-          <TabsContent value="parties" className="space-y-4 mt-4">
-            <div className="flex flex-col space-y-4">
-              {process.partes && process.partes.length > 0 ? (
-                process.partes.map((parte, index) => (
-                  <div key={index} className="border p-4 rounded-md">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <h3 className="font-medium text-lg">{parte.papel || "Parte"}</h3>
+          <CollapsibleContent className="mt-2">
+            <Tabs defaultValue="eventos" className="w-full">
+              <TabsList className="w-full grid grid-cols-6">
+                <TabsTrigger value="eventos" className="text-xs py-1">Eventos</TabsTrigger>
+                <TabsTrigger value="intimacoes" className="text-xs py-1">Intimações</TabsTrigger>
+                <TabsTrigger value="documentos" className="text-xs py-1">Documentos</TabsTrigger>
+                <TabsTrigger value="decisao" className="text-xs py-1">Decisão</TabsTrigger>
+                <TabsTrigger value="partes" className="text-xs py-1">Partes</TabsTrigger>
+                <TabsTrigger value="inteiro-teor" className="text-xs py-1">Inteiro Teor</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="eventos" className="mt-2 max-h-[60vh] overflow-auto">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      {allEventsSorted.length > 0 && <Pagination currentPage={currentEventPage} totalPages={getTotalPages(allEventsSorted)} onPageChange={setCurrentEventPage} className="my-1 justify-start" />}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Nome</p>
-                        <p className="font-medium">{parte.nome || "Não informado"}</p>
+                    
+                  </div>
+                  
+                  {showEventFilter && <div className="bg-gray-50 p-3 rounded-md space-y-2 mb-3 border">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Filtros de eventos aqui */}
+                        <p className="text-sm text-gray-500">Filtros em desenvolvimento...</p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Tipo</p>
-                        <p>{parte.tipoPessoa || "Não informado"}</p>
-                      </div>
-                      {parte.documento && (
-                        <div>
-                          <p className="text-sm text-gray-500">Documento</p>
-                          <p>{parte.documento}</p>
-                        </div>
-                      )}
-                      {parte.advogados && parte.advogados.length > 0 && (
-                        <div className="col-span-2">
-                          <p className="text-sm text-gray-500 mb-2">Advogados</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {parte.advogados.map((advogado, advIndex) => (
-                              <div key={advIndex} className="border-l-2 border-gray-200 pl-2">
-                                <p className="font-medium">{advogado.nome}</p>
-                                <p className="text-sm">{advogado.inscricao}</p>
+                    </div>}
+                  
+                  {allEventsSorted.length > 0 ? <div className="space-y-2 pb-2">
+                      {currentPageEvents.map((movimento, index) => <div key={index} className="p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="font-semibold text-sm">
+                                #{index + 1 + (currentEventPage - 1) * itemsPerPage} {movimento.nome}
+                                {movimento.codigo && <span className="ml-1 text-xs text-gray-500">
+                                    (Código: {movimento.codigo})
+                                  </span>}
                               </div>
-                            ))}
+                              <div className="text-xs text-gray-600">
+                                {formatEventDate(movimento.dataHora)}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        </div>)}
+                    </div> : <div className="p-2 text-center text-gray-500 text-sm">
+                      Nenhuma informação encontrada
+                    </div>}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="intimacoes" className="mt-2 max-h-[60vh] overflow-auto">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      {intimationEvents.length > 0 && <Pagination currentPage={currentIntimationPage} totalPages={getTotalPages(intimationEvents)} onPageChange={setCurrentIntimationPage} className="my-1 justify-start" />}
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem informações de partes</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Não há informações disponíveis sobre as partes deste processo.
-                  </p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          {/* Aba de Eventos */}
-          <TabsContent value="events" className="space-y-4 mt-4">
-            {sortedEvents.length > 0 ? (
-              <>
-                <div className="space-y-3">
-                  {paginatedEvents.map((movimento, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-md border">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-2">
-                            <Clock className="h-5 w-5 text-gray-500 mt-0.5" />
+                  
+                  {intimationEvents.length > 0 ? <div className="space-y-2 pb-2">
+                      {currentPageIntimations.map((movimento, index) => <div key={index} className="p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-start justify-between">
                             <div>
-                              <span className="font-medium">{movimento.nome}</span>
-                              {movimento.complementosTabelados && movimento.complementosTabelados.length > 0 && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {movimento.complementosTabelados
-                                    .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
-                                    .join(" | ")}
-                                </p>
-                              )}
+                              <div className="font-semibold text-sm">
+                                #{index + 1 + (currentIntimationPage - 1) * itemsPerPage} {movimento.nome}
+                                {movimento.codigo && <span className="ml-1 text-xs text-gray-500">
+                                    (Código: {movimento.codigo})
+                                  </span>}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {formatEventDate(movimento.dataHora)}
+                              </div>
                             </div>
                           </div>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            {formatDateTime(movimento.dataHora)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                        </div>)}
+                    </div> : <div className="p-2 text-center text-gray-500 text-sm">
+                      Nenhuma intimação encontrada
+                    </div>}
                 </div>
-
-                {/* Paginação para Eventos */}
-                <PaginationComponent 
-                  currentPage={currentEventsPage} 
-                  totalPages={totalEventPages} 
-                  onPageChange={setCurrentEventsPage} 
-                />
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem eventos</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Não há eventos registrados para este processo.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-          
-          {/* Aba de Intimações */}
-          <TabsContent value="intimations" className="space-y-4 mt-4">
-            {intimationEvents.length > 0 ? (
-              <>
+              </TabsContent>
+              
+              <TabsContent value="documentos" className="mt-2 max-h-[60vh] overflow-auto">
                 <div className="space-y-3">
-                  {paginatedIntimations.map((evento, index) => (
-                    <div key={index} className="p-4 bg-purple-50 rounded-md border border-purple-100">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-2">
-                            <Bell className="h-5 w-5 text-purple-500 mt-0.5" />
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      {documentEvents.length > 0 && <Pagination currentPage={currentDocumentPage} totalPages={getTotalPages(documentEvents)} onPageChange={setCurrentDocumentPage} className="my-1 justify-start" />}
+                    </div>
+                  </div>
+                  
+                  {documentEvents.length > 0 ? <div className="space-y-2 pb-2">
+                      {currentPageDocuments.map((movimento, index) => <div key={index} className="p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-start justify-between">
                             <div>
-                              <span className="font-medium text-purple-800">{evento.nome}</span>
-                              <p className="text-xs text-purple-700 mt-1">Código: {evento.codigo}</p>
-                              {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
-                                <p className="text-sm text-purple-700 mt-1">
-                                  {evento.complementosTabelados
-                                    .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
-                                    .join(" | ")}
-                                </p>
-                              )}
+                              <div className="font-semibold text-sm">
+                                #{index + 1 + (currentDocumentPage - 1) * itemsPerPage} {movimento.nome}
+                                {movimento.codigo && <span className="ml-1 text-xs text-gray-500">
+                                    (Código: {movimento.codigo})
+                                  </span>}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {formatEventDate(movimento.dataHora)}
+                              </div>
                             </div>
                           </div>
-                          <span className="text-xs text-purple-600 whitespace-nowrap">
-                            {formatDateTime(evento.dataHora)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                        </div>)}
+                    </div> : <div className="p-2 text-center text-gray-500 text-sm">
+                      Nenhum documento encontrado
+                    </div>}
                 </div>
-
-                {/* Paginação para Intimações */}
-                <PaginationComponent 
-                  currentPage={currentIntimationsPage} 
-                  totalPages={totalIntimationPages} 
-                  onPageChange={setCurrentIntimationsPage} 
-                />
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <Bell className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem intimações</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Não foram encontradas intimações para este processo.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-          
-          {/* Nova Aba de Documentos */}
-          <TabsContent value="documents" className="space-y-4 mt-4">
-            {documentEvents.length > 0 ? (
-              <>
-                <div className="space-y-3">
-                  {paginatedDocuments.map((evento, index) => (
-                    <div key={index} className="p-4 bg-blue-50 rounded-md border border-blue-100">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-2">
-                            <File className="h-5 w-5 text-blue-500 mt-0.5" />
-                            <div>
-                              <span className="font-medium text-blue-800">{evento.nome}</span>
-                              <p className="text-xs text-blue-700 mt-1">Código: {evento.codigo}</p>
-                              {evento.complementosTabelados && evento.complementosTabelados.length > 0 && (
-                                <p className="text-sm text-blue-700 mt-1">
-                                  {evento.complementosTabelados
-                                    .map(comp => `${comp.nome}: ${comp.valor || comp.descricao}`)
-                                    .join(" | ")}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <span className="text-xs text-blue-600 whitespace-nowrap">
-                            {formatDateTime(evento.dataHora)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              </TabsContent>
+              
+              <TabsContent value="decisao" className="mt-2 max-h-[60vh] overflow-auto">
+                <div className="p-2 text-center text-gray-500 text-sm">
+                  Nenhuma informação encontrada
                 </div>
-
-                {/* Paginação para Documentos */}
-                <PaginationComponent 
-                  currentPage={currentDocumentsPage} 
-                  totalPages={totalDocumentPages} 
-                  onPageChange={setCurrentDocumentsPage} 
-                />
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <File className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Sem documentos</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Não foram encontrados documentos para este processo.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex gap-3 justify-end mt-6">
-          <Button variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button onClick={onSave}>
-            Importar Processo
-          </Button>
-        </div>
+              </TabsContent>
+              
+              <TabsContent value="partes" className="mt-2 max-h-[60vh] overflow-auto">
+                {partiesData.length > 0 ? <ProcessPartiesList parties={partiesData} /> : <div className="p-2 text-center text-gray-500 text-sm">
+                    Nenhuma informação encontrada
+                  </div>}
+              </TabsContent>
+              
+              <TabsContent value="inteiro-teor" className="mt-2 max-h-[60vh] overflow-auto">
+                <div className="p-2 text-center text-gray-500 text-sm">
+                  Nenhuma informação encontrada
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
-    </Card>
-  );
+      
+      {mainProcess.assuntos && mainProcess.assuntos.length === 0 && <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
+          <AlertCircle className="text-yellow-500 w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-yellow-700">
+            Este processo não possui assuntos cadastrados no DataJud. 
+            Você poderá adicionar assuntos manualmente após a importação.
+          </p>
+        </div>}
+      
+      {isPublicView && <p className="text-xs text-gray-500 text-center">
+          Esta consulta pública é fornecida apenas para fins informativos.
+          Os dados são provenientes da API DataJud e podem estar incompletos ou desatualizados.
+        </p>}
+    </div>;
 }

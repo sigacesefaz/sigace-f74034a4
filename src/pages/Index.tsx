@@ -1,205 +1,409 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Footer } from "../components/Footer";
+import { LoginDropdown } from "@/components/LoginDropdown";
 import { Link } from "react-router-dom";
-import { 
-  GavelIcon, 
-  BarChart3Icon, 
-  Clock4Icon, 
-  DollarSignIcon, 
-  ShieldCheckIcon,
-  Users2Icon
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { GavelIcon, BarChart3Icon, Clock4Icon, ShieldCheckIcon, Users2Icon, ArrowRightIcon, CheckCircle2Icon, FileTextIcon, BuildingIcon, ScaleIcon, Menu } from "lucide-react";
+import { PublicConsultationTerms } from "@/components/process/PublicConsultationTerms";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 
-// Dados simulados para os KPIs
-const kpiData = {
-  processosTotais: 15482,
-  valorRecuperado: "R$ 42,5M",
-  tempoMedioResposta: "48h",
-  taxaSucesso: "94%"
+// Cores institucionais com tonalidades
+const colors = {
+  primary: "#2e3092",
+  secondary: "#ffd700",
 };
 
-export default function Index() {
+function LandingHeader() {
+  const isMobile = useIsMobile();
+  
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-50">
-      {/* Header */}
-      <header className="fixed w-full top-0 z-50 border-b bg-white shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+    <header className="fixed w-full top-0 z-50 border-b bg-white shadow-sm">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center space-x-2">
+            <Link to="/">
               <img 
-                src="/lovable-uploads/41d8761a-90fe-4080-9302-a5040d446fb1.png" 
-                alt="SEFAZ Tecnologia" 
-                className="h-8"
+                src="/images/logo_sefaz_estado.png" 
+                alt="Governo do Tocantins" 
+                style={{filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))"}} 
+                className="h-10 md:h-12 object-fill" 
               />
-              <span className="text-xl font-semibold text-primary">SIGACE</span>
-            </div>
-            <Button asChild variant="ghost">
-              <Link to="/login" className="text-primary hover:text-primary-dark">
-                Acessar Sistema
-              </Link>
-            </Button>
+            </Link>
+            {!isMobile ? (
+              <div className="flex flex-col">
+                <span className="font-bold text-[#2e3092] text-base">SIGACE - Sistema de Gestão de Ações Contra o Estado</span>
+                <span className="text-xs text-gray-500 font-bold">Secretaria da Fazenda do Tocantins</span>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
+                <span className="text-xs text-gray-500 font-bold">SEFAZ-TO</span>
+              </div>
+            )}
           </div>
+          <LoginDropdown />
         </div>
-      </header>
+      </div>
+    </header>
+  );
+}
+
+export default function Index() {
+  const [showTerms, setShowTerms] = useState(false);
+  const isMobile = useIsMobile();
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <LandingHeader />
 
       <main className="flex-grow mt-16">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden">
-          <div className="container mx-auto px-4 py-16">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                  Sistema de Gestão de Ações Contra o Estado
-                </h1>
-                <p className="text-xl text-gray-600">
-                  Portal oficial da Secretaria da Fazenda do Estado do Tocantins para 
-                  gestão e acompanhamento de processos judiciais.
-                </p>
-                <div className="flex gap-4">
-                  <Button asChild size="lg" className="bg-primary hover:bg-primary-dark">
-                    <Link to="/login">Área Restrita</Link>
-                  </Button>
-                  <Button variant="outline" size="lg" className="text-primary border-primary hover:bg-primary/10">
-                    Consulta Pública
-                  </Button>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-secondary/10 rounded-3xl" />
-                <Card className="relative glass-card p-8 backdrop-blur">
+      {/* Hero Section */}
+      <section className="relative py-20 md:py-32 bg-cover bg-center" style={{
+        backgroundImage: `url('/images/imagem_fundo_1.jpeg'), linear-gradient(135deg, rgba(46,48,146,0.95) 0%, rgba(46,48,146,0.85) 100%)`
+      }}>
+        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6 md:space-y-8">
+              <motion.div initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} transition={{
+                duration: 0.5
+              }} className="inline-flex items-center px-4 py-2 rounded-full text-secondary-800 text-sm font-medium border border-secondary/30 shadow-sm bg-amber-400">
+                <span className="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
+                Um Sistema Oficial da SEFAZ-TO
+              </motion.div>
+              
+              <motion.h1 initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} transition={{
+                duration: 0.5,
+                delay: 0.2
+              }} className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                Modernização da <span className="text-secondary">Gestão Processual</span>
+              </motion.h1>
+              
+              <motion.p initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} transition={{
+                duration: 0.5,
+                delay: 0.4
+              }} className="text-lg md:text-xl text-white/90">
+                Sistema Integrado de Gestão de Ações Contra o Estado
+              </motion.p>
+              
+              <motion.div initial={{
+                opacity: 0,
+                y: 20
+              }} animate={{
+                opacity: 1,
+                y: 0
+              }} transition={{
+                duration: 0.5,
+                delay: 0.6
+              }} className="flex flex-col sm:flex-row gap-4">
+                <Button asChild size="lg" className="bg-secondary text-gray-900 hover:bg-secondary/90 shadow-lg">
+                  <Link to="/register">
+                    <span className="flex items-center gap-2">
+                      Acessar Sistema
+                      <ArrowRightIcon className="h-5 w-5" />
+                    </span>
+                  </Link>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  onClick={() => setShowTerms(true)}
+                >
+                  Consulta Pública
+                </Button>
+              </motion.div>
+            </div>
+            
+            {!isMobile && (
+              <motion.div initial={{
+                opacity: 0,
+                x: 50
+              }} animate={{
+                opacity: 1,
+                x: 0
+              }} transition={{
+                duration: 0.8
+              }} className="relative">
+                <div className="absolute -inset-4 bg-white/10 backdrop-blur-sm rounded-3xl"></div>
+                <Card className="p-8 relative bg-white/90 backdrop-blur-sm border border-white/20 shadow-2xl">
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <BarChart3Icon className="h-8 w-8 text-primary" />
-                      <h3 className="font-semibold">Gestão Eficiente</h3>
-                      <p className="text-sm text-gray-600">
-                        Acompanhamento em tempo real dos processos
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Clock4Icon className="h-8 w-8 text-primary" />
-                      <h3 className="font-semibold">Controle de Prazos</h3>
-                      <p className="text-sm text-gray-600">
-                        Gestão automatizada de deadlines
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <ShieldCheckIcon className="h-8 w-8 text-primary" />
-                      <h3 className="font-semibold">Segurança</h3>
-                      <p className="text-sm text-gray-600">
-                        Conformidade com LGPD
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Users2Icon className="h-8 w-8 text-primary" />
-                      <h3 className="font-semibold">Integração</h3>
-                      <p className="text-sm text-gray-600">
-                        Comunicação entre setores
-                      </p>
-                    </div>
+                    {[{
+                      icon: <BarChart3Icon className="h-8 w-8 text-primary" />,
+                      title: "Gestão Eficiente",
+                      description: "Acompanhamento em tempo real dos processos"
+                    }, {
+                      icon: <Clock4Icon className="h-8 w-8 text-primary" />,
+                      title: "Controle de Prazos",
+                      description: "Gestão automatizada de deadlines"
+                    }, {
+                      icon: <ShieldCheckIcon className="h-8 w-8 text-primary" />,
+                      title: "Segurança",
+                      description: "Conformidade com LGPD"
+                    }, {
+                      icon: <Users2Icon className="h-8 w-8 text-primary" />,
+                      title: "Integração",
+                      description: "Comunicação entre setores"
+                    }].map((item, index) => <motion.div key={index} className="p-6 rounded-xl hover:bg-white transition-colors" whileHover={{
+                      y: -5,
+                      scale: 1.02
+                    }} transition={{
+                      type: "spring",
+                      stiffness: 300
+                    }}>
+                        <div className="p-3 bg-primary/10 rounded-lg inline-block shadow-sm">
+                          {item.icon}
+                        </div>
+                        <h3 className="font-semibold text-lg mt-4">{item.title}</h3>
+                        <p className="text-sm text-gray-600 mt-2">{item.description}</p>
+                      </motion.div>)}
                   </div>
                 </Card>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* KPIs Section */}
-        <section className="py-16 bg-gradient-to-r from-primary/5 to-secondary/5">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Indicadores de Desempenho
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <Card className="p-6 animate-in glass-card">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <GavelIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{kpiData.processosTotais}</p>
-                    <p className="text-gray-600">Processos em Gestão</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 animate-in glass-card">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <DollarSignIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{kpiData.valorRecuperado}</p>
-                    <p className="text-gray-600">Recursos Recuperados</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 animate-in glass-card">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <Clock4Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{kpiData.tempoMedioResposta}</p>
-                    <p className="text-gray-600">Tempo Médio de Resposta</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 animate-in glass-card">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <BarChart3Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{kpiData.taxaSucesso}</p>
-                    <p className="text-gray-600">Taxa de Resolutividade</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-primary text-white">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-start">
-              <img 
-                src="/lovable-uploads/89bd7950-f4cd-40bd-aa52-fc3560ab0a2c.png" 
-                alt="Governo do Tocantins" 
-                className="h-16 mb-4"
-              />
-              <p className="text-primary-100/80">
-                Sistema de Gestão de Ações Contra o Estado - Uma iniciativa da 
-                Secretaria da Fazenda do Estado do Tocantins para modernização 
-                da gestão processual.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Links Úteis</h3>
-              <ul className="space-y-2 text-primary-100/80">
-                <li><a href="https://www.to.gov.br" className="hover:text-white">Portal do Governo</a></li>
-                <li><a href="https://sefaz.to.gov.br" className="hover:text-white">SEFAZ-TO</a></li>
-                <li><a href="#" className="hover:text-white">Transparência</a></li>
-                <li><a href="#" className="hover:text-white">Ouvidoria</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contato</h3>
-              <address className="text-primary-100/80 not-italic">
-                Secretaria da Fazenda do Estado do Tocantins<br />
-                Esplanada das Secretarias<br />
-                Palmas - TO<br />
-                <a href="tel:+556332185555" className="hover:text-white">Tel: (63) 3218-5555</a>
-              </address>
-            </div>
-          </div>
-          <div className="border-t border-primary-light/20 mt-8 pt-8 text-center text-primary-100/80">
-            <p>© 2024 Governo do Estado do Tocantins. Todos os direitos reservados.</p>
+              </motion.div>
+            )}
           </div>
         </div>
-      </footer>
+      </section>
+
+        {/* Seção de Funcionalidades */}
+        <section className="py-16 md:py-20 bg-gradient-to-b from-white to-[#f8f9fa]">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Funcionalidades Principais</h2>
+              <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
+                Conheça as principais funcionalidades do sistema de gestão de processos
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.1
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <GavelIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Gestão Processual</h3>
+                    </div>
+                    <p className="text-gray-600">
+                      Controle completo de prazos, recursos e tramitações dos processos
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.2
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <FileTextIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Documentação</h3>
+                    </div>
+                    <p className="text-gray-600">
+                      Armazenamento e organização de documentos relacionados aos processos
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.3
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <ScaleIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Transparência</h3>
+                    </div>
+                    <p className="text-gray-600">
+                      Acompanhamento público e relatórios detalhados
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Seção Institucional */}
+        <section className="py-16 md:py-20 bg-gradient-to-b from-[#f8f9fa] to-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Sobre a SEFAZ-TO</h2>
+              <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
+                Conheça mais sobre a Secretaria da Fazenda do Tocantins e suas principais atribuições
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.1
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <BuildingIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Missão</h3>
+                    </div>
+                    <p className="text-gray-600">
+                      Promover a gestão fiscal e financeira do Estado, garantindo a arrecadação e aplicação dos recursos públicos com transparência e eficiência.
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.2
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <BarChart3Icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Visão</h3>
+                    </div>
+                    <p className="text-gray-600">
+                      Ser referência nacional em gestão fiscal e financeira, contribuindo para o desenvolvimento sustentável do Tocantins.
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.5,
+              delay: 0.3
+            }} whileHover={{
+              y: -10
+            }}>
+                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-primary/10 rounded-md">
+                        <ScaleIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">Valores</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-primary border-primary">
+                        Transparência
+                      </Badge>
+                      <Badge variant="outline" className="text-primary border-primary">
+                        Eficiência
+                      </Badge>
+                      <Badge variant="outline" className="text-primary border-primary">
+                        Integridade
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <Footer />
+      
+      {/* Public consultation terms dialog */}
+      <PublicConsultationTerms 
+        open={showTerms} 
+        onOpenChange={setShowTerms} 
+      />
     </div>
   );
 }

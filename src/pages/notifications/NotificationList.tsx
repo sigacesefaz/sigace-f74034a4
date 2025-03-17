@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ProcessNotification } from "@/types/process";
 import { supabase } from "@/lib/supabase";
 import { BellRing } from "lucide-react";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function Notifications() {
   const { data: notifications, isLoading } = useQuery({
@@ -20,13 +21,19 @@ export default function Notifications() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Carregando...</div>;
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-16rem)]">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+      </MainLayout>
+    );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <MainLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Notificações</h1>
+        <h1 className="text-2xl font-bold text-[#2e3092]">Notificações</h1>
         <p className="text-gray-600">Acompanhe suas notificações</p>
       </div>
 
@@ -34,25 +41,28 @@ export default function Notifications() {
         <div className="grid gap-4">
           {notifications.map((notification) => (
             <Card key={notification.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{notification.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                  <p className="text-sm text-gray-500 mt-2">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <BellRing className="h-4 w-4 text-[#2e3092]" />
+                    <h3 className="font-medium">{notification.title}</h3>
+                    <Badge
+                      variant={notification.type === "deadline" ? "destructive" : "default"}
+                    >
+                      {notification.type === "deadline"
+                        ? "Prazo"
+                        : notification.type === "update"
+                        ? "Atualização"
+                        : notification.type === "document"
+                        ? "Documento"
+                        : "Audiência"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">{notification.message}</p>
+                  <div className="text-xs text-gray-500">
                     {new Date(notification.created_at).toLocaleDateString()}
-                  </p>
+                  </div>
                 </div>
-                <Badge
-                  variant={notification.type === "deadline" ? "destructive" : "default"}
-                >
-                  {notification.type === "deadline"
-                    ? "Prazo"
-                    : notification.type === "update"
-                    ? "Atualização"
-                    : notification.type === "document"
-                    ? "Documento"
-                    : "Audiência"}
-                </Badge>
               </div>
             </Card>
           ))}
@@ -66,6 +76,6 @@ export default function Notifications() {
           </p>
         </div>
       )}
-    </div>
+    </MainLayout>
   );
 }

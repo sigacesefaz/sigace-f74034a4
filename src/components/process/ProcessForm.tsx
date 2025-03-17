@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { courts } from "@/services/datajud";
-import { InputMask } from "@react-input/mask";
+import { MaskedInput } from "@/components/ui/input-mask";
 
 const processSchema = z.object({
   number: z.string().min(1, "Número do processo é obrigatório"),
@@ -49,6 +48,9 @@ interface ProcessFormProps {
 
 export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Encontrar o TJTO nos tribunais disponíveis
+  const tjto = courts.ESTADUAL.find(court => court.id === "tjto");
 
   const form = useForm<ProcessFormValues>({
     resolver: zodResolver(processSchema),
@@ -56,7 +58,7 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
       status: "active",
       type: "liminar",
       instance: "primeira",
-      court: courts.ESTADUAL[0].name, // Default to TJTO
+      court: tjto ? tjto.name : courts.ESTADUAL[0].name, // Default para TJTO
     },
   });
 
@@ -80,14 +82,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Número do Processo*</FormLabel>
                 <FormControl>
-                  <InputMask
-                    component={Input}
-                    mask="0000000-00.0000.0.00.0000"
-                    replacement={{ _: /\d/ }}
-                    defaultValue={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  <MaskedInput
+                    mask="process"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
                     placeholder="0000000-00.0000.0.00.0000"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </FormControl>
                 <FormMessage />
@@ -100,24 +100,26 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
             name="court"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tribunal*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <div className="grid gap-2">
+                  <FormLabel htmlFor="court" className="text-lg font-bold text-primary">Tribunal</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tribunal" />
-                    </SelectTrigger>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um tribunal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courts.ESTADUAL.map((court) => (
+                          <SelectItem key={court.id} value={court.name}>
+                            {court.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
-                  <SelectContent>
-                    {courts.ESTADUAL.map((court) => (
-                      <SelectItem key={court.id} value={court.name}>
-                        {court.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -129,10 +131,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título*</FormLabel>
-              <FormControl>
-                <Input placeholder="Título do processo" {...field} />
-              </FormControl>
+              <div className="grid gap-2">
+                <FormLabel htmlFor="subject" className="text-lg font-bold text-primary">Assunto</FormLabel>
+                <FormControl>
+                  <Input placeholder="Título do processo" {...field} />
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -196,21 +200,20 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
             name="instance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Instância*</FormLabel>
+                <FormLabel>Classe do Processo*</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma instância" />
+                      <SelectValue placeholder="Selecione uma classe" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="primeira">Primeira</SelectItem>
-                    <SelectItem value="segunda">Segunda</SelectItem>
+                    <SelectItem value="primeira">Primeira Instância</SelectItem>
+                    <SelectItem value="segunda">Segunda Instância</SelectItem>
                     <SelectItem value="superior">Superior</SelectItem>
-                    <SelectItem value="supremo">Supremo</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -259,7 +262,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Documento do Autor</FormLabel>
                 <FormControl>
-                  <Input placeholder="CPF/CNPJ do autor" {...field} />
+                  <MaskedInput
+                    mask="cpf"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
+                    placeholder="000.000.000-00"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -289,7 +297,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Documento do Réu</FormLabel>
                 <FormControl>
-                  <Input placeholder="CPF/CNPJ do réu" {...field} />
+                  <MaskedInput
+                    mask="cpf"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
+                    placeholder="000.000.000-00"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -336,12 +349,9 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading} className="text-white">
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading} className="text-white">
-            {isLoading ? "Salvando..." : "Salvar Processo"}
+        <div className="flex justify-end space-x-4">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </form>

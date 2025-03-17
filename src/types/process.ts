@@ -1,117 +1,181 @@
+// Add PartyType to be exported here
+export type PartyPersonType = "physical" | "legal";
 
-export type ProcessStatus = "active" | "pending" | "closed";
-export type ProcessType = "liminar" | "recurso" | "outros";
-export type CourtInstance = "primeira" | "segunda" | "superior" | "supremo";
-export type IntimationType = "defense" | "hearing" | "payment" | "document" | "other";
-export type IntimationStatus = "pending" | "completed" | "expired";
-export type IntimationMethod = "official_gazette" | "mail" | "officer" | "electronic";
+export type PartyType = {
+  id: string;
+  document: string;
+  name: string;
+  type: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito" | "AUTHOR" | "DEFENDANT" | "MP";
+  subtype: string;
+  personType: PartyPersonType;
+};
+
+// Adicionando a interface Document, renomeada para ProcessDocument para evitar conflito com o tipo DOM Document
+export interface ProcessDocument {
+  id: string;
+  title: string;
+  file_path: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+  updated_at?: string;
+  process_id: string;
+  hit_id?: string;
+}
+
+// Adicionando a interface Decision
+export interface Decision {
+  id: string;
+  title: string;
+  content: string; // Changed from description to content to match DB schema
+  decision_type: string;
+  judge?: string; // Campo judge sempre opcional
+  decision_date: string;
+  created_at: string;
+  updated_at?: string;
+  process_id: string;
+  hit_id?: string;
+}
+
+// Add other types needed from the process
+export interface Movement {
+  id: string;
+  data: string;
+  descricao: string;
+  tipo?: string;
+  complemento?: string;
+  codigo?: string; // Add this property that's being used in ProcessList.tsx
+  process?: Process;
+  index: string;
+  score: number;
+  rawData?: any;
+  nome?: string; // Add the nome property that's being used
+  data_hora?: string; // Add the data_hora property that's being used
+}
+
+export interface ProcessHit {
+  id: string;
+  hit_index?: string;
+  hit_id?: string;
+  hit_score?: number;
+  tribunal?: string;
+  numero_processo?: string;
+  data_ajuizamento?: string;
+  grau?: string;
+  nivel_sigilo?: number;
+  formato?: any;
+  sistema?: any;
+  classe?: {
+    nome?: string;
+    codigo?: string;
+  };
+  orgao_julgador?: {
+    nome?: string;
+    codigo?: string;
+  };
+  data_hora_ultima_atualizacao?: string;
+  valor_causa?: number;
+  situacao?: any;
+  created_at?: string;
+  updated_at?: string;
+  status?: string;
+  assuntos?: Array<{
+    codigo?: string | number;
+    nome: string;
+  }>;
+  movimentos?: Array<{
+    codigo: number;
+    nome: string;
+    data_hora?: string;
+    tipo?: string;
+    complemento?: string;
+  }>;
+}
 
 export interface Process {
   id: string;
   number: string;
-  title: string;
-  status: ProcessStatus;
-  type: ProcessType;
-  instance: CourtInstance;
-  value: number;
-  description: string;
+  court: string;
+  title?: string;
+  status?: string;
+  description?: string;
+  is_parent?: boolean;
+  parent_id?: string;
+  metadata: ProcessMetadata;
+  movimentacoes?: Movement[];
   created_at: string;
   updated_at: string;
-  plaintiff: string;
-  plaintiff_document: string;
-  defendant: string;
-  defendant_document: string;
-  judge: string;
-  court: string;
-  tags: string[];
-  attachments: string[];
+  dataHoraUltimaAtualizacao?: string;
+  plaintiff?: string; // Add the plaintiff property that's being used
+  hits?: ProcessHit[]; // Atualizado para usar o tipo ProcessHit
 }
 
-export interface ProcessParty {
-  id: string;
-  name: string;
-  document: string;
-  type: "physical" | "legal" | "public";
-  role: string;
-  contact_email: string;
-  contact_phone: string;
-}
-
+// Add ProcessNotification type to fix notification error
 export interface ProcessNotification {
   id: string;
-  process_id: string;
   title: string;
   message: string;
-  type: "deadline" | "update" | "document" | "hearing";
-  created_at: string;
+  type: "update" | "deadline" | "document" | "hearing";
+  process_id?: string;
+  user_id: string;
   read: boolean;
-  deadline?: string;
-}
-
-export interface ProcessIntimation {
-  id: string;
-  process_id: string;
-  process_number: string;
-  court: string;
-  court_division: string;
-  title: string;
-  content: string;
-  intimation_date: string;
-  deadline: string;
-  type: IntimationType;
-  method: IntimationMethod;
-  status: IntimationStatus;
-  response?: string;
   created_at: string;
-  created_by: string;
   updated_at: string;
-  updated_by?: string;
-  parties: {
-    name: string;
-    role: string;
-    lawyer?: {
-      name: string;
-      oab: string;
-      contact: string;
-    };
-  }[];
-  attachments: {
-    id: string;
-    name: string;
-    url: string;
-    type: string;
-  }[];
-  receipt?: {
-    id: string;
-    date: string;
-    type: string;
-    proof_url?: string;
-  };
-  related_hearing?: {
-    date: string;
-    time: string;
-    location: string;
-    type: string;
-  };
-  related_decision?: {
-    id: string;
-    type: string;
-    content: string;
-    date: string;
-  };
-  related_appeal?: {
-    id: string;
-    type: string;
-    status: string;
-    filing_date: string;
-  };
-  observations?: string;
-  history: {
-    id: string;
-    date: string;
-    user: string;
-    action: string;
-    details?: string;
-  }[];
 }
 
+export interface ProcessMetadata {
+  sistema?: {
+    codigo: number;
+    nome: string;
+  };
+  orgaoJulgador?: {
+    codigo: number;
+    nome: string;
+    codigoMunicipioIBGE?: number;
+  };
+  assuntos?: Array<{
+    codigo: number;
+    nome: string;
+    principal?: boolean;
+  }>;
+  classe?: {
+    codigo: number;
+    nome: string;
+  };
+  nivelSigilo?: number;
+  grau?: string;
+  dataAjuizamento?: string;
+  formato?: 'Eletrônico' | 'Físico';
+  partes?: Array<{
+    papel: string;
+    nome: string;
+    tipoPessoa: string;
+    documento?: string;
+    advogados?: Array<{
+      nome: string;
+      inscricao: string;
+    }>;
+  }>;
+  movimentos?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
+  intimacoes?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
+  documentos?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+    tipo: string;
+  }>;
+  decisoes?: Array<{
+    id: string;
+    data: string;
+    descricao: string;
+  }>;
+}

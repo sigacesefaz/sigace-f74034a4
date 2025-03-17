@@ -1,0 +1,79 @@
+-- Create a table for process_hits to store each procedural movement (hit)
+CREATE TABLE process_hits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  process_id UUID REFERENCES processes(id) ON DELETE CASCADE,
+  hit_index VARCHAR,
+  hit_id VARCHAR,
+  hit_score NUMERIC,
+  tribunal VARCHAR,
+  numero_processo VARCHAR,
+  data_ajuizamento TIMESTAMP WITH TIME ZONE,
+  grau VARCHAR,
+  nivel_sigilo INTEGER,
+  formato JSONB,
+  sistema JSONB,
+  classe JSONB,
+  orgao_julgador JSONB,
+  data_hora_ultima_atualizacao TIMESTAMP WITH TIME ZONE,
+  valor_causa NUMERIC(15,2),
+  situacao JSONB,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Improve process_movements table (connects to a specific hit)
+DROP TABLE IF EXISTS process_movements;
+CREATE TABLE process_movements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  process_id UUID REFERENCES processes(id) ON DELETE CASCADE,
+  hit_id UUID REFERENCES process_hits(id) ON DELETE CASCADE,
+  codigo INTEGER,
+  nome TEXT,
+  data_hora TIMESTAMP WITH TIME ZONE,
+  tipo VARCHAR,
+  complemento TEXT,
+  complementos_tabelados JSONB DEFAULT '[]',
+  orgao_julgador JSONB,
+  movimento_principal_id UUID REFERENCES process_movements(id),
+  json_completo JSONB,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+
+-- Improve process_subjects table (connects to a specific hit)
+DROP TABLE IF EXISTS process_subjects;
+CREATE TABLE process_subjects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  process_id UUID REFERENCES processes(id) ON DELETE CASCADE,
+  hit_id UUID REFERENCES process_hits(id) ON DELETE CASCADE,
+  codigo INTEGER,
+  nome VARCHAR,
+  principal BOOLEAN DEFAULT false,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Keep the raw JSON in process_details for reference
+DROP TABLE IF EXISTS process_details;
+CREATE TABLE process_details (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  process_id UUID REFERENCES processes(id) ON DELETE CASCADE,
+  tribunal VARCHAR,
+  data_ajuizamento TIMESTAMP WITH TIME ZONE,
+  grau VARCHAR,
+  nivel_sigilo INTEGER DEFAULT 0,
+  orgao_julgador JSONB,
+  formato JSONB DEFAULT '{"nome": "Eletrônico", "codigo": 1}'::JSONB,
+  sistema JSONB DEFAULT '{"nome": "PJe", "codigo": 1}'::JSONB,
+  classe JSONB,
+  assuntos JSONB,
+  movimentos JSONB,
+  partes JSONB,
+  data_hora_ultima_atualizacao TIMESTAMP WITH TIME ZONE,
+  json_completo JSONB,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);

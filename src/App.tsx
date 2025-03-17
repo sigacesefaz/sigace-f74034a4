@@ -3,109 +3,40 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Navbar } from "@/components/layout/Navbar";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import NotFound from "./pages/NotFound";
-import ProcessList from "./pages/processes/ProcessList";
-import NewProcess from "./pages/processes/NewProcess";
-import IntimationList from "./pages/intimations/IntimationList";
-import NewIntimation from "./pages/intimations/NewIntimation";
-import NotificationList from "./pages/notifications/NotificationList";
-import ReportList from "./pages/reports/ReportList";
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "./lib/supabase";
+import AppRoutes from "./routes";
+import { useEffect } from "react";
+import { toast } from "./components/ui/use-toast";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+// Comentando temporariamente a verificação de tabelas que está causando erros
+/*
+setupRequiredTables()
+  .then((success) => {
+    if (success) {
+      console.log("Configuração das tabelas concluída com sucesso");
+    } else {
+      console.error("Houve um problema na configuração das tabelas");
+      toast({
+        title: "Aviso de sistema",
+        description: "Algumas funcionalidades podem não estar disponíveis. Por favor, contate o suporte técnico.",
+        variant: "destructive"
+      });
+    }
+  })
+  .catch((error) => {
+    console.error("Erro ao inicializar tabelas:", error);
+  });
+*/
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const user = await getCurrentUser();
-      setIsAuthenticated(!!user);
-    };
-    checkAuth();
-  }, []);
-
-  if (isAuthenticated === null) {
-    return <div>Loading...</div>;
-  }
-
-  return isAuthenticated ? (
-    <>
-      <Navbar />
-      {children}
-    </>
-  ) : (
-    <Navigate to="/login" replace />
-  );
-};
+console.log("Sistema SIGACE iniciando...");
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/processes"
-            element={
-              <ProtectedRoute>
-                <ProcessList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/processes/new"
-            element={
-              <ProtectedRoute>
-                <NewProcess />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/intimations"
-            element={
-              <ProtectedRoute>
-                <IntimationList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/intimations/new"
-            element={
-              <ProtectedRoute>
-                <NewIntimation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <NotificationList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <ReportList />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AppRoutes />
     </TooltipProvider>
   </QueryClientProvider>
 );

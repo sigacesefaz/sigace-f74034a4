@@ -39,39 +39,81 @@ serve(async (req) => {
     // Remove endpoint from the request body before sending to API
     const { endpoint: _, ...requestData } = body;
     
-    // Forward the request to DataJud API
-    const apiUrl = `https://api-publica.datajud.cnj.jus.br/${endpoint}/_search`;
+    // Formato correto da URL para a API DataJud conforme a documentação
+    const apiUrl = `https://api-publica.datajud.cnj.jus.br/api_publica_${endpoint.toLowerCase()}/_search`;
     
     console.log(`Proxying request to: ${apiUrl}`);
     console.log(`Request body: ${JSON.stringify(requestData)}`);
     
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `APIKey ${API_KEY}`,
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    console.log(`Response status: ${response.status}`);
+    // Increase timeout to 120 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds timeout
     
-    const data = await response.json();
-    
-    return new Response(JSON.stringify(data), {
-      status: response.status,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `APIKey ${API_KEY}`,
+        },
+        body: JSON.stringify(requestData),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`Response status: ${response.status}`);
+      
+      // Check if response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error response from DataJud API: ${errorText}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            error: `Error from DataJud API: ${response.status} ${response.statusText}`,
+            details: errorText 
+          }),
+          {
+            status: response.status,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders,
+            },
+          }
+        );
+      }
+      
+      const data = await response.json();
+      console.log(`Response data structure: ${Object.keys(data).join(', ')}`);
+      console.log(`Response hits count: ${data.hits?.hits?.length || 0}`);
+      
+      // Return complete hits array with source data
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
+    }
   } catch (error) {
     console.error("Error in datajud-proxy:", error);
     
+    const errorMessage = error.name === 'AbortError' 
+      ? "Timeout: A requisição excedeu o tempo limite"
+      : error.message || "Internal server error";
+    
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ 
+        error: errorMessage,
+        stack: error.stack
+      }),
       {
-        status: 500,
+        status: error.name === 'AbortError' ? 408 : 500,
         headers: {
           "Content-Type": "application/json",
           ...corsHeaders,

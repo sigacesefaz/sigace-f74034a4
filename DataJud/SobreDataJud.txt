@@ -1,0 +1,51 @@
+Link : https://www.cnj.jus.br/sistemas/datajud/
+
+Instituída pela Resolução CNJ n. 331/2020 como fonte primária de dados do Sistema de Estatística do Poder Judiciário – SIESPJ, a Base Nacional de Dados do Poder Judiciário – DataJud é responsável pelo armazenamento centralizado dos dados e metadados processuais relativos a todos os processos físicos ou eletrônicos, públicos ou sigilosos dos os tribunais indicados nos incisos II a VII do art. 92 da Constituição Federal. 
+
+Dentre as inovações trazidas pela Resolução, cabe destacar a possibilidade das informações do Datajud serem disponibilizadas por meio de API pública, resguardados o sigilo e a confidencialidade das informações, nos termos da legislação processual e da Lei Geral de Proteção de Dados.
+
+A base é composta com dados e metadados processuais relativos a todos os processos físicos ou eletrônicos, públicos ou sigilosos, de qualquer das classes previstas nas Tabelas Processuais Unificadas –TPUs, criadas pela Resolução CNJ nº 46/2007.
+
+Os metadados processuais deverão ser encaminhados pelos tribunais ao DataJud conforme Modelo de Transmissão de Dados – MTD definido pelo Departamento de Pesquisas Judiciárias –DPJ, mediante arquivo encaminhado por meio de serviço de envio de dados fornecido pelo CNJ.
+
+A carga inicial do DataJud conterá, no mínimo, os processos que estejam em tramitação no Poder Judiciário e os que tenham sido baixados a partir de 1º de janeiro de 2020.
+
+Os Tribunais devem transmitir mensalmente os arquivos com as informações processuais de processos que tiveram movimentação ou alguma atualização no mês de referência. Cabendo destacar que os arquivos transmitidos devem possuir todos os dados e movimentações de cada processo enviado do respectivo grau, mesmo que haja mudança de classe (ex: no processo de execução devem ser enviados todos os movimentos, desde a distribuição do processo de conhecimento). Ressalta-se que não devem ser enviados movimentos de graus diversos (G1, G2, JE e TR). Também devem ser enviadas mensalmente ao CNJ as eventuais exclusões de registros indevidos constantes da base.
+
+Pelo serviço, deverá ser informado o grau de jurisdição, limitado a 3 caracteres, da seguinte forma:
+
+Sup para Tribunais Superiores
+G2 para 2º grau
+G1 para 1º grau (justiça comum)
+TR para Turmas Recursais
+JE para Juizados especiais
+TRU para Turmas Regionais de Uniformização
+TNU para Turmas Nacionais de Uniformização
+
+Em relação aos campos com informações de Data, deve ser utilizado padrão abaixo.
+
+DIAMESANO: dia, mês e ano em que o arquivo será transmitido.
+
+Classes e Movimentações Processuais Consideradas
+
+Devem ser consideradas todas as classes das Tabelas Processuais Unificadas, inclusive inquéritos, cartas precatórias e de ordem, recursos internos, procedimento administrativos, RPVs, precatórios etc. Caso o processo esteja “em tramitação” ou “baixado”, deverão ser observadas as seguintes regras para definição.
+
+1. Na carga completa
+
+1.1 Processos em tramitação
+Saldo de processos em tramitação. Enviar o histórico completo dos movimentos nos seguintes casos:
+
+a) Processos pendentes de baixa, conforme critérios de movimento de baixa estabelecidos na resolução CNJ nº 76/2009.
+b) Cartas precatórias e de ordem pendentes de devolução.
+c) Recursos internos pendentes de julgamento.
+d) Processos de competência exclusiva da presidência/corregedoria pendentes de decisão.
+e) RPVs e precatórios pendentes de quitação.
+
+1.2 Processos baixados
+Todos os processos baixados desde 1º/01/2015. Enviar o histórico completo dos movimentos nos seguintes casos:
+
+a) Processos baixados, conforme critérios de movimento de baixa estabelecidos na resolução CNJ nº 76/2009.
+b) Cartas Precatórias e de ordem
+c) Recursos Internos julgados
+d) Processos de competência exclusiva da Presidência/Corregedoria Decididos.
+e) RPvs e Precatórios quitados/cancelados.
