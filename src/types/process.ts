@@ -1,3 +1,4 @@
+
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -122,6 +123,18 @@ export interface ProcessNotification {
   read: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProcessUpdateHistory {
+  id: string;
+  process_id: string | number;
+  update_type: string;
+  previous_status?: string;
+  new_status?: string;
+  details?: any;
+  user_id?: string;
+  created_at?: string;
+  update_date?: string;
 }
 
 export interface ProcessMetadata {

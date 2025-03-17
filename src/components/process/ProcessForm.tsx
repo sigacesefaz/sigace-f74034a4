@@ -51,7 +51,7 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
               placeholder="0000000-00.0000.0.00.0000"
               className="w-full"
             />
-            {errors.number && <p className="text-sm text-red-500">{errors.number.message}</p>}
+            {errors.number && <p className="text-sm text-red-500">{String(errors.number.message)}</p>}
           </div>
           
           <div className="space-y-2">
@@ -72,7 +72,7 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
                 <SelectItem value="STF">STF</SelectItem>
               </SelectContent>
             </Select>
-            {errors.court && <p className="text-sm text-red-500">{errors.court.message}</p>}
+            {errors.court && <p className="text-sm text-red-500">{String(errors.court.message)}</p>}
           </div>
         </div>
         
@@ -83,7 +83,7 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
             {...register('title', { required: 'O título é obrigatório' })}
             placeholder="Título do processo"
           />
-          {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+          {errors.title && <p className="text-sm text-red-500">{String(errors.title.message)}</p>}
         </div>
         
         <div className="space-y-2">
