@@ -1,0 +1,26 @@
+// Função auxiliar para renderizar movimentos
+function renderMovements(movements: any[] | undefined) {
+  if (!movements || movements.length === 0) {
+    return (
+      <div className="text-center py-6 text-gray-500">
+        <FileText className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+        <p>Nenhuma movimentação encontrada</p>
+      </div>
+    );
+  }
+
+  return movements.slice(0, 5).map((movement, index) => (
+    <div key={index} className="border rounded-md p-3 hover:bg-gray-50">
+      <div className="flex justify-between items-start">
+        <div className="font-medium">{safeStringValue(movement.nome)}</div>
+        <Badge variant="outline" className="text-xs">
+          {safeStringValue(movement.codigo)}
+        </Badge>
+      </div>
+      <div className="flex items-center mt-2 text-gray-500 text-sm">
+        <Clock className="h-3 w-3 mr-1" />
+        {formatDateTime(movement.data_hora)}
+      </div>
+    </div>
+  ));
+}

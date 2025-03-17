@@ -1,0 +1,204 @@
+﻿// Aqui estÃ¡ o cÃ³digo para restaurar o layout original
+
+  return (
+    <div className="space-y-4">
+      {paginatedProcesses.map((process) => {
+        // Extrair dados do metadata
+        const metadata = process.metadata || {};
+        
+        // Melhoria na extraÃ§Ã£o de dados, garantindo que todos os valores sejam seguros
+        const processTitle = safeStringValue(
+          metadata.classe?.nome || process.title || "Processo Judicial", 
+          "Mandado de SeguranÃ§a CÃ­vel"
+        );
+        
+        // Garantir que o nÃºmero do processo sempre seja exibido
+        const processNumber = formatProcessNumber(
+          metadata.numeroProcesso || process.number || "NÃºmero nÃ£o informado"
+        );
+        
+        // InformaÃ§Ãµes complementares com valores seguros
+        const court = safeStringValue(metadata.orgaoJulgador?.nome || process.court);
+        const system = safeStringValue(metadata.sistema?.nome, "Sistema nÃ£o informado");
+        const securityLevel = safeStringValue(metadata.nivelSigilo, "PÃºblico");
+        
+        // Formatar data de atualizaÃ§Ã£o de forma segura
+        let lastUpdate = "Data desconhecida";
+        try {
+          lastUpdate = process.updated_at ? 
+            format(new Date(process.updated_at), 'dd MMMM yyyy, HH:mm', { locale: ptBR }) : 
+            "Hoje";
+        } catch (error) {
+          console.error("Erro ao formatar data:", error);
+        }
+        
+        const isExpanded = expandedProcess === process.id;
+        
+        return (
+          <Card key={process.id} className="overflow-hidden">
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Badge variant="outline" className="text-purple-600 bg-purple-100 mr-2">TIPO</Badge>
+                  <span className="text-gray-500 text-xs">Ãšltima atualizaÃ§Ã£o: {lastUpdate}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => loadProcessDetails(process.id)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              <h3 className="text-xl font-bold mt-2">{processTitle}</h3>
+              <div className="text-blue-600 font-medium">{processNumber}</div>
+              
+              <div className="flex items-center mt-2">
+                <span className="text-sm mr-2">Formato:</span>
+                <Badge variant="outline" className="bg-blue-100 text-blue-600 border-blue-200">
+                  EletrÃ´nico
+                </Badge>
+              </div>
+            </div>
+
+            {/* Sempre visÃ­vel - Data de Ajuizamento e Sistema */}
+            <div className="p-4 grid grid-cols-2 gap-4 bg-gray-50">
+              <div className="flex items-start">
+                <CalendarIcon className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Data de Ajuizamento</h4>
+                  <p>{metadata.dataAjuizamento ? 
+                    formatDate(metadata.dataAjuizamento) : 
+                    "NÃ£o informado"}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <FileText className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Sistema</h4>
+                  <p>{system}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Ãrea retrÃ¡til - Detalhes completos */}
+            {isExpanded && (
+              <div className="border-t">
+                {isLoadingDetails ? (
+                  <div className="p-4 flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <h3 className="text-lg font-medium mb-4">Detalhes do Processo</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="flex items-start gap-2">
+                        <GavelIcon className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Ã“rgÃ£o Julgador</p>
+                          <p className="text-gray-600">{safeStringValue(expandedDetails?.details?.orgao_julgador, court)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">NÃ­vel de Sigilo</p>
+                          <Badge variant={expandedDetails?.details?.nivel_sigilo ? "destructive" : "outline"}>
+                            {expandedDetails?.details?.nivel_sigilo ? `NÃ­vel ${expandedDetails.details.nivel_sigilo}` : "PÃºblico"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <Users className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Grau</p>
+                          <p className="text-gray-600">{safeStringValue(expandedDetails?.details?.grau, safeStringValue(metadata.grau, "NÃ£o informado"))}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Assuntos do Processo */}
+                    <div className="mb-6">
+                      <h4 className="text-md font-medium mb-2">Assuntos do Processo</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {expandedDetails?.subjects?.length > 0 ? (
+                          expandedDetails.subjects.map((assunto: any, index: number) => (
+                            <Badge key={index} variant="secondary" className="text-xs py-1">
+                              <Bookmark className="h-3 w-3 mr-1" />
+                              {safeStringValue(assunto.nome)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm">Nenhum assunto registrado</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tabs para MovimentaÃ§Ãµes */}
+                    <div>
+                      <h4 className="text-md font-medium mb-2">MovimentaÃ§Ãµes</h4>
+                      
+                      <Tabs value={currentTab} onValueChange={setCurrentTab}>
+                        <TabsList className="mb-4">
+                          <TabsTrigger value="movimentacao">Todos</TabsTrigger>
+                          <TabsTrigger value="decisao">DecisÃµes</TabsTrigger>
+                          <TabsTrigger value="intimacao">IntimaÃ§Ãµes</TabsTrigger>
+                          <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="movimentacao" className="space-y-3">
+                          {renderMovements(expandedDetails?.movements)}
+                        </TabsContent>
+                        <TabsContent value="decisao" className="space-y-3">
+                          {renderMovements(expandedDetails?.movements?.filter((m: any) => 
+                            safeStringValue(m.nome).toLowerCase().includes('decisÃ£o') || 
+                            safeStringValue(m.nome).toLowerCase().includes('sentenÃ§a') || 
+                            safeStringValue(m.nome).toLowerCase().includes('despacho')
+                          ))}
+                        </TabsContent>
+                        <TabsContent value="intimacao" className="space-y-3">
+                          {renderMovements(expandedDetails?.movements?.filter((m: any) => 
+                            safeStringValue(m.nome).toLowerCase().includes('intima')
+                          ))}
+                        </TabsContent>
+                        <TabsContent value="documentos" className="space-y-3">
+                          {renderMovements(expandedDetails?.movements?.filter((m: any) => 
+                            safeStringValue(m.nome).toLowerCase().includes('documento') || 
+                            safeStringValue(m.nome).toLowerCase().includes('petiÃ§Ã£o')
+                          ))}
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="p-4 flex justify-end">
+              <Button variant="outline" onClick={() => loadProcessDetails(process.id)}>
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                    Ocultar detalhes
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Ver detalhes
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
+        );
+      })}
