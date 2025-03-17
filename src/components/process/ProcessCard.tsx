@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +20,6 @@ interface ProcessCardProps {
     metadata: any;
     created_at: string;
     updated_at: string;
-    status?: string;
     hits?: Array<{
       id: string;
       number: string;
@@ -29,7 +27,6 @@ interface ProcessCardProps {
       metadata: any;
       created_at: string;
       updated_at: string;
-      status?: string;
     }>;
   };
 }
@@ -62,13 +59,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
-  const getStatusBadgeClass = (status?: string) => {
-    if (status === "Baixado") {
-      return "bg-red-100 text-red-700 hover:bg-red-100";
-    }
-    return "bg-blue-100 text-blue-700 hover:bg-blue-100";
-  };
-
   const currentMovimento = movimentos[currentMovimentoIndex] || null;
 
   return (
@@ -83,9 +73,6 @@ export function ProcessCard({ process }: ProcessCardProps) {
         <h2 className="text-xl font-medium">{safeStringValue(process.type)}</h2>
         <div className="flex items-center gap-2">
           <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
-          <Badge variant="default" className={getStatusBadgeClass(process.status)}>
-            {safeStringValue(process.status, "Em andamento")}
-          </Badge>
           <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
             {safeStringValue(process.metadata?.formato, "Eletrônico")}
           </Badge>
