@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { courts } from "@/services/datajud";
-import { InputMask } from "@react-input/mask";
+import { MaskedInput } from "@/components/ui/input-mask";
 
 const processSchema = z.object({
   number: z.string().min(1, "Número do processo é obrigatório"),
@@ -82,14 +82,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Número do Processo*</FormLabel>
                 <FormControl>
-                  <InputMask
-                    component={Input}
-                    mask="0000000-00.0000.0.00.0000"
-                    replacement={{ _: /\d/ }}
-                    defaultValue={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  <MaskedInput
+                    mask="process"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
                     placeholder="0000000-00.0000.0.00.0000"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </FormControl>
                 <FormMessage />
@@ -264,7 +262,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Documento do Autor</FormLabel>
                 <FormControl>
-                  <Input placeholder="CPF/CNPJ do autor" {...field} />
+                  <MaskedInput
+                    mask="cpf"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
+                    placeholder="000.000.000-00"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -294,7 +297,12 @@ export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
               <FormItem>
                 <FormLabel>Documento do Réu</FormLabel>
                 <FormControl>
-                  <Input placeholder="CPF/CNPJ do réu" {...field} />
+                  <MaskedInput
+                    mask="cpf"
+                    value={field.value || ""}
+                    onChange={(value) => field.onChange(value)}
+                    placeholder="000.000.000-00"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -11,6 +11,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPartiesByProcessId, createParty, updateParty, deleteParty } from "@/services/process-parties";
 import { PartyType, PartyPersonType } from "@/types/process";
+import { MaskedInput } from "@/components/ui/input-mask";
+import { formatCPF, formatCNPJ } from "@/utils/masks";
+
 interface ProcessPartiesProps {
   processId: string;
 }
@@ -174,7 +177,12 @@ export function ProcessParties({
                 
                 <div className="space-y-2">
                   <Label htmlFor="document">Documento</Label>
-                  <Input id="document" value={document} onChange={e => setDocument(e.target.value)} placeholder={personType === "physical" ? "CPF" : "CNPJ"} />
+                  <MaskedInput
+                    mask={personType === "physical" ? "cpf" : "cnpj"}
+                    value={document || ""}
+                    onChange={(value) => setDocument(value)}
+                    placeholder={personType === "physical" ? "000.000.000-00" : "00.000.000/0000-00"}
+                  />
                 </div>
                 
                 <div className="space-y-2">
@@ -229,7 +237,9 @@ export function ProcessParties({
                         {party.personType === "physical" ? "Pessoa Física" : "Pessoa Jurídica"}
                       </Badge>
                     </div>
-                    {party.document && <p className="text-xs text-gray-500 mt-0.5">Documento: {party.document}</p>}
+                    {party.document && <p className="text-xs text-gray-500 mt-0.5">
+                      Documento: {party.personType === "physical" ? formatCPF(party.document) : formatCNPJ(party.document)}
+                    </p>}
                   </div>
                 </div>
                 <div className="flex gap-0.5">

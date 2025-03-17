@@ -237,7 +237,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                   <ProcessMovements 
                     processId={processId} 
                     hitId={currentHit.id} 
-                    filter={{}} 
+                    filter={{
+                      ascending: false
+                    }}
                   />
                 </TabsContent>
 
@@ -246,7 +248,8 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                     processId={processId} 
                     hitId={currentHit.id} 
                     filter={{
-                      codes: [12266, 12265]
+                      codes: [12265, 12266],
+                      ascending: false
                     }} 
                   />
                 </TabsContent>
@@ -256,7 +259,8 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                     processId={processId} 
                     hitId={currentHit.id} 
                     filter={{
-                      codes: [581]
+                      codes: [581],
+                      ascending: false
                     }} 
                   />
                 </TabsContent>

@@ -1,14 +1,17 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ProcessList } from "@/pages/processes/ProcessList";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Filter, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { updateProcess } from "@/services/processUpdateService";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // Utility for safe string conversion
 export const safeStringValue = (value: any, defaultValue: string = ""): string => {
@@ -33,6 +36,9 @@ export const safeStringValue = (value: any, defaultValue: string = ""): string =
 
 export default function ProcessListPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const navigate = useNavigate();
 
   const {
@@ -60,43 +66,35 @@ export default function ProcessListPage() {
         const processesWithMetadata = await Promise.all(processesData.map(async process => {
           try {
             // Fetch process details - direct attempt using simpler SQL
-            const {
-              data: details,
-              error: detailsError
-            } = await supabase.from('process_details').select('*').eq('process_id', process.id).order('updated_at', {
-              ascending: false
-            }).limit(1);
+            const { data: details, error: detailsError } = await supabase
+              .from('process_details')
+              .select('*')
+              .eq('process_id', process.id)
+              .order('updated_at', { ascending: false })
+              .limit(1);
+
             if (detailsError) {
               console.warn(`Error fetching details for process ${process.id}:`, detailsError);
             }
 
             // Fetch process movements
-            const {
-              data: movements,
-              error: movementsError
-            } = await supabase.from('process_movements').select('*').eq('process_id', process.id).order('data_hora', {
-              ascending: false
-            });
+            const { data: movements, error: movementsError } = await supabase
+              .from('process_movements')
+              .select('*')
+              .eq('process_id', process.id)
+              .order('data_hora', { ascending: false });
+
             if (movementsError) {
               console.warn(`Error fetching movements for process ${process.id}:`, movementsError);
             }
 
-            // Fetch process subjects
-            const {
-              data: subjects,
-              error: subjectsError
-            } = await supabase.from('process_subjects').select('*').eq('process_id', process.id);
-            if (subjectsError) {
-              console.warn(`Error fetching subjects for process ${process.id}:`, subjectsError);
-            }
-
             // Fetch process hits
-            const {
-              data: hits,
-              error: hitsError
-            } = await supabase.from('process_hits').select('*').eq('process_id', process.id).order('data_hora_ultima_atualizacao', {
-              ascending: false
-            });
+            const { data: hits, error: hitsError } = await supabase
+              .from('process_hits')
+              .select('*')
+              .eq('process_id', process.id)
+              .order('data_hora_ultima_atualizacao', { ascending: false });
+
             if (hitsError) {
               console.warn(`Error fetching hits for process ${process.id}:`, hitsError);
             }
@@ -121,8 +119,9 @@ export default function ProcessListPage() {
               grau: processDetails?.grau || process.instance || "First",
               nivelSigilo: processDetails?.nivel_sigilo || 0,
               movimentos: movements || [],
-              assuntos: subjects || []
+              assuntos: processDetails?.assuntos || []
             };
+
             console.log(`Process ${process.id} loaded with metadata:`, metadata);
             return {
               ...process,
@@ -147,7 +146,8 @@ export default function ProcessListPage() {
                   nome: process.court || "Not specified"
                 },
                 grau: process.instance || "First",
-                nivelSigilo: 0
+                nivelSigilo: 0,
+                assuntos: []
               },
               hits: [],
               movimentacoes: [],
@@ -229,6 +229,12 @@ export default function ProcessListPage() {
     return number.includes(searchLower) || classeNome.toLowerCase().includes(searchLower);
   }) : [];
 
+  // Resetar filtros
+  const resetFilters = () => {
+    setStatusFilter("all");
+    setDateFilter("all");
+  };
+
   if (processesLoading) {
     return <div className="container mx-auto py-6">
         <div className="flex justify-center items-center h-64">
@@ -252,20 +258,82 @@ export default function ProcessListPage() {
   // Ensure we always pass an array to ProcessList, even if the data is undefined
   const safeProcesses = Array.isArray(filteredProcesses) ? filteredProcesses : [];
 
-  return <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6 my-0 py-0 px-0 mx-[33px]">
-        <h1 className="text-2xl font-bold">Processes</h1>
-        <div className="flex items-center gap-4">
-          <Input 
-            placeholder="Search processes" 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
-            className="w-64" 
-          />
-          <Button onClick={handleNewProcess}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Process
-          </Button>
+  return <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold">Processos</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <Input 
+              placeholder="Pesquisar processos..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              className="pl-10 w-full" 
+            />
+          </div>
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Filtrar processos</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="status-filter">Status</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger id="status-filter">
+                        <SelectValue placeholder="Todos os status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os status</SelectItem>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="in_progress">Em Andamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="date-filter">Data de cadastro</Label>
+                    <Select value={dateFilter} onValueChange={setDateFilter}>
+                      <SelectTrigger id="date-filter">
+                        <SelectValue placeholder="Qualquer data" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Qualquer data</SelectItem>
+                        <SelectItem value="today">Hoje</SelectItem>
+                        <SelectItem value="week">Última semana</SelectItem>
+                        <SelectItem value="month">Último mês</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex justify-between pt-2">
+                    <Button variant="outline" size="sm" onClick={resetFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                    <Button size="sm" onClick={() => setFilterOpen(false)}>
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            <Button onClick={handleNewProcess} variant="default" className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Processo
+            </Button>
+          </div>
         </div>
       </div>
       

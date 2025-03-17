@@ -84,6 +84,13 @@ export interface ProcessHit {
     codigo?: string | number;
     nome: string;
   }>;
+  movimentos?: Array<{
+    codigo: number;
+    nome: string;
+    data_hora?: string;
+    tipo?: string;
+    complemento?: string;
+  }>;
 }
 
 export interface Process {
@@ -130,6 +137,7 @@ export interface ProcessMetadata {
   assuntos?: Array<{
     codigo: number;
     nome: string;
+    principal?: boolean;
   }>;
   classe?: {
     codigo: number;

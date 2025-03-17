@@ -4,7 +4,32 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rhwtvaqsakxpumamnzgo.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJod3R2YXFzYWt4cHVtYW1uemdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAyMzI3MjcsImV4cCI6MjA1NTgwODcyN30.5sW7XFeZaTItEF_76UVyW4xpJASOB-DX5Ivr_g1tfgE';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Criar uma única instância do cliente Supabase
+let supabaseInstance: ReturnType<typeof createClient>;
+
+export const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'app-storage-key',
+        storage: window.localStorage,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+    });
+  }
+  return supabaseInstance;
+};
+
+export const supabase = getSupabaseClient();
 
 // ATENÇÃO: Devido a problemas de compatibilidade na API, estamos criando um cliente personalizado
 // para realizar consultas com headers específicos
@@ -378,15 +403,41 @@ export async function getCurrentUser() {
 
 export async function signInWithEmail(email: string, password: string) {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Garantir que estamos usando a instância correta do cliente
+    const supabase = getSupabaseClient();
     
-    return { data, error };
+    // Validar entrada
+    if (!email || !password) {
+      throw new Error('Email e senha são obrigatórios');
+    }
+
+    // Limpar o email e remover espaços extras
+    const cleanEmail = email.trim().toLowerCase();
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password,
+    });
+
+    if (error) {
+      console.error('Erro de autenticação:', error.message);
+      // Traduzir mensagens de erro comuns
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error('Email ou senha inválidos');
+      }
+      if (error.message.includes('Email not confirmed')) {
+        throw new Error('Email não confirmado. Por favor, verifique sua caixa de entrada');
+      }
+      throw error;
+    }
+    
+    return { data, error: null };
   } catch (error) {
-    console.error("Error during sign in:", error);
-    return { data: null, error };
+    console.error("Erro durante o login:", error);
+    return { 
+      data: null, 
+      error: error instanceof Error ? error : new Error('Erro desconhecido durante o login')
+    };
   }
 }
 
@@ -427,4 +478,39 @@ export async function verifyCode(token: string, code: string) {
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   return { error };
+}
+
+export async function checkProcessStatus(processId: string | null | undefined): Promise<'Baixado' | 'Em andamento'> {
+  try {
+    // Validar se o processId é válido
+    if (!processId || typeof processId !== 'string' || !processId.trim()) {
+      return 'Em andamento';
+    }
+
+    // Limpar o ID do processo de caracteres especiais
+    const cleanProcessId = processId.trim();
+
+    const { data: movements, error } = await supabase
+      .from('process_movements')
+      .select('codigo')
+      .eq('process_id', cleanProcessId);
+
+    if (error) {
+      console.error('Erro ao verificar status do processo:', error);
+      return 'Em andamento';
+    }
+
+    if (!movements || !Array.isArray(movements)) {
+      return 'Em andamento';
+    }
+
+    // Verifica se existem os códigos 22 e 848 para o mesmo processo
+    const hasCodigo22 = movements.some(mov => mov.codigo === 22);
+    const hasCodigo848 = movements.some(mov => mov.codigo === 848);
+
+    return (hasCodigo22 && hasCodigo848) ? 'Baixado' : 'Em andamento';
+  } catch (error) {
+    console.error('Erro ao verificar status do processo:', error);
+    return 'Em andamento';
+  }
 }

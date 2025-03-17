@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { courts, searchProcesses } from '@/services/datajud';
 import { formatProcessNumber } from '@/lib/utils';
 import { DatajudMovimentoProcessual } from '@/types/datajud';
+import { MaskedInput } from '@/components/ui/input-mask';
 
 interface ProcessSearchPanelProps {
   onProcessSelect: (processes: DatajudMovimentoProcessual[], courtEndpoint: string) => void;
@@ -70,8 +70,7 @@ export function ProcessSearchPanel({
     setSearched(false);
   };
 
-  const handleProcessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+  const handleProcessNumberChange = (value: string) => {
     setProcessNumber(value);
     setError(null);
   };
@@ -96,7 +95,8 @@ export function ProcessSearchPanel({
         </div>
 
         <div className={size === 'sm' ? 'col-span-1' : 'md:col-span-1'}>
-          <Input
+          <MaskedInput
+            mask="process"
             value={processNumber}
             onChange={handleProcessNumberChange}
             placeholder="Número do Processo"

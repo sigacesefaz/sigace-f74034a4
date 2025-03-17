@@ -1,6 +1,6 @@
-
 import React from "react";
 import { DatajudParty } from "@/types/datajud";
+import { formatCPF, formatCNPJ } from "@/utils/masks";
 
 interface ProcessPartiesListProps {
   parties: DatajudParty[] | undefined;
@@ -23,7 +23,9 @@ export function ProcessPartiesList({ parties }: ProcessPartiesListProps) {
                 <p className="text-xs sm:text-sm text-gray-600">Papel: {parte.papel}</p>
                 <p className="text-xs sm:text-sm text-gray-600">Tipo: {parte.tipoPessoa}</p>
                 {parte.documento && (
-                  <p className="text-xs sm:text-sm text-gray-600">Documento: {parte.documento}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Documento: {parte.tipoPessoa === "FISICA" ? formatCPF(parte.documento) : formatCNPJ(parte.documento)}
+                  </p>
                 )}
               </div>
             </div>

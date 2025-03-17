@@ -13,7 +13,7 @@ import { Process } from "@/types/process";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient, checkProcessStatus } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
 import { formatProcessNumber } from "@/utils/format";
@@ -27,6 +27,8 @@ import { ProcessHitsNavigation } from "@/components/process/ProcessHitsNavigatio
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ProcessSubjects } from "@/components/process/ProcessSubjects";
+import { cn } from "@/lib/utils";
 
 interface ProcessListProps {
   processes: Process[];
@@ -67,6 +69,7 @@ export function ProcessList({
   const [courtFilter, setCourtFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [filteredProcesses, setFilteredProcesses] = useState<Process[]>(processes);
+  const [processStatuses, setProcessStatuses] = useState<Record<string, string>>({});
   const itemsPerPage = 5;
 
   const groupedProcesses = filteredProcesses.reduce<Record<string, {
@@ -163,12 +166,6 @@ export function ProcessList({
   };
 
   const handleShare = async (process: Process) => {
-    const formatProcessNumber = (number: string) => {
-      if (!number) return "";
-      const numericOnly = number.replace(/\D/g, '');
-      if (numericOnly.length !== 20) return number;
-      return `${numericOnly.slice(0, 7)}-${numericOnly.slice(7, 9)}.${numericOnly.slice(9, 13)}.${numericOnly.slice(13, 14)}.${numericOnly.slice(14, 16)}.${numericOnly.slice(16)}`;
-    };
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     try {
       if (navigator.share) {
@@ -263,6 +260,7 @@ export function ProcessList({
   // Verificar senha do usuário
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
+      const supabase = getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -270,15 +268,11 @@ export function ProcessList({
         return false;
       }
       
-      // Aqui você pode implementar a verificação de senha
-      // Como exemplo, estamos apenas verificando se a senha não está vazia
       if (!password.trim()) {
         setPasswordError("A senha não pode estar vazia");
         return false;
       }
       
-      // Em um cenário real, você enviaria a senha para o servidor verificar
-      // Por simplicidade, vamos apenas simular uma verificação bem-sucedida
       return true;
     } catch (error) {
       console.error("Erro ao verificar senha:", error);
@@ -369,6 +363,55 @@ export function ProcessList({
     setFilteredProcesses(processes);
   };
 
+  const getProcessStatus = (process: Process): string => {
+    // Verifica se o processo tem hits
+    if (!process.hits || process.hits.length === 0) {
+      return "Em andamento";
+    }
+
+    // Pega o hit mais recente (último do array)
+    const latestHit = process.hits[process.hits.length - 1];
+    
+    // Verifica se o hit tem movimentos
+    if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
+      return "Em andamento";
+    }
+
+    // Verifica se existe algum movimento com código 22 ou 848
+    const hasBaixaMovement = latestHit.movimentos.some(
+      movimento => movimento.codigo === 22 || movimento.codigo === 848
+    );
+
+    return hasBaixaMovement ? "Baixado" : "Em andamento";
+  };
+
+  // Função para carregar o status dos processos
+  const loadProcessStatuses = async (processes: Process[]) => {
+    try {
+      // Filtra apenas processos com IDs válidos (não nulos e não vazios)
+      const validProcesses = processes.filter(process => 
+        process?.id && typeof process.id === 'string' && process.id.trim() !== ''
+      );
+
+      const statusPromises = validProcesses.map(async (process) => {
+        const status = await checkProcessStatus(process.id);
+        return [process.id, status] as [string, string];
+      });
+
+      const statuses = await Promise.all(statusPromises);
+      setProcessStatuses(Object.fromEntries(statuses));
+    } catch (error) {
+      console.error('Erro ao carregar status dos processos:', error);
+    }
+  };
+
+  // Carregar status quando os processos mudarem
+  useEffect(() => {
+    if (processes.length > 0) {
+      loadProcessStatuses(processes);
+    }
+  }, [processes]);
+
   if (isLoading) {
     return <div className="space-y-2">
         {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
@@ -392,107 +435,34 @@ export function ProcessList({
   }
 
   return <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <Checkbox 
-            id="select-all" 
-            checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
-            onCheckedChange={toggleAllProcesses}
-          />
-          <label htmlFor="select-all" className="text-sm font-medium">
-            Selecionar todos
-          </label>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="select-all" 
+              checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
+              onCheckedChange={toggleAllProcesses}
+            />
+            <label htmlFor="select-all" className="text-sm font-medium">
+              Selecionar todos
+            </label>
+          </div>
+          
+          <Badge variant="outline" className="px-2 py-1">
+            Total: {Object.keys(groupedProcesses).length} processos
+          </Badge>
           
           {selectedProcesses.length > 0 && (
             <Button 
               variant="destructive" 
               size="sm" 
               onClick={() => setBulkAlertOpen(true)}
-              className="ml-4"
+              className="ml-0 sm:ml-4"
             >
               <Trash className="h-4 w-4 mr-2" />
               Excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
             </Button>
           )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-2 py-1">
-            Total: {Object.keys(groupedProcesses).length} processos
-          </Badge>
-          
-          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <Filter className="h-4 w-4" />
-                Filtros
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <h4 className="font-medium">Filtrar processos</h4>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="status-filter">Status</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger id="status-filter">
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      {availableStatuses.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="court-filter">Tribunal</Label>
-                  <Select value={courtFilter} onValueChange={setCourtFilter}>
-                    <SelectTrigger id="court-filter">
-                      <SelectValue placeholder="Todos os tribunais" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os tribunais</SelectItem>
-                      {availableCourts.map(court => (
-                        <SelectItem key={court} value={court}>
-                          {court}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="date-filter">Data de cadastro</Label>
-                  <Select value={dateFilter} onValueChange={setDateFilter}>
-                    <SelectTrigger id="date-filter">
-                      <SelectValue placeholder="Qualquer data" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Qualquer data</SelectItem>
-                      <SelectItem value="today">Hoje</SelectItem>
-                      <SelectItem value="week">Última semana</SelectItem>
-                      <SelectItem value="month">Último mês</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-between pt-2">
-                  <Button variant="outline" size="sm" onClick={resetFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Limpar
-                  </Button>
-                  <Button size="sm" onClick={() => setFilterOpen(false)}>
-                    Aplicar
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
 
@@ -517,27 +487,41 @@ export function ProcessList({
                             {parentProcess.title || `Processo ${formatProcessNumber(parentProcess.number)}`}
                           </CardTitle>
                           <div className="flex flex-col space-y-1">
-                            <div className="flex items-baseline gap-1">
-                              <Badge variant={parentProcess.status === "Em andamento" ? "secondary" : "outline"}>
-                                {parentProcess.status || "Não informado"}
+                            <div className="flex flex-wrap items-baseline gap-1">
+                              <Badge variant={processStatuses[parentProcess.id] === "Baixado" ? "destructive" : "secondary"}>
+                                {processStatuses[parentProcess.id] || "Em andamento"}
                               </Badge>
-                              <span className="text-sm text-gray-500">
+                              <span className="text-sm text-gray-500 break-all">
                                 {formatProcessNumber(parentProcess.number)}
                               </span>
                             </div>
                             <div className="flex flex-wrap items-baseline gap-1">
                               {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? (
-                                parentProcess.metadata.assuntos.map((assunto, index) => (
-                                  <Badge 
-                                    key={index}
-                                    variant="default" 
-                                    className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white"
-                                    title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}` : "Assunto não informado"}
-                                  >
-                                    {assunto.nome}
-                                    {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
+                                <>
+                                  <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200">
+                                    {parentProcess.metadata.assuntos.length} {parentProcess.metadata.assuntos.length === 1 ? 'assunto' : 'assuntos'}
                                   </Badge>
-                                ))
+                                  {parentProcess.metadata.assuntos.map((assunto, index) => {
+                                    const isPrincipal = assunto.principal;
+                                    return (
+                                      <Badge 
+                                        key={index}
+                                        variant="default" 
+                                        className={cn(
+                                          "whitespace-normal text-xs",
+                                          isPrincipal 
+                                            ? "bg-indigo-600 hover:bg-indigo-700 text-white" 
+                                            : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                                        )}
+                                        title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}${isPrincipal ? ' - Principal' : ''}` : "Assunto não informado"}
+                                      >
+                                        {isPrincipal && <Check className="h-3 w-3 mr-1 inline-block" />}
+                                        {assunto.nome}
+                                        {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
+                                      </Badge>
+                                    );
+                                  })}
+                                </>
                               ) : (
                                 <Badge variant="default" className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white">
                                   Assunto não informado
@@ -545,7 +529,7 @@ export function ProcessList({
                               )}
                             </div>
                             <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
-                              <div className="flex items-center gap-1">
+                              <div className="flex flex-wrap items-center gap-1">
                                 <Badge variant="outline">
                                   Data Ajuizamento: {formatDate(parentProcess.metadata?.dataAjuizamento)}
                                 </Badge>
@@ -556,7 +540,7 @@ export function ProcessList({
                                   Grau: {parentProcess.metadata?.grau || "G1"}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-4">
+                              <div className="flex flex-wrap items-center gap-4 mt-1 sm:mt-0">
                                 <div className="flex items-center gap-1">
                                   <span className="text-gray-500">Criado em:</span>
                                   <span className="font-medium text-gray-700">{formatDate(parentProcess.created_at)}</span>
@@ -570,7 +554,7 @@ export function ProcessList({
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-1 mt-2 sm:mt-0">
                         <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -589,7 +573,7 @@ export function ProcessList({
                         }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
                           <Trash className="h-4 w-4" />
                         </Button>
-                        <div className="h-4 w-px bg-gray-200 mx-1" />
+                        <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
                       </div>
                     </div>
                   </CardHeader>

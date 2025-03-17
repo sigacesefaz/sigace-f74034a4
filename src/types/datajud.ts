@@ -14,8 +14,9 @@ export interface DatajudClass {
 }
 
 export interface DatajudSubject {
-  codigo: number;
+  codigo: string;
   nome: string;
+  principal?: boolean;
 }
 
 export interface DatajudCourt {

@@ -262,134 +262,137 @@ export default function IntimationList() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Intimações</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <Input 
               type="search" 
               placeholder="Pesquisar intimações..." 
-              className="pl-10 w-64" 
+              className="pl-10 w-full" 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
             />
           </div>
-          <Button asChild variant="default">
-            <Link to="/intimations/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Intimação
-            </Link>
-          </Button>
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Filtrar intimações</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="status-filter">Status</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger id="status-filter">
+                        <SelectValue placeholder="Todos os status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os status</SelectItem>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="completed">Concluída</SelectItem>
+                        <SelectItem value="expired">Expirada</SelectItem>
+                        <SelectItem value="in_progress">Em Andamento</SelectItem>
+                        <SelectItem value="cancelled">Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="deadline-filter">Data de Prazo</Label>
+                    <div className="flex items-center gap-2">
+                      <DatePicker
+                        selected={deadlineFilter}
+                        onSelect={setDeadlineFilter}
+                        placeholder="Selecione uma data"
+                      />
+                      {deadlineFilter && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setDeadlineFilter(undefined)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="sort-order">Ordenar por data</Label>
+                    <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "asc" | "desc")}>
+                      <SelectTrigger id="sort-order">
+                        <SelectValue placeholder="Ordenação" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="desc">Mais recentes primeiro</SelectItem>
+                        <SelectItem value="asc">Mais antigas primeiro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex justify-between pt-2">
+                    <Button variant="outline" size="sm" onClick={resetFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                    <Button size="sm" onClick={() => setFilterOpen(false)}>
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            <Button asChild variant="default" className="w-full sm:w-auto">
+              <Link to="/intimations/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Intimação
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <Checkbox 
-            id="select-all-intimations" 
-            checked={selectedIntimations.length > 0 && selectedIntimations.length === filteredIntimations.length}
-            onCheckedChange={toggleAllIntimations}
-          />
-          <label htmlFor="select-all-intimations" className="text-sm font-medium">
-            Selecionar todas
-          </label>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="select-all-intimations" 
+              checked={selectedIntimations.length > 0 && selectedIntimations.length === filteredIntimations.length}
+              onCheckedChange={toggleAllIntimations}
+            />
+            <label htmlFor="select-all-intimations" className="text-sm font-medium">
+              Selecionar todas
+            </label>
+          </div>
+          
+          <Badge variant="outline" className="px-2 py-1">
+            Total: {filteredIntimations.length} intimações
+          </Badge>
           
           {selectedIntimations.length > 0 && (
             <Button 
               variant="destructive" 
               size="sm" 
               onClick={() => setBulkAlertOpen(true)}
-              className="ml-4"
+              className="ml-0 sm:ml-4"
               disabled={isDeleting}
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Excluir {selectedIntimations.length} {selectedIntimations.length === 1 ? 'intimação' : 'intimações'}
             </Button>
           )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-2 py-1">
-            Total: {filteredIntimations.length} intimações
-          </Badge>
-          
-          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <Filter className="h-4 w-4" />
-                Filtros
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <h4 className="font-medium">Filtrar intimações</h4>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="status-filter">Status</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger id="status-filter">
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="completed">Concluída</SelectItem>
-                      <SelectItem value="expired">Expirada</SelectItem>
-                      <SelectItem value="in_progress">Em Andamento</SelectItem>
-                      <SelectItem value="cancelled">Cancelada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="deadline-filter">Data de Prazo</Label>
-                  <div className="flex items-center gap-2">
-                    <DatePicker
-                      selected={deadlineFilter}
-                      onSelect={setDeadlineFilter}
-                      placeholder="Selecione uma data"
-                    />
-                    {deadlineFilter && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => setDeadlineFilter(undefined)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="sort-order">Ordenar por data</Label>
-                  <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "asc" | "desc")}>
-                    <SelectTrigger id="sort-order">
-                      <SelectValue placeholder="Ordenação" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="desc">Mais recentes primeiro</SelectItem>
-                      <SelectItem value="asc">Mais antigas primeiro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-between pt-2">
-                  <Button variant="outline" size="sm" onClick={resetFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Limpar
-                  </Button>
-                  <Button size="sm" onClick={() => setFilterOpen(false)}>
-                    Aplicar
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
 
@@ -416,62 +419,64 @@ export default function IntimationList() {
         <>
           <div className="space-y-4">
             <Card>
-              <table className="w-full">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="px-4 py-2 w-10 text-left">
-                      <span className="sr-only">Selecionar</span>
-                    </th>
-                    <th className="px-4 py-2 text-left">Processo</th>
-                    <th className="px-4 py-2 text-left">Título</th>
-                    <th className="px-4 py-2 text-left">Prazo</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {paginatedIntimations.map((intimation) => (
-                    <tr key={intimation.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2">
-                        <Checkbox 
-                          checked={selectedIntimations.includes(intimation.id)}
-                          onCheckedChange={() => toggleIntimationSelection(intimation.id)}
-                        />
-                      </td>
-                      <td className="px-4 py-2 font-medium">{intimation.process_number}</td>
-                      <td className="px-4 py-2">
-                        <div className="font-medium">{intimation.title}</div>
-                        <div className="text-xs text-gray-500">{intimation.description}</div>
-                      </td>
-                      <td className="px-4 py-2">{formatDate(intimation.deadline)}</td>
-                      <td className="px-4 py-2">
-                        <Badge variant={getStatusBadgeVariant(intimation.status)}>
-                          {translateStatus(intimation.status)}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link to={`/intimations/${intimation.id}`}>
-                              <FileText className="h-4 w-4" />
-                              <span className="sr-only">Ver</span>
-                            </Link>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => confirmDelete(intimation.id)}
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                            <span className="sr-only">Excluir</span>
-                          </Button>
-                        </div>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="px-4 py-2 w-10 text-left">
+                        <span className="sr-only">Selecionar</span>
+                      </th>
+                      <th className="px-4 py-2 text-left">Processo</th>
+                      <th className="px-4 py-2 text-left">Título</th>
+                      <th className="px-4 py-2 text-left">Prazo</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {paginatedIntimations.map((intimation) => (
+                      <tr key={intimation.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2">
+                          <Checkbox 
+                            checked={selectedIntimations.includes(intimation.id)}
+                            onCheckedChange={() => toggleIntimationSelection(intimation.id)}
+                          />
+                        </td>
+                        <td className="px-4 py-2 font-medium">{intimation.process_number}</td>
+                        <td className="px-4 py-2">
+                          <div className="font-medium">{intimation.title}</div>
+                          <div className="text-xs text-gray-500">{intimation.description}</div>
+                        </td>
+                        <td className="px-4 py-2">{formatDate(intimation.deadline)}</td>
+                        <td className="px-4 py-2">
+                          <Badge variant={getStatusBadgeVariant(intimation.status)}>
+                            {translateStatus(intimation.status)}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" asChild>
+                              <Link to={`/intimations/${intimation.id}`}>
+                                <FileText className="h-4 w-4" />
+                                <span className="sr-only">Ver</span>
+                              </Link>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => confirmDelete(intimation.id)}
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Card>
 
             {totalPages > 1 && (

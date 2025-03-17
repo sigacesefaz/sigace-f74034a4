@@ -19,7 +19,7 @@ export function DashboardHeader() {
             </Link>
             <div className="flex flex-col">
               <span className="font-bold text-[#2e3092] text-base">SIGACE</span>
-              <span className="text-gray-500 text-xs font-bold">Secretaria da Fazenda do Tocantins</span>
+              <span className="text-gray-500 text-xs font-bold">Sefaz - Tocantins</span>
             </div>
           </div>
           <div className="absolute right-0">

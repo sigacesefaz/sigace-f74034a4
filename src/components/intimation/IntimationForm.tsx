@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -28,6 +27,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { MaskedInput } from "@/components/ui/input-mask";
 
 const intimationSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
@@ -440,9 +440,11 @@ export function IntimationForm({ onSubmit, onBack }: IntimationFormProps) {
                     {intimatedPersonType === "physical" ? "CPF*" : "CNPJ*"}
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder={intimatedPersonType === "physical" ? "CPF" : "CNPJ"}
-                      {...field}
+                    <MaskedInput
+                      mask={intimatedPersonType === "physical" ? "cpf" : "cnpj"}
+                      value={field.value || ""}
+                      onChange={(value) => field.onChange(value)}
+                      placeholder={intimatedPersonType === "physical" ? "000.000.000-00" : "00.000.000/0000-00"}
                     />
                   </FormControl>
                   <FormMessage />
