@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { getProcessById } from "@/services/datajud";
 import { saveProcess } from "@/services/processService";
@@ -52,24 +51,31 @@ export function useProcessImport() {
 
   // Função para verificar se o processo possui os códigos 22 ou 848 nos movimentos
   const checkProcessStatus = (movimentos: DatajudMovimentoProcessual[]): string => {
-    // Pega o último (mais recente) hit
+    // Se não temos movimentos, consideramos o processo em andamento
     if (!movimentos || movimentos.length === 0) {
       return "Em andamento";
     }
     
-    const latestHit = movimentos[movimentos.length - 1];
-    
-    // Verifica se o hit tem movimentos e se é um array
-    if (!latestHit.process?.movimentos || !Array.isArray(latestHit.process.movimentos)) {
-      return "Em andamento";
+    // Verificar todos os hits por movimentos com código 22 ou 848
+    for (const hit of movimentos) {
+      // Verificar se o hit tem movimentos e se é um array
+      if (!hit.process?.movimentos || !Array.isArray(hit.process.movimentos)) {
+        continue;
+      }
+      
+      // Verificar se existe algum movimento com código 22 ou 848
+      const hasBaixaMovement = hit.process.movimentos.some(
+        movimento => movimento.codigo === 22 || movimento.codigo === 848
+      );
+      
+      // Se encontrou algum movimento de baixa, retorna "Baixado"
+      if (hasBaixaMovement) {
+        return "Baixado";
+      }
     }
     
-    // Verifica se existe algum movimento com código 22 ou 848
-    const hasBaixaMovement = latestHit.process.movimentos.some(
-      movimento => movimento.codigo === 22 || movimento.codigo === 848
-    );
-    
-    return hasBaixaMovement ? "Baixado" : "Em andamento";
+    // Se não encontrou movimento de baixa em nenhum hit, retorna "Em andamento"
+    return "Em andamento";
   };
 
   const handleSaveProcess = async () => {

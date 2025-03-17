@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
@@ -5,6 +6,7 @@ import { saveProcessMovements } from "./process-movements";
 import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
+import { determineStatusFromHits } from "@/utils/processStatus";
 
 export async function saveProcess(
   processMovimentos: DatajudMovimentoProcessual[], 
@@ -50,11 +52,14 @@ export async function saveProcess(
     
     setImportProgress(15);
 
+    // Determine the status based on movement codes
+    const determinedStatus = determineStatusFromHits(processMovimentos);
+
     console.log("Process data to be inserted:", {
       number: numeroProcesso,
       title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-      status: processStatus, // Use the status determined by checkProcessStatus
+      status: determinedStatus, // Use the status determined by our function
       court: mainProcess.tribunal,
       user_id: user.id,
       plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
@@ -68,7 +73,7 @@ export async function saveProcess(
         number: numeroProcesso,
         title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
         description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-        status: processStatus, // Use the status determined by checkProcessStatus
+        status: determinedStatus, // Use the status determined by our function
         court: mainProcess.tribunal,
         user_id: user.id,
         created_at: new Date().toISOString(),
