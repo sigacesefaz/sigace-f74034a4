@@ -1,12 +1,5 @@
-
-import { supabase } from "@/lib/supabase";
-import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
-import { toast } from "sonner";
-import { saveProcessMovements } from "./process-movements";
-import { saveProcessSubjects } from "./process-subjects";
-import { saveProcessDetails } from "./process-details";
-import { saveProcessParties } from "./process-parties";
-import { determineStatusFromHits } from "@/utils/processStatus";
+import { supabase } from '@/lib/supabase';
+import { Process } from '@/types/process';
 
 export async function saveProcess(
   processMovimentos: DatajudMovimentoProcessual[], 
@@ -333,21 +326,33 @@ export async function getProcesses() {
   }
 }
 
-export async function getProcessById(processId: string) {
+export async function getProcessById(id: string | number): Promise<Process | null> {
   try {
     const { data, error } = await supabase
       .from('processes')
       .select('*')
-      .eq('id', processId)
+      .eq('id', String(id))
       .single();
-      
-    if (error) {
-      throw error;
-    }
     
-    return data;
+    if (error) throw error;
+    return data as Process;
   } catch (error) {
-    console.error("Error fetching process:", error);
-    throw error;
+    console.error('Error fetching process:', error);
+    return null;
+  }
+}
+
+export async function updateProcessStatus(processId: string | number, status: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('processes')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', String(processId));
+      
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error updating process status:', error);
+    return false;
   }
 }

@@ -21,7 +21,7 @@ export interface ProcessDocument {
   file_size: number;
   created_at: string;
   updated_at?: string;
-  process_id: string;
+  process_id: string | number;
   hit_id?: string;
 }
 
@@ -35,7 +35,7 @@ export interface Decision {
   decision_date: string;
   created_at: string;
   updated_at?: string;
-  process_id: string;
+  process_id: string | number;
   hit_id?: string;
 }
 
@@ -46,7 +46,7 @@ export interface Movement {
   descricao: string;
   tipo?: string;
   complemento?: string;
-  codigo?: string; // Add this property that's being used in ProcessList.tsx
+  codigo?: string | number; // Allow both string and number types
   process?: Process;
   index: string;
   score: number;
@@ -69,11 +69,11 @@ export interface ProcessHit {
   sistema?: any;
   classe?: {
     nome?: string;
-    codigo?: string;
+    codigo?: string | number;
   };
   orgao_julgador?: {
     nome?: string;
-    codigo?: string;
+    codigo?: string | number;
   };
   data_hora_ultima_atualizacao?: string;
   valor_causa?: number;
@@ -95,14 +95,14 @@ export interface ProcessHit {
 }
 
 export interface Process {
-  id: string;
+  id: string | number;
   number: string;
   court: string;
   title?: string;
   status?: string;
   description?: string;
   is_parent?: boolean;
-  parent_id?: string;
+  parent_id?: string | number;
   metadata: ProcessMetadata;
   movimentacoes?: Movement[];
   created_at: string;
@@ -118,7 +118,7 @@ export interface ProcessNotification {
   title: string;
   message: string;
   type: "update" | "deadline" | "document" | "hearing";
-  process_id?: string;
+  process_id?: string | number;
   user_id: string;
   read: boolean;
   created_at: string;
@@ -139,21 +139,21 @@ export interface ProcessUpdateHistory {
 
 export interface ProcessMetadata {
   sistema?: {
-    codigo: number;
+    codigo: number | string;
     nome: string;
   };
   orgaoJulgador?: {
-    codigo: number;
+    codigo: number | string;
     nome: string;
     codigoMunicipioIBGE?: number;
   };
   assuntos?: Array<{
-    codigo: number;
+    codigo: number | string;
     nome: string;
     principal?: boolean;
   }>;
   classe?: {
-    codigo: number;
+    codigo: number | string;
     nome: string;
   };
   nivelSigilo?: number;

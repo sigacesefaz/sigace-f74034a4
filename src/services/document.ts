@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 export interface Document {
@@ -55,16 +56,17 @@ export async function uploadDocument(
     throw new Error(`Error creating document record: ${dbError.message}`);
   }
 
+  // Convert the database response to the Document interface
   return {
-    id: document.id,
-    processId: document.process_id,
-    title: document.title,
-    description: document.description,
-    fileName: document.file_name,
-    fileUrl: document.file_url,
-    fileType: document.file_type,
-    createdAt: document.created_at,
-    updatedAt: document.updated_at
+    id: String(document.id),
+    processId: String(document.process_id),
+    title: String(document.title),
+    description: String(document.description),
+    fileName: String(document.file_name),
+    fileUrl: String(document.file_url),
+    fileType: String(document.file_type),
+    createdAt: String(document.created_at),
+    updatedAt: String(document.updated_at)
   };
 }
 
@@ -86,16 +88,17 @@ export async function updateDocument(
     throw new Error(`Error updating document: ${error.message}`);
   }
 
+  // Convert the database response to the Document interface
   return {
-    id: document.id,
-    processId: document.process_id,
-    title: document.title,
-    description: document.description,
-    fileName: document.file_name,
-    fileUrl: document.file_url,
-    fileType: document.file_type,
-    createdAt: document.created_at,
-    updatedAt: document.updated_at
+    id: String(document.id),
+    processId: String(document.process_id),
+    title: String(document.title),
+    description: String(document.description),
+    fileName: String(document.file_name),
+    fileUrl: String(document.file_url),
+    fileType: String(document.file_type),
+    createdAt: String(document.created_at),
+    updatedAt: String(document.updated_at)
   };
 }
 
@@ -114,7 +117,7 @@ export async function deleteDocument(documentId: string): Promise<void> {
   // Delete file from storage
   const { error: storageError } = await supabase.storage
     .from('documents')
-    .remove([document.file_name]);
+    .remove([String(document.file_name)]);
 
   if (storageError) {
     throw new Error(`Error deleting file: ${storageError.message}`);
@@ -142,15 +145,16 @@ export async function getProcessDocuments(processId: string): Promise<Document[]
     throw new Error(`Error fetching documents: ${error.message}`);
   }
 
+  // Convert the database response to an array of Document interfaces
   return documents.map(doc => ({
-    id: doc.id,
-    processId: doc.process_id,
-    title: doc.title,
-    description: doc.description,
-    fileName: doc.file_name,
-    fileUrl: doc.file_url,
-    fileType: doc.file_type,
-    createdAt: doc.created_at,
-    updatedAt: doc.updated_at
+    id: String(doc.id),
+    processId: String(doc.process_id),
+    title: String(doc.title),
+    description: String(doc.description),
+    fileName: String(doc.file_name),
+    fileUrl: String(doc.file_url),
+    fileType: String(doc.file_type),
+    createdAt: String(doc.created_at),
+    updatedAt: String(doc.updated_at)
   }));
 }

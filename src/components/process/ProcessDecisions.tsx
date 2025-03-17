@@ -16,10 +16,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface ProcessDecisionsProps {
   processId: string;
   hitId?: string;
 }
+
 export function ProcessDecisions({
   processId,
   hitId
@@ -69,14 +71,17 @@ export function ProcessDecisions({
     value: "outro",
     label: "Outro"
   }];
+
   useEffect(() => {
     fetchDecisions();
   }, [processId, hitId]);
+
   useEffect(() => {
     if (decisions.length > 0) {
       applyFilters();
     }
   }, [decisions, searchText, currentPage]);
+
   useEffect(() => {
     if (editingDecision) {
       setTitle(editingDecision.title);
@@ -88,6 +93,7 @@ export function ProcessDecisions({
       resetForm();
     }
   }, [editingDecision]);
+
   const fetchDecisions = async () => {
     try {
       setLoading(true);
@@ -96,7 +102,6 @@ export function ProcessDecisions({
         throw new Error("Invalid process ID format");
       }
 
-      // Usar diretamente o supabase client ao invés do customSupabaseQuery
       const {
         data,
         error
@@ -105,9 +110,11 @@ export function ProcessDecisions({
         throw error;
       }
       console.log("Fetched decisions:", data);
-      setDecisions(data || []);
-      setFilteredDecisions(data || []);
-      setTotalPages(Math.ceil((data?.length || 0) / itemsPerPage));
+
+      const typedData = data as Decision[] || [];
+      setDecisions(typedData);
+      setFilteredDecisions(typedData);
+      setTotalPages(Math.ceil((typedData.length || 0) / itemsPerPage));
     } catch (error) {
       console.error("Erro ao buscar decisões:", error);
       toast.error("Não foi possível carregar as decisões do processo");
@@ -115,6 +122,7 @@ export function ProcessDecisions({
       setLoading(false);
     }
   };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -123,6 +131,7 @@ export function ProcessDecisions({
     setDecisionDate(new Date());
     setEditingDecision(null);
   };
+
   const applyFilters = () => {
     let filtered = [...decisions];
     if (searchText.trim() !== "") {
@@ -132,16 +141,19 @@ export function ProcessDecisions({
     setFilteredDecisions(filtered);
     setTotalPages(Math.ceil(filtered.length / itemsPerPage));
   };
+
   const handleFilterChange = (filters: {
     text?: string;
   }) => {
     setSearchText(filters.text || "");
     setCurrentPage(1);
   };
+
   const handleResetFilter = () => {
     setSearchText("");
     setCurrentPage(1);
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim() || !decisionType || !decisionDate) {
@@ -165,7 +177,6 @@ export function ProcessDecisions({
       };
       let result;
       if (editingDecision) {
-        // Usar diretamente o supabase client para atualização
         const {
           data,
           error
@@ -181,7 +192,6 @@ export function ProcessDecisions({
         toast.success("Decisão atualizada com sucesso!");
       } else {
         console.log("Inserting decision with data:", decisionData);
-        // Usar diretamente o supabase client para inserção
         const {
           data,
           error
@@ -204,10 +214,10 @@ export function ProcessDecisions({
       setFormLoading(false);
     }
   };
+
   const handleDelete = async () => {
     if (!decisionToDelete) return;
     try {
-      // Usar diretamente o supabase client para exclusão
       const {
         error
       } = await supabase.from('process_judicial_decisions').delete().eq('id', decisionToDelete);
@@ -225,10 +235,12 @@ export function ProcessDecisions({
       setDeleteDialogOpen(false);
     }
   };
+
   const getDecisionTypeLabel = (type: string) => {
     const found = decisionTypes.find(t => t.value === type);
     return found ? found.label : type;
   };
+
   const formatDecisionDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", {
@@ -238,12 +250,15 @@ export function ProcessDecisions({
       return "Data inválida";
     }
   };
+
   const paginatedDecisions = filteredDecisions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   if (loading) {
     return <div className="flex justify-center items-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>;
   }
+
   return <div className="space-y-4">
       <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-2">
         <div className="flex-1">
@@ -443,3 +458,4 @@ export function ProcessDecisions({
       </AlertDialog>
     </div>;
 }
+
