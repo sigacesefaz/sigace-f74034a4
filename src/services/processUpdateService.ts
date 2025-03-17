@@ -1,62 +1,36 @@
 
-import { supabase } from '@/lib/supabase';
-import { Process, ProcessUpdateHistory } from '@/types/process';
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { ProcessUpdateHistory } from "@/types/process";
 
-export async function updateProcess(processId: string | number): Promise<boolean> {
+export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
-    console.log(`Starting process update for process ID: ${processId}`);
+    toast.loading("Updating process...");
     
-    // First, get the current process status
-    const { data: process, error: processError } = await supabase
-      .from('processes')
-      .select('status')
-      .eq('id', processId)
-      .single();
-    
-    if (processError) {
-      console.error('Error fetching process for update:', processError);
-      return false;
-    }
-    
-    const previousStatus = process?.status || 'unknown';
-
-    // Call the Edge Function to update the process
-    const { data, error } = await supabase.functions.invoke('update-process', {
-      body: { processId }
+    const { data, error } = await supabase.functions.invoke("update-process", {
+      body: { processId, courtEndpoint }
     });
     
     if (error) {
-      console.error('Error updating process via function:', error);
+      console.error("Error updating process:", error);
+      toast.dismiss();
+      toast.error(`Error updating process: ${error.message}`);
       return false;
     }
     
-    // Log the update history
-    const { data: newProcess, error: newProcessError } = await supabase
-      .from('processes')
-      .select('status')
-      .eq('id', processId)
-      .single();
+    toast.dismiss();
     
-    if (!newProcessError) {
-      const newStatus = newProcess?.status || 'unknown';
-      
-      // Only log if there was an actual change
-      if (previousStatus !== newStatus) {
-        await supabase.from('process_update_history').insert({
-          process_id: processId,
-          update_type: 'status_change',
-          previous_status: previousStatus,
-          new_status: newStatus,
-          details: { manual_update: true },
-          update_date: new Date().toISOString()
-        });
-      }
+    if (data.newHits > 0) {
+      toast.success(`Process updated successfully! ${data.newHits} new movement(s) found.`);
+    } else {
+      toast.success("Process updated, but no new movements found.");
     }
     
-    console.log(`Process update completed for process ID: ${processId}`);
     return true;
   } catch (error) {
-    console.error('Error in updateProcess function:', error);
+    console.error("Error in updateProcess:", error);
+    toast.dismiss();
+    toast.error("Error updating process");
     return false;
   }
 }
@@ -64,19 +38,60 @@ export async function updateProcess(processId: string | number): Promise<boolean
 export async function getProcessUpdateHistory(processId: string | number): Promise<ProcessUpdateHistory[]> {
   try {
     const { data, error } = await supabase
-      .from('process_update_history')
-      .select('*')
-      .eq('process_id', processId)
-      .order('update_date', { ascending: false });
+      .from("process_update_history")
+      .select("*")
+      .eq("process_id", processId)
+      .order("update_date", { ascending: false });
     
     if (error) {
+      console.error("Error fetching process update history:", error);
       throw error;
     }
     
-    // Properly cast data to ProcessUpdateHistory[] type
-    return (data as unknown) as ProcessUpdateHistory[];
+    // Cast the data to ProcessUpdateHistory type
+    return (data || []) as ProcessUpdateHistory[];
   } catch (error) {
-    console.error('Error fetching process update history:', error);
-    return [];
+    console.error("Error in getProcessUpdateHistory:", error);
+    throw error;
+  }
+}
+
+export async function getSystemConfiguration() {
+  try {
+    const { data, error } = await supabase
+      .from("system_configuration")
+      .select("*")
+      .single();
+    
+    if (error) {
+      console.error("Error fetching system configuration:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in getSystemConfiguration:", error);
+    throw error;
+  }
+}
+
+export async function updateSystemConfiguration(updates: any) {
+  try {
+    const { data, error } = await supabase
+      .from("system_configuration")
+      .update(updates)
+      .eq("id", updates.id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error updating system configuration:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in updateSystemConfiguration:", error);
+    throw error;
   }
 }

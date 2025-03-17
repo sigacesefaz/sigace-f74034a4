@@ -1,4 +1,3 @@
-
 // Add PartyType to be exported here
 export type PartyPersonType = "physical" | "legal";
 
@@ -21,7 +20,7 @@ export interface ProcessDocument {
   file_size: number;
   created_at: string;
   updated_at?: string;
-  process_id: string | number;
+  process_id: string;
   hit_id?: string;
 }
 
@@ -35,7 +34,7 @@ export interface Decision {
   decision_date: string;
   created_at: string;
   updated_at?: string;
-  process_id: string | number;
+  process_id: string;
   hit_id?: string;
 }
 
@@ -46,7 +45,7 @@ export interface Movement {
   descricao: string;
   tipo?: string;
   complemento?: string;
-  codigo?: string | number; // Allow both string and number types
+  codigo?: string; // Add this property that's being used in ProcessList.tsx
   process?: Process;
   index: string;
   score: number;
@@ -69,11 +68,11 @@ export interface ProcessHit {
   sistema?: any;
   classe?: {
     nome?: string;
-    codigo?: string | number;
+    codigo?: string;
   };
   orgao_julgador?: {
     nome?: string;
-    codigo?: string | number;
+    codigo?: string;
   };
   data_hora_ultima_atualizacao?: string;
   valor_causa?: number;
@@ -95,14 +94,14 @@ export interface ProcessHit {
 }
 
 export interface Process {
-  id: string | number;
+  id: string;
   number: string;
   court: string;
   title?: string;
   status?: string;
   description?: string;
   is_parent?: boolean;
-  parent_id?: string | number;
+  parent_id?: string;
   metadata: ProcessMetadata;
   movimentacoes?: Movement[];
   created_at: string;
@@ -118,42 +117,30 @@ export interface ProcessNotification {
   title: string;
   message: string;
   type: "update" | "deadline" | "document" | "hearing";
-  process_id?: string | number;
+  process_id?: string;
   user_id: string;
   read: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export interface ProcessUpdateHistory {
-  id: string;
-  process_id: string | number;
-  update_type: string;
-  previous_status?: string;
-  new_status?: string;
-  details?: any;
-  user_id?: string;
-  created_at?: string;
-  update_date?: string;
-}
-
 export interface ProcessMetadata {
   sistema?: {
-    codigo: number | string;
+    codigo: number;
     nome: string;
   };
   orgaoJulgador?: {
-    codigo: number | string;
+    codigo: number;
     nome: string;
     codigoMunicipioIBGE?: number;
   };
   assuntos?: Array<{
-    codigo: number | string;
+    codigo: number;
     nome: string;
     principal?: boolean;
   }>;
   classe?: {
-    codigo: number | string;
+    codigo: number;
     nome: string;
   };
   nivelSigilo?: number;

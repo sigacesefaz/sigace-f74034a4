@@ -16,8 +16,7 @@ export default function Notifications() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Explicitly cast the data to ProcessNotification[] type
-      return (data as unknown) as ProcessNotification[];
+      return data as ProcessNotification[];
     }
   });
 

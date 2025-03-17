@@ -12,12 +12,10 @@ import { Pagination } from "@/components/ui/pagination";
 import { Filters } from "@/components/ui/filters";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
 interface ProcessDocumentsProps {
   processId: string;
   hitId?: string;
 }
-
 export function ProcessDocuments({
   processId,
   hitId
@@ -39,23 +37,19 @@ export function ProcessDocuments({
   const [searchText, setSearchText] = useState("");
   const [filteredDocuments, setFilteredDocuments] = useState<ProcessDocument[]>([]);
   const itemsPerPage = 5;
-
   useEffect(() => {
     fetchDocuments();
   }, [processId, hitId]);
-
   useEffect(() => {
     if (showPreviewDialog && previewDocument) {
       getDocumentUrl(previewDocument);
     }
   }, [showPreviewDialog, previewDocument]);
-
   useEffect(() => {
     if (documents.length > 0) {
       applyFilters();
     }
   }, [documents, searchText, currentPage]);
-
   const fetchDocuments = async () => {
     try {
       setLoading(true);
@@ -71,11 +65,9 @@ export function ProcessDocuments({
         console.error("Erro detalhado ao buscar documentos:", error);
         throw error;
       }
-      
-      const typedData = data as ProcessDocument[] || [];
-      setDocuments(typedData);
-      setFilteredDocuments(typedData);
-      setTotalPages(Math.ceil((typedData.length || 0) / itemsPerPage));
+      setDocuments(data || []);
+      setFilteredDocuments(data || []);
+      setTotalPages(Math.ceil((data?.length || 0) / itemsPerPage));
     } catch (error) {
       console.error("Erro ao buscar documentos:", error);
       toast.error("Não foi possível carregar os documentos do processo");
@@ -83,7 +75,6 @@ export function ProcessDocuments({
       setLoading(false);
     }
   };
-
   const applyFilters = () => {
     let filtered = [...documents];
     if (searchText.trim() !== "") {
@@ -93,19 +84,16 @@ export function ProcessDocuments({
     setFilteredDocuments(filtered);
     setTotalPages(Math.ceil(filtered.length / itemsPerPage));
   };
-
   const handleFilterChange = (filters: {
     text?: string;
   }) => {
     setSearchText(filters.text || "");
     setCurrentPage(1);
   };
-
   const handleResetFilter = () => {
     setSearchText("");
     setCurrentPage(1);
   };
-
   const getDocumentUrl = async (document: ProcessDocument) => {
     try {
       const {
@@ -123,7 +111,6 @@ export function ProcessDocuments({
       setPreviewUrl(null);
     }
   };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -141,7 +128,6 @@ export function ProcessDocuments({
       setFile(selectedFile);
     }
   };
-
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title.trim()) {
@@ -180,6 +166,7 @@ export function ProcessDocuments({
       if (dbError) {
         console.error("Erro detalhado ao inserir no banco:", dbError);
 
+        // Se houve erro no banco, tenta remover o arquivo que foi enviado
         await supabase.storage.from('process-documents').remove([filePath]);
         throw dbError;
       }
@@ -196,7 +183,6 @@ export function ProcessDocuments({
       setUploading(false);
     }
   };
-
   const handleDelete = async () => {
     if (!documentToDelete) return;
     try {
@@ -232,7 +218,6 @@ export function ProcessDocuments({
       setShowDeleteDialog(false);
     }
   };
-
   const handleDownload = async (document: ProcessDocument) => {
     try {
       const {
@@ -255,11 +240,9 @@ export function ProcessDocuments({
       toast.error("Não foi possível baixar o documento. Por favor, tente novamente.");
     }
   };
-
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' bytes';else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';else return (bytes / 1048576).toFixed(1) + ' MB';
   };
-
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) {
       return <File className="h-6 w-6 text-red-500" />;
@@ -269,15 +252,12 @@ export function ProcessDocuments({
       return <File className="h-6 w-6 text-gray-500" />;
     }
   };
-
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   if (loading) {
     return <div className="flex justify-center items-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>;
   }
-
   return <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-medium">Documentos do Processo</h3>
@@ -372,7 +352,7 @@ export function ProcessDocuments({
           
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </>}
-
+      
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>

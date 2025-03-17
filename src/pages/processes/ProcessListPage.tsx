@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ProcessList } from "@/pages/processes/ProcessList";
@@ -13,7 +12,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Process } from "@/types/process";
 
 // Utility for safe string conversion
 export const safeStringValue = (value: any, defaultValue: string = ""): string => {
@@ -103,24 +101,20 @@ export default function ProcessListPage() {
 
             // Create full metadata for display
             const processDetails = Array.isArray(details) && details.length > 0 ? details[0] : null;
-            const detailsClasse = processDetails?.classe || {};
-            const detailsSistema = processDetails?.sistema || {};
-            const detailsOrgaoJulgador = processDetails?.orgaoJulgador || {};
-            
             const metadata = {
               numeroProcesso: process.number,
               classe: {
-                nome: safeStringValue(detailsClasse.nome) || process.title || "Not specified",
-                codigo: detailsClasse.codigo || "0000"
+                nome: processDetails?.classe?.nome || process.title || "Not specified",
+                codigo: processDetails?.classe?.codigo || "0000"
               },
               dataAjuizamento: processDetails?.data_ajuizamento || process.created_at,
               sistema: {
-                nome: safeStringValue(detailsSistema.nome) || "PJe",
-                codigo: detailsSistema.codigo || "1"
+                nome: processDetails?.sistema?.nome || "PJe",
+                codigo: processDetails?.sistema?.codigo || "1"
               },
               orgaoJulgador: {
-                nome: safeStringValue(detailsOrgaoJulgador.nome) || process.court || "Not specified",
-                codigo: detailsOrgaoJulgador.codigo || "0000"
+                nome: processDetails?.orgao_julgador?.nome || process.court || "Not specified",
+                codigo: processDetails?.orgao_julgador?.codigo || "0000"
               },
               grau: processDetails?.grau || process.instance || "First",
               nivelSigilo: processDetails?.nivel_sigilo || 0,
@@ -129,51 +123,27 @@ export default function ProcessListPage() {
             };
 
             console.log(`Process ${process.id} loaded with metadata:`, metadata);
-            
-            // Return a correctly typed Process object
             return {
               ...process,
-              id: process.id,
-              number: process.number,
-              court: process.court || "",
-              title: process.title || "",
-              status: process.status || "",
-              description: process.description || "",
-              created_at: process.created_at || new Date().toISOString(),
-              updated_at: process.updated_at || new Date().toISOString(),
               metadata,
               hits: hits || [],
               movimentacoes: movements || [],
               is_parent: !process.parent_id,
               parent_id: process.parent_id || null
-            } as Process;
+            };
           } catch (error) {
             console.error(`Error loading complete data for process ${process.id}:`, error);
             // Return the process with minimal metadata on error
             return {
               ...process,
-              id: process.id,
-              number: process.number || "",
-              court: process.court || "",
-              title: process.title || "",
-              status: process.status || "",
-              description: process.description || "",
-              created_at: process.created_at || new Date().toISOString(),
-              updated_at: process.updated_at || new Date().toISOString(),
               metadata: {
                 numeroProcesso: process.number,
                 classe: {
-                  nome: process.title || "Not specified",
-                  codigo: "0000"
+                  nome: process.title || "Not specified"
                 },
                 dataAjuizamento: process.created_at,
                 orgaoJulgador: {
-                  nome: process.court || "Not specified",
-                  codigo: "0000"
-                },
-                sistema: {
-                  nome: "PJe",
-                  codigo: "1"
+                  nome: process.court || "Not specified"
                 },
                 grau: process.instance || "First",
                 nivelSigilo: 0,
@@ -183,10 +153,10 @@ export default function ProcessListPage() {
               movimentacoes: [],
               is_parent: !process.parent_id,
               parent_id: process.parent_id || null
-            } as Process;
+            };
           }
         }));
-        return processesWithMetadata as Process[];
+        return processesWithMetadata;
       } catch (error) {
         console.error("Error in Supabase query:", error);
         throw error;
