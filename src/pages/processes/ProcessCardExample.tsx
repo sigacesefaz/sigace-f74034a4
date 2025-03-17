@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { ProcessCard } from "@/components/dashboard/ProcessCard";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Process, ProcessHit } from "@/types/process";
 
 // Dados de exemplo
 const exampleProcesses = [
@@ -10,7 +12,7 @@ const exampleProcesses = [
     id: "1",
     number: "0037536-57.2015.8.27.2729",
     title: "Mandado de Segurança Cível",
-    court: "TJTO", // Adding the required court property
+    court: "TJTO", 
     created_at: "2023-05-09T16:24:00",
     updated_at: "2025-02-26T15:54:00",
     metadata: {
@@ -123,11 +125,11 @@ const exampleProcesses = [
         data_ajuizamento: "2015-12-08T12:50:00",
         classe: {
           nome: "Mandado de Segurança Cível",
-          codigo: 120
+          codigo: "120" // Converted to string
         },
         orgao_julgador: {
           nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
-          codigo: 2729
+          codigo: "2729" // Converted to string
         },
         data_hora_ultima_atualizacao: "2023-05-09T16:24:00"
       },
@@ -140,11 +142,11 @@ const exampleProcesses = [
         data_ajuizamento: "2015-12-08T12:50:00",
         classe: {
           nome: "Mandado de Segurança Cível",
-          codigo: 120
+          codigo: "120" // Converted to string
         },
         orgao_julgador: {
           nome: "Juízo da Vara de Execuções Fiscais e Saúde de Palmas",
-          codigo: 2729
+          codigo: "2729" // Converted to string
         },
         data_hora_ultima_atualizacao: "2022-10-15T08:30:00"
       }
@@ -154,7 +156,7 @@ const exampleProcesses = [
     id: "2",
     number: "1234567-89.2022.8.27.2700",
     title: "Ação Civil Pública",
-    court: "TJTO", // Adding the required court property
+    court: "TJTO", 
     created_at: "2022-01-10T09:30:00",
     updated_at: "2025-02-25T14:22:00",
     metadata: {
@@ -246,20 +248,20 @@ const exampleProcesses = [
         data_ajuizamento: "2022-01-10T09:30:00",
         classe: {
           nome: "Ação Civil Pública",
-          codigo: 65
+          codigo: "65" // Converted to string
         },
         orgao_julgador: {
           nome: "2ª Vara Cível de Palmas", 
-          codigo: 2700
+          codigo: "2700" // Converted to string
         },
         data_hora_ultima_atualizacao: "2023-01-15T11:20:00"
       }
     ]
   }
-];
+] as unknown as Process[];
 
 export default function ProcessCardExample() {
-  const [processes, setProcesses] = useState(exampleProcesses);
+  const [processes, setProcesses] = useState<Process[]>(exampleProcesses);
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   
   const handleDelete = (id: string) => {
