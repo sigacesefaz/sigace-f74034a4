@@ -8,33 +8,29 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get current user data
-    const fetchUser = async () => {
-      setLoading(true);
-      
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session);
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+
+    // THEN check for existing session
+    const checkSession = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching session:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setUser(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-    });
+    checkSession();
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
