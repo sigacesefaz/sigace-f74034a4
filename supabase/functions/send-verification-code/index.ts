@@ -1,30 +1,33 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
 // Use the environment variable for the Resend API key
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 if (!RESEND_API_KEY) {
   console.error("RESEND_API_KEY environment variable is not set");
-  throw new Error("Email service configuration error");
 }
 
-const JWT_SECRET = Deno.env.get("JWT_SECRET") || "super-secret-jwt-token-for-verification";
+const JWT_SECRET = Deno.env.get("JWT_SECRET") || "sigace-jwt-secret-token-for-email-verification-2024";
 // The verified email address for Resend
-const VERIFIED_EMAIL = Deno.env.get("VERIFIED_EMAIL");
+const VERIFIED_EMAIL = Deno.env.get("VERIFIED_EMAIL") || "sigace@sefaz.to.gov.br";
 if (!VERIFIED_EMAIL) {
   console.error("VERIFIED_EMAIL environment variable is not set");
-  throw new Error("Email service configuration error");
 }
 
 serve(async (req) => {
+  console.log(`Request method: ${req.method}`);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS preflight request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders,
@@ -32,7 +35,18 @@ serve(async (req) => {
   }
   
   try {
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
     const { email, processNumber } = await req.json();
+    console.log(`Processing request for email: ${email}, process: ${processNumber}`);
     
     // Validate email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -77,7 +91,7 @@ serve(async (req) => {
     console.log("Verification Code:", verificationCode);
     
     try {
-      // Send the verification email
+      // Send the verification email via Resend API
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -106,6 +120,9 @@ serve(async (req) => {
           `
         })
       });
+
+      const resendStatus = resendResponse.status;
+      console.log(`Resend API response status: ${resendStatus}`);
 
       if (!resendResponse.ok) {
         const resendError = await resendResponse.text();
