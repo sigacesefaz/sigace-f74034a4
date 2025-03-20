@@ -5,9 +5,10 @@ import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
+// Use the environment variable for the secret
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "super-secret-jwt-token-for-verification";
 
 serve(async (req) => {
@@ -20,11 +21,11 @@ serve(async (req) => {
   }
   
   try {
-    const { token, code } = await req.json();
+    const { email, code, token } = await req.json();
     
-    if (!token || !code) {
+    if (!email || !code || !token) {
       return new Response(
-        JSON.stringify({ error: "Missing token or verification code" }),
+        JSON.stringify({ error: "Missing required parameters" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -35,52 +36,56 @@ serve(async (req) => {
     try {
       // Verify the JWT token
       const { payload } = await jose.jwtVerify(
-        token,
+        token, 
         new TextEncoder().encode(JWT_SECRET)
       );
       
-      // Check if the provided code matches the one in the token
-      if (payload.code !== code) {
-        return new Response(
-          JSON.stringify({ error: "Invalid verification code" }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+      // Verify the email matches
+      if (payload.email !== email) {
+        throw new Error("Email mismatch");
       }
       
-      // All checks passed, return success and the verified email
+      // Verify the code matches
+      if (payload.code !== code) {
+        throw new Error("Invalid verification code");
+      }
+      
+      // Get the process number from the token
+      const processNumber = payload.processNumber;
+      
       return new Response(
-        JSON.stringify({
-          success: true,
-          email: payload.email,
-          processNumber: payload.processNumber
+        JSON.stringify({ 
+          success: true, 
+          verified: true,
+          processNumber 
         }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
-      
-    } catch (verifyError) {
-      // Token validation failed
-      console.error("Token verification error:", verifyError);
+    } catch (jwtError) {
+      console.error("JWT verification error:", jwtError);
       
       return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
+        JSON.stringify({ 
+          error: "Invalid or expired code", 
+          details: jwtError.message 
+        }),
         {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
-    
   } catch (error) {
     console.error("Error in verify-code:", error);
     
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error.message 
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -815,6 +815,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          created_at: string | null
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
