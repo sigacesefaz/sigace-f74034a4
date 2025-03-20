@@ -89,10 +89,16 @@ export default function Register() {
     setIsRegistering(true);
     
     try {
+      // Get the current URL's origin for proper redirecting
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/dashboard`;
+      
+      console.log('Redirecting to:', redirectTo);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo
         }
       });
       
