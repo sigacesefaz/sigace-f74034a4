@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,8 +44,11 @@ serve(async (req) => {
       );
     }
     
-    const { email, processNumber } = await req.json();
+    const requestBody = await req.json();
+    const { email, processNumber } = requestBody;
+    
     console.log(`Processing request for email: ${email}, process: ${processNumber}`);
+    console.log("Full request body:", JSON.stringify(requestBody));
     
     // Validate email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -100,7 +102,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           from: `SIGACE <${VERIFIED_EMAIL}>`,
-          to: [VERIFIED_EMAIL], // Using verified email in test mode
+          to: [email], // Send to the actual recipient email
           subject: "Seu código de verificação para consulta pública",
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -113,8 +115,7 @@ serve(async (req) => {
               </div>
               <p style="margin-top: 20px;">Este código é válido por 15 minutos.</p>
               <p style="font-size: 12px; color: #777; margin-top: 40px;">
-                Esta é uma mensagem automática. Por favor, não responda a este email.<br>
-                <strong>OBSERVAÇÃO PARA DESENVOLVIMENTO:</strong> Este email foi enviado para ${VERIFIED_EMAIL} ao invés do destinatário real (${email}) porque estamos em modo de teste do Resend. Em produção, com um domínio verificado, os emails serão enviados diretamente para os usuários.
+                Esta é uma mensagem automática. Por favor, não responda a este email.
               </p>
             </div>
           `

@@ -46,7 +46,7 @@ export default function EmailVerification() {
       console.log("Sending verification code to:", email);
       console.log("Process Number:", processNumber);
       
-      // Call the original working edge function to send verification email
+      // Call the edge function to send verification email
       const { data, error } = await supabase.functions.invoke("send-verification-code", {
         body: {
           email,
