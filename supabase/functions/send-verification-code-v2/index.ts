@@ -1,29 +1,28 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
+// Define proper CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-// Use the environment variable for the Resend API key
+// Get environment variables
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-if (!RESEND_API_KEY) {
-  console.error("RESEND_API_KEY environment variable is not set");
-}
-
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "sigace-jwt-secret-token-for-email-verification-2024";
-// The verified email address for Resend
 const VERIFIED_EMAIL = Deno.env.get("VERIFIED_EMAIL") || "sigace@sefaz.to.gov.br";
-if (!VERIFIED_EMAIL) {
-  console.error("VERIFIED_EMAIL environment variable is not set");
-}
+
+// Log environment variables availability (without exposing values)
+console.log("Environment check:");
+console.log(`RESEND_API_KEY available: ${Boolean(RESEND_API_KEY)}`);
+console.log(`JWT_SECRET available: ${Boolean(JWT_SECRET)}`);
+console.log(`VERIFIED_EMAIL available: ${Boolean(VERIFIED_EMAIL)}`);
 
 serve(async (req) => {
   console.log(`Request method: ${req.method}`);
+  console.log(`Request URL: ${req.url}`);
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -45,11 +44,28 @@ serve(async (req) => {
       );
     }
     
-    const { email, processNumber } = await req.json();
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("Request body parsed successfully");
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    const { email, processNumber } = requestBody;
     console.log(`Processing request for email: ${email}, process: ${processNumber}`);
     
     // Validate email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.error("Invalid email:", email);
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         {
@@ -61,6 +77,7 @@ serve(async (req) => {
 
     // Validate process number
     if (!processNumber) {
+      console.error("Missing process number");
       return new Response(
         JSON.stringify({ error: "Process number is required" }),
         {
@@ -84,14 +101,19 @@ serve(async (req) => {
       .setExpirationTime('15m') // Code expires in 15 minutes
       .sign(new TextEncoder().encode(JWT_SECRET));
     
-    console.log("Attempting to send verification code");
+    console.log("Sending verification code");
     console.log("From:", VERIFIED_EMAIL);
     console.log("To:", email);
     console.log("Process Number:", processNumber);
     console.log("Verification Code:", verificationCode);
     
     try {
+      if (!RESEND_API_KEY) {
+        throw new Error("RESEND_API_KEY environment variable is not set");
+      }
+      
       // Send the verification email via Resend API
+      console.log("Preparing to call Resend API");
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -124,17 +146,20 @@ serve(async (req) => {
       const resendStatus = resendResponse.status;
       console.log(`Resend API response status: ${resendStatus}`);
 
+      // Log the full response body for debugging
+      const responseText = await resendResponse.text();
+      console.log("Resend API response body:", responseText);
+
       if (!resendResponse.ok) {
-        const resendError = await resendResponse.text();
-        console.error("Error from Resend API:", resendError);
-        
         // Parse the error response if possible
         let errorDetails;
         try {
-          errorDetails = JSON.parse(resendError);
+          errorDetails = JSON.parse(responseText);
         } catch {
-          errorDetails = { message: resendError };
+          errorDetails = { message: responseText };
         }
+        
+        console.error("Error from Resend API:", errorDetails);
         
         return new Response(
           JSON.stringify({ 
@@ -148,7 +173,15 @@ serve(async (req) => {
         );
       }
 
-      const resendResult = await resendResponse.json();
+      // Parse the successful response as JSON
+      let resendResult;
+      try {
+        resendResult = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error("Error parsing Resend API response:", jsonError);
+        resendResult = { id: "unknown", message: responseText };
+      }
+      
       console.log("Email sent successfully:", resendResult);
 
       return new Response(
