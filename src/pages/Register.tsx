@@ -88,7 +88,7 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 to-white">
       <Card className="w-full max-w-md p-8 bg-slate-50">
         <div className="flex justify-center mb-6">
-          <img src="/lovable-uploads/41d8761a-90fe-4080-9302-a5040d446fb1.png" alt="SEFAZ Tecnologia" className="h-12" />
+          <img src="/images/sefaz_t1i.png" alt="SEFAZ Tecnologia" className="h-12" />
         </div>
         
         <p className="text-center mb-6 text-slate-900 font-bold text-sm">Sigace - Sistema de Gestão da Ações Contra o Estado</p>

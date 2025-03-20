@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { DatajudProcess, DatajudMovimentoProcessual } from "@/types/datajud";
 import { toast } from "sonner";
@@ -5,8 +6,14 @@ import { saveProcessMovements } from "./process-movements";
 import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
+import { determineStatusFromHits } from "@/utils/processStatus";
 
-export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean | 'PROCESS_EXISTS'> {
+export async function saveProcess(
+  processMovimentos: DatajudMovimentoProcessual[], 
+  selectedCourt: string, 
+  processStatus: string = "Em andamento",
+  setImportProgress: (progress: number) => void
+): Promise<boolean | 'PROCESS_EXISTS'> {
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
     toast.error("Dados do processo incompletos");
     return false;
@@ -45,11 +52,14 @@ export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[
     
     setImportProgress(15);
 
+    // Determine the status based on movement codes
+    const determinedStatus = determineStatusFromHits(processMovimentos);
+
     console.log("Process data to be inserted:", {
       number: numeroProcesso,
       title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-      status: mainProcess.situacao?.nome || "Em andamento",
+      status: determinedStatus, // Use the status determined by our function
       court: mainProcess.tribunal,
       user_id: user.id,
       plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
@@ -63,7 +73,7 @@ export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[
         number: numeroProcesso,
         title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
         description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-        status: mainProcess.situacao?.nome || "Em andamento",
+        status: determinedStatus, // Use the status determined by our function
         court: mainProcess.tribunal,
         user_id: user.id,
         created_at: new Date().toISOString(),
@@ -251,6 +261,11 @@ export async function createManualProcess(processData: any) {
     if (existingProcess) {
       toast.error("Este processo já foi cadastrado anteriormente");
       return false;
+    }
+    
+    // Remove any type field if it exists in the processData
+    if ('type' in processData) {
+      delete processData.type;
     }
     
     const {

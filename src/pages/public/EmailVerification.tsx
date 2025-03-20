@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,7 @@ export default function EmailVerification() {
       console.log("Process Number:", processNumber);
       
       // Call the edge function to send verification email
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification-code`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification-code-v2`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +61,7 @@ export default function EmailVerification() {
       
       if (!response.ok) {
         console.error("Error response from server:", result);
-        throw new Error(result.error || result.details || "Erro ao enviar código de verificação");
+        throw new Error(result.error || result.details?.message || result.details || "Erro ao enviar código de verificação");
       }
       
       // Store the session token in sessionStorage for verification
@@ -81,9 +80,10 @@ export default function EmailVerification() {
       setShowOTP(true);
     } catch (error) {
       console.error("Error sending verification code:", error);
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível enviar o código de verificação. Tente novamente.";
       toast({
         title: "Erro ao enviar código",
-        description: error.message || "Não foi possível enviar o código de verificação. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -136,9 +136,10 @@ export default function EmailVerification() {
       
     } catch (error) {
       console.error("Error verifying code:", error);
+      const errorMessage = error instanceof Error ? error.message : "Código inválido ou expirado. Tente novamente.";
       toast({
         title: "Erro na verificação",
-        description: error.message || "Código inválido ou expirado. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

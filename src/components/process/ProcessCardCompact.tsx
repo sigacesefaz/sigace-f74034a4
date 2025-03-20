@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Process } from "@/types/process";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { formatProcessNumber } from "@/utils/format";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface ProcessCardCompactProps {
   process: Process;
@@ -59,24 +59,16 @@ export function ProcessCardCompact({
     }
   };
 
-  const getStatusColor = (status?: string) => {
-    if (!status) return "bg-gray-500";
+  const getStatusBadgeProps = (status?: string) => {
+    if (!status) return { variant: "secondary" as const };
     
-    switch (status.toLowerCase()) {
-      case "active":
-      case "ativo":
-      case "em andamento":
-        return "bg-green-500";
-      case "pending":
-      case "pendente":
-        return "bg-yellow-500";
-      case "closed":
-      case "fechado":
-      case "arquivado":
-        return "bg-gray-500";
-      default:
-        return "bg-blue-500";
-    }
+    if (status === "Baixado") {
+      return { 
+        variant: "destructive" as const,
+        className: "bg-red-600 text-white"
+      };
+    } 
+    return { variant: "secondary" as const };
   };
 
   const assunto = process.metadata?.assuntos?.[0];
@@ -99,7 +91,7 @@ export function ProcessCardCompact({
               </CardTitle>
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={process.status === "Em andamento" ? "secondary" : "outline"}>
+                  <Badge {...getStatusBadgeProps(process.status)}>
                     {process.status || "Não informado"}
                   </Badge>
                   <span className="text-sm text-gray-500">

@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +7,7 @@ import { Process } from "@/types/process";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import { ProcessNavigation } from "@/components/process/ProcessNavigation";
+import { cn } from "@/lib/utils";
 
 interface ProcessListProps {
   processes: Process[];
@@ -23,17 +23,17 @@ export function ProcessList({ processes }: ProcessListProps) {
   const currentProcesses = processes.filter(process => !process.parent_id);
   const previousHits = processes.filter(process => process.parent_id);
 
-  const getStatusColor = (status: string | undefined) => {
-    switch (status) {
-      case "active":
-        return "bg-sage-500 text-white";
-      case "pending":
-        return "bg-yellow-500 text-white";
-      case "closed":
-        return "bg-gray-500 text-white";
-      default:
-        return "bg-blue-500 text-white";
-    }
+  // Updated function to determine badge styling based on status
+  const getStatusBadgeProps = (status?: string) => {
+    if (!status) return { variant: "secondary" as const };
+    
+    if (status === "Baixado") {
+      return { 
+        variant: "destructive" as const,
+        className: "bg-red-600 text-white"
+      };
+    } 
+    return { variant: "secondary" as const };
   };
 
   const handleProcessSelect = (id: string) => {
@@ -112,8 +112,11 @@ export function ProcessList({ processes }: ProcessListProps) {
                       {process.plaintiff || "Autor não informado"}
                     </p>
                   </div>
-                  <Badge className={getStatusColor(process.status)}>
-                    {process.status ? process.status.charAt(0).toUpperCase() + process.status.slice(1) : "Em andamento"}
+                  <Badge 
+                    {...getStatusBadgeProps(process.status)}
+                    className={cn(getStatusBadgeProps(process.status).className)}
+                  >
+                    {process.status || "Em andamento"}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -184,8 +187,6 @@ export function ProcessList({ processes }: ProcessListProps) {
                     )}
                   </div>
                 )}
-
-                {/* Removendo a duplicação de navegação de movimentos fora dos detalhes */}
               </Card>
             ))
           ) : (
@@ -209,8 +210,11 @@ export function ProcessList({ processes }: ProcessListProps) {
                       <p className="text-sm text-muted-foreground">{process.number}</p>
                       <h3 className="font-medium mt-1">{process.title || "Processo sem título"}</h3>
                     </div>
-                    <Badge className={getStatusColor(process.status)}>
-                      {process.status ? process.status.charAt(0).toUpperCase() + process.status.slice(1) : "Em andamento"}
+                    <Badge 
+                      {...getStatusBadgeProps(process.status)}
+                      className={cn(getStatusBadgeProps(process.status).className)}
+                    >
+                      {process.status || "Em andamento"}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
@@ -281,8 +285,6 @@ export function ProcessList({ processes }: ProcessListProps) {
                       )}
                     </div>
                   )}
-
-                  {/* Removendo a duplicação de navegação de movimentos fora dos detalhes */}
                 </Card>
               ))}
             </div>

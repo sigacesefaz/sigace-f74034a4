@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { AutoUpdateConfig } from '@/components/settings/AutoUpdateConfig';
 
 // Fix interface for DateRangePicker
 interface DateRange {
@@ -317,6 +318,8 @@ export default function Dashboard() {
               <div className="space-y-2">
                 <h3 className="font-medium">Configurações de Sistema</h3>
                 <div className="grid grid-cols-1 gap-4">
+                  <AutoUpdateConfig />
+                  
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="backup_auto">Backup Automático</Label>

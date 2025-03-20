@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProcessSubjects } from "@/components/process/ProcessSubjects";
 import { cn } from "@/lib/utils";
+import { ProcessScheduleConfig } from '@/components/ProcessScheduleConfig';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProcessListProps {
   processes: Process[];
@@ -68,38 +70,100 @@ export function ProcessList({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [courtFilter, setCourtFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
-  const [filteredProcesses, setFilteredProcesses] = useState<Process[]>(processes);
+  const [filteredProcesses, setFilteredProcesses] = useState<Process[]>([]);
   const [processStatuses, setProcessStatuses] = useState<Record<string, string>>({});
+  const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
+  const [scheduleConfigOpen, setScheduleConfigOpen] = useState(false);
   const itemsPerPage = 5;
 
-  const groupedProcesses = filteredProcesses.reduce<Record<string, {
-    parent: Process | null;
-    children: Process[];
-  }>>((acc, process) => {
-    if (process.is_parent || !process.parent_id) {
-      if (!acc[process.id]) {
-        acc[process.id] = {
-          parent: process,
-          children: []
-        };
-      } else {
-        acc[process.id].parent = process;
-      }
-    } else if (process.parent_id) {
-      if (!acc[process.parent_id]) {
-        acc[process.parent_id] = {
-          parent: null,
-          children: [process]
-        };
-      } else {
-        acc[process.parent_id].children.push(process);
-      }
-    }
-    return acc;
-  }, {});
+  // Função de ordenação centralizada
+  const sortProcessesByDate = (processes: Process[], order: "recent" | "oldest" = "recent") => {
+    return [...processes].sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      // Garante que datas mais recentes vêm primeiro
+      return order === "recent" ? dateB - dateA : dateA - dateB;
+    });
+  };
 
-  const paginatedGroups = Object.entries(groupedProcesses).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const totalPages = Math.ceil(Object.keys(groupedProcesses).length / itemsPerPage);
+  // Inicialização - sempre começa com os mais recentes
+  useEffect(() => {
+    if (processes.length > 0) {
+      const sortedProcesses = sortProcessesByDate(processes, "recent");
+      setFilteredProcesses(sortedProcesses);
+      loadProcessStatuses(processes);
+    }
+  }, [processes]);
+
+  const handleSortOrderChange = () => {
+    const newSortOrder = sortOrder === "recent" ? "oldest" : "recent";
+    setSortOrder(newSortOrder);
+    setFilteredProcesses(prev => sortProcessesByDate(prev, newSortOrder));
+  };
+
+  // Agrupa os processos mantendo a ordem de criação
+  const groupedProcesses = useMemo(() => {
+    // Primeiro, vamos criar um array de processos pai ordenados por data
+    const parentProcesses = filteredProcesses.filter(p => p.is_parent || !p.parent_id);
+    const sortedParents = parentProcesses.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
+    });
+    
+    // Criar um array ordenado de grupos para preservar a ordem
+    const orderedGroups: [string, { parent: Process | null; children: Process[] }][] = [];
+    
+    // Agora vamos criar os grupos mantendo a ordem dos pais
+    sortedParents.forEach(process => {
+      const children = filteredProcesses.filter(p => p.parent_id === process.id);
+      orderedGroups.push([
+        process.id,
+        {
+          parent: process,
+          children: children
+        }
+      ]);
+    });
+    
+    return orderedGroups;
+  }, [filteredProcesses, sortOrder]);
+
+  const applyFilters = useCallback(() => {
+    let processesToFilter = [...processes];
+    
+    // Primeiro aplicar o filtro de status
+    if (statusFilter !== "all") {
+      processesToFilter = processesToFilter.filter(process => {
+        const status = process.status || "Em andamento";
+        if (statusFilter === "active") return status === "Em andamento";
+        if (statusFilter === "archived") return status === "Baixado";
+        return true;
+      });
+    }
+
+    // Depois aplicar a ordenação
+    processesToFilter.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
+    });
+
+    setFilteredProcesses(processesToFilter);
+  }, [processes, sortOrder, statusFilter]);
+
+  // Effect para reaplicar filtros quando as dependências mudarem
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  // Ajustar a paginação para trabalhar com o array ordenado
+  const paginatedGroups = groupedProcesses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+  const totalPages = Math.ceil(groupedProcesses.length / itemsPerPage);
 
   const handleDelete = async (id: string) => {
     if (onDelete) {
@@ -257,7 +321,6 @@ export function ProcessList({
     }));
   };
 
-  // Verificar senha do usuário
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
@@ -281,7 +344,6 @@ export function ProcessList({
     }
   };
 
-  // Função para confirmar exclusão em massa com senha
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
     
@@ -293,53 +355,47 @@ export function ProcessList({
     }
   };
 
-  // Função para aplicar filtros
-  const applyFilters = () => {
-    let filtered = [...processes];
-    
-    // Filtrar por status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(process => process.status === statusFilter);
-    }
-    
-    // Filtrar por tribunal
-    if (courtFilter !== "all") {
-      filtered = filtered.filter(process => process.court === courtFilter);
-    }
-    
-    // Filtrar por data
-    if (dateFilter !== "all") {
-      const now = new Date();
-      const oneDay = 24 * 60 * 60 * 1000;
-      const oneWeek = 7 * oneDay;
-      const oneMonth = 30 * oneDay;
+  const loadProcessStatuses = async (processes: Process[]) => {
+    try {
+      const supabase = getSupabaseClient();
       
-      filtered = filtered.filter(process => {
-        const createdAt = new Date(process.created_at);
-        const diff = now.getTime() - createdAt.getTime();
-        
-        switch (dateFilter) {
-          case "today":
-            return diff < oneDay;
-          case "week":
-            return diff < oneWeek;
-          case "month":
-            return diff < oneMonth;
-          default:
-            return true;
-        }
-      });
+      // Filtra processos válidos
+      const validProcesses = processes.filter(process => 
+        process?.id && typeof process.id === 'string' && process.id.trim() !== ''
+      );
+
+      interface ProcessStatusData {
+        id: string;
+        status: string;
+      }
+
+      // Busca o status diretamente da tabela processes
+      const { data: processesData, error: processesError } = await supabase
+        .from('processes')
+        .select('id, status')
+        .in('id', validProcesses.map(p => p.id));
+
+      if (processesError) {
+        console.error('Erro ao buscar status dos processos:', processesError);
+        return;
+      }
+
+      // Cria um mapa de status
+      const statusMap: Record<string, string> = {};
+      
+      if (processesData) {
+        (processesData as ProcessStatusData[]).forEach(process => {
+          statusMap[process.id] = process.status;
+        });
+      }
+
+      setProcessStatuses(statusMap);
+      
+    } catch (error) {
+      console.error('Erro ao carregar status dos processos:', error);
     }
-    
-    setFilteredProcesses(filtered);
   };
 
-  // Aplicar filtros quando os valores mudarem
-  useEffect(() => {
-    applyFilters();
-  }, [statusFilter, courtFilter, dateFilter, processes]);
-
-  // Obter lista única de tribunais para o filtro
   const availableCourts = useMemo(() => {
     const courts = processes
       .map(process => process.court)
@@ -347,7 +403,6 @@ export function ProcessList({
     return Array.from(new Set(courts));
   }, [processes]);
 
-  // Obter lista única de status para o filtro
   const availableStatuses = useMemo(() => {
     const statuses = processes
       .map(process => process.status)
@@ -355,7 +410,6 @@ export function ProcessList({
     return Array.from(new Set(statuses));
   }, [processes]);
 
-  // Resetar filtros
   const resetFilters = () => {
     setStatusFilter("all");
     setCourtFilter("all");
@@ -364,20 +418,16 @@ export function ProcessList({
   };
 
   const getProcessStatus = (process: Process): string => {
-    // Verifica se o processo tem hits
     if (!process.hits || process.hits.length === 0) {
       return "Em andamento";
     }
 
-    // Pega o hit mais recente (último do array)
     const latestHit = process.hits[process.hits.length - 1];
     
-    // Verifica se o hit tem movimentos
     if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
       return "Em andamento";
     }
 
-    // Verifica se existe algum movimento com código 22 ou 848
     const hasBaixaMovement = latestHit.movimentos.some(
       movimento => movimento.codigo === 22 || movimento.codigo === 848
     );
@@ -385,32 +435,21 @@ export function ProcessList({
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
 
-  // Função para carregar o status dos processos
-  const loadProcessStatuses = async (processes: Process[]) => {
-    try {
-      // Filtra apenas processos com IDs válidos (não nulos e não vazios)
-      const validProcesses = processes.filter(process => 
-        process?.id && typeof process.id === 'string' && process.id.trim() !== ''
-      );
-
-      const statusPromises = validProcesses.map(async (process) => {
-        const status = await checkProcessStatus(process.id);
-        return [process.id, status] as [string, string];
-      });
-
-      const statuses = await Promise.all(statusPromises);
-      setProcessStatuses(Object.fromEntries(statuses));
-    } catch (error) {
-      console.error('Erro ao carregar status dos processos:', error);
-    }
+  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
+    if (status === "Baixado") {
+      return "destructive";
+    } 
+    return "secondary";
   };
 
-  // Carregar status quando os processos mudarem
-  useEffect(() => {
-    if (processes.length > 0) {
-      loadProcessStatuses(processes);
-    }
-  }, [processes]);
+  const handleScheduleUpdate = (updatedProcess: Process) => {
+    // Atualiza o processo na lista
+    setProcesses((prevProcesses) =>
+      prevProcesses.map((p) =>
+        p.id === updatedProcess.id ? updatedProcess : p
+      )
+    );
+  };
 
   if (isLoading) {
     return <div className="space-y-2">
@@ -451,6 +490,63 @@ export function ProcessList({
           <Badge variant="outline" className="px-2 py-1">
             Total: {Object.keys(groupedProcesses).length} processos
           </Badge>
+
+          <button 
+            onClick={handleSortOrderChange}
+            className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
+          >
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform ${sortOrder === "recent" ? "" : "rotate-180"}`}
+            />
+            {sortOrder === "recent" ? "Recentes Primeiro" : "Antigos Primeiro"}
+          </button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button 
+                className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
+              >
+                <ChevronDown 
+                  className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`}
+                />
+                Status: {statusFilter === "all" ? "Todos" : statusFilter === "active" ? "Em andamento" : "Baixados"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1">
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
+                    statusFilter === "all"
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setStatusFilter("active")}
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
+                    statusFilter === "active"
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Em andamento
+                </button>
+                <button
+                  onClick={() => setStatusFilter("archived")}
+                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
+                    statusFilter === "archived"
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Baixados
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
           
           {selectedProcesses.length > 0 && (
             <Button 
@@ -463,6 +559,9 @@ export function ProcessList({
               Excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
             </Button>
           )}
+        </div>
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
         </div>
       </div>
 
@@ -488,8 +587,14 @@ export function ProcessList({
                           </CardTitle>
                           <div className="flex flex-col space-y-1">
                             <div className="flex flex-wrap items-baseline gap-1">
-                              <Badge variant={processStatuses[parentProcess.id] === "Baixado" ? "destructive" : "secondary"}>
-                                {processStatuses[parentProcess.id] || "Em andamento"}
+                              <Badge 
+                                variant={getStatusBadgeVariant(parentProcess.status)}
+                                className={cn(
+                                  "text-xs",
+                                  parentProcess.status === "Baixado" && "bg-red-600 text-white"
+                                )}
+                              >
+                                {parentProcess.status || "Em andamento"}
                               </Badge>
                               <span className="text-sm text-gray-500 break-all">
                                 {formatProcessNumber(parentProcess.number)}
@@ -604,7 +709,7 @@ export function ProcessList({
         })
       )}
 
-      {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-2" />}
+      
 
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>

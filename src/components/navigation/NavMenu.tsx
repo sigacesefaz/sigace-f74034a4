@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -57,15 +56,18 @@ export function NavMenu() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
   const handleLogout = () => {
-    // Aqui você pode adicionar lógica de logout se necessário
     navigate('/');
   };
 
   const handleHome = () => {
     navigate('/dashboard');
+    if (isDrawerOpen) {
+      setIsDrawerOpen(false);
+    }
   };
 
   const navigationItems = [
+    
     {
       title: "Processos",
       items: [
@@ -240,7 +242,7 @@ export function NavMenu() {
   );
 
   return (
-    <div className="flex items-center justify-between space-x-4">
+    <div className="flex items-left justify-between space-x-1">
       {isMobile ? <MobileMenu /> : <DesktopMenu />}
       
       {!isMobile && (

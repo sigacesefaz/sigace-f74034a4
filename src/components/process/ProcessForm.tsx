@@ -1,360 +1,148 @@
+
 import { useState } from "react";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { courts } from "@/services/datajud";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaskedInput } from "@/components/ui/input-mask";
 
-const processSchema = z.object({
-  number: z.string().min(1, "Número do processo é obrigatório"),
-  title: z.string().min(1, "Título é obrigatório"),
-  status: z.string().min(1, "Status é obrigatório"),
-  type: z.string().min(1, "Tipo é obrigatório"),
-  instance: z.string().min(1, "Instância é obrigatória"),
-  court: z.string().min(1, "Tribunal é obrigatório"),
-  description: z.string().optional(),
-  plaintiff: z.string().optional(),
-  plaintiff_document: z.string().optional(),
-  defendant: z.string().optional(),
-  defendant_document: z.string().optional(),
-  judge: z.string().optional(),
-  value: z.number().optional(),
-});
-
-type ProcessFormValues = z.infer<typeof processSchema>;
-
 interface ProcessFormProps {
-  onSubmit: (data: ProcessFormValues) => void;
+  onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
+  initialData?: any;
 }
 
-export function ProcessForm({ onSubmit, onCancel }: ProcessFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Encontrar o TJTO nos tribunais disponíveis
-  const tjto = courts.ESTADUAL.find(court => court.id === "tjto");
-
-  const form = useForm<ProcessFormValues>({
-    resolver: zodResolver(processSchema),
-    defaultValues: {
-      status: "active",
-      type: "liminar",
-      instance: "primeira",
-      court: tjto ? tjto.name : courts.ESTADUAL[0].name, // Default para TJTO
-    },
+export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+    defaultValues: initialData || {
+      number: '',
+      title: '',
+      description: '',
+      status: 'Em andamento',
+      court: '',
+      plaintiff: '',
+      plaintiff_document: ''
+    }
   });
 
-  const handleSubmit = async (data: ProcessFormValues) => {
-    setIsLoading(true);
+  const onSubmitForm = async (data: any) => {
+    setIsSubmitting(true);
     try {
       await onSubmit(data);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="number"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número do Processo*</FormLabel>
-                <FormControl>
-                  <MaskedInput
-                    mask="process"
-                    value={field.value || ""}
-                    onChange={(value) => field.onChange(value)}
-                    placeholder="0000000-00.0000.0.00.0000"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="number">Número do Processo</Label>
+            <MaskedInput
+              id="number"
+              mask="process"
+              value={watch('number')}
+              onChange={(value) => setValue('number', value)}
+              placeholder="0000000-00.0000.0.00.0000"
+              className="w-full"
+            />
+            {errors.number && <p className="text-sm text-red-500">{errors.number.message}</p>}
+          </div>
           
-          <FormField
-            control={form.control}
-            name="court"
-            render={({ field }) => (
-              <FormItem>
-                <div className="grid gap-2">
-                  <FormLabel htmlFor="court" className="text-lg font-bold text-primary">Tribunal</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tribunal" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courts.ESTADUAL.map((court) => (
-                          <SelectItem key={court.id} value={court.name}>
-                            {court.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
+          <div className="space-y-2">
+            <Label htmlFor="court">Tribunal</Label>
+            <Select 
+              value={watch('court')} 
+              onValueChange={(value) => setValue('court', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tribunal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TJTO">TJTO</SelectItem>
+                <SelectItem value="TJSP">TJSP</SelectItem>
+                <SelectItem value="TJRJ">TJRJ</SelectItem>
+                <SelectItem value="TJMG">TJMG</SelectItem>
+                <SelectItem value="STJ">STJ</SelectItem>
+                <SelectItem value="STF">STF</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.court && <p className="text-sm text-red-500">{errors.court.message}</p>}
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="title">Título</Label>
+          <Input
+            id="title"
+            {...register('title', { required: 'O título é obrigatório' })}
+            placeholder="Título do processo"
+          />
+          {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="description">Descrição</Label>
+          <Textarea
+            id="description"
+            {...register('description')}
+            placeholder="Descrição do processo"
+            rows={3}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <div className="grid gap-2">
-                <FormLabel htmlFor="subject" className="text-lg font-bold text-primary">Assunto</FormLabel>
-                <FormControl>
-                  <Input placeholder="Título do processo" {...field} />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="closed">Encerrado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="liminar">Liminar</SelectItem>
-                    <SelectItem value="recurso">Recurso</SelectItem>
-                    <SelectItem value="outros">Outros</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="instance"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Classe do Processo*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma classe" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="primeira">Primeira Instância</SelectItem>
-                    <SelectItem value="segunda">Segunda Instância</SelectItem>
-                    <SelectItem value="superior">Superior</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Descrição detalhada do processo" 
-                  className="resize-none min-h-[100px]" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="plaintiff"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Autor</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome do autor" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={watch('status')} 
+              onValueChange={(value) => setValue('status', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Em andamento">Em andamento</SelectItem>
+                <SelectItem value="Arquivado">Arquivado</SelectItem>
+                <SelectItem value="Suspenso">Suspenso</SelectItem>
+                <SelectItem value="Baixado">Baixado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <FormField
-            control={form.control}
-            name="plaintiff_document"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Documento do Autor</FormLabel>
-                <FormControl>
-                  <MaskedInput
-                    mask="cpf"
-                    value={field.value || ""}
-                    onChange={(value) => field.onChange(value)}
-                    placeholder="000.000.000-00"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          <div className="space-y-2">
+            <Label htmlFor="plaintiff">Nome do Autor</Label>
+            <Input
+              id="plaintiff"
+              {...register('plaintiff')}
+              placeholder="Nome do autor/requerente"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="plaintiff_document">Documento do Autor</Label>
+          <Input
+            id="plaintiff_document"
+            {...register('plaintiff_document')}
+            placeholder="CPF/CNPJ do autor"
           />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="defendant"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Réu</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome do réu" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="defendant_document"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Documento do Réu</FormLabel>
-                <FormControl>
-                  <MaskedInput
-                    mask="cpf"
-                    value={field.value || ""}
-                    onChange={(value) => field.onChange(value)}
-                    placeholder="000.000.000-00"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="judge"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Juiz</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome do juiz" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor da Causa</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    step="0.01"
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      field.onChange(isNaN(value) ? undefined : value);
-                    }}
-                    value={field.value === undefined ? '' : field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Salvando..." : "Salvar"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      </div>
+      
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Salvando...' : initialData ? 'Atualizar' : 'Cadastrar'}
+        </Button>
+      </div>
+    </form>
   );
 }

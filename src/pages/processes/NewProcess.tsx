@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { ProcessSearch } from "@/components/process/ProcessSearch";
 import { ProcessForm } from "@/components/process/ProcessForm";
 import { ProcessModeDetails } from "@/components/process/ProcessModeDetails";
+import { BatchImportDialog } from "@/components/process/BatchImportDialog";
 import { useProcessImport } from "@/hooks/useProcessImport";
 import { createManualProcess } from "@/services/processService";
 import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, CheckCircle2, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, X, AlertTriangle, Upload } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Definindo os tipos para as etapas do wizard
 type WizardStep = "search" | "details" | "manual" | "confirmation";
@@ -20,6 +22,7 @@ export default function NewProcess() {
   const [currentStep, setCurrentStep] = useState<WizardStep>("search");
   const [savedProcess, setSavedProcess] = useState<any>(null);
   const [showProcessExistsDialog, setShowProcessExistsDialog] = useState(false);
+  const [showBatchImport, setShowBatchImport] = useState(false);
   
   const { 
     isLoading,
@@ -145,12 +148,32 @@ export default function NewProcess() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center mb-4">
-          <Button variant="ghost" onClick={() => navigate('/processes')} className="mr-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-2xl font-bold">{getStepTitle()}</h1>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <Button variant="ghost" onClick={() => navigate('/processes')} className="mr-2">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <h1 className="text-2xl font-bold">{getStepTitle()}</h1>
+          </div>
+          
+          {currentStep === "search" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-500 hover:text-gray-900"
+                  onClick={() => setShowBatchImport(true)}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Importar processos em lote</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         {/* Barra de progresso do wizard */}
@@ -286,6 +309,11 @@ export default function NewProcess() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <BatchImportDialog
+          open={showBatchImport}
+          onOpenChange={setShowBatchImport}
+        />
       </div>
     </div>
   );
