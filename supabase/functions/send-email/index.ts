@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { from, to, subject, html, headers, apiKey, devMode } = await req.json();
+    const { from, to, subject, html, headers, apiKey, testMode } = await req.json();
     
     if (!apiKey) {
       throw new Error("API key não fornecida");
@@ -48,7 +48,7 @@ serve(async (req) => {
     
     // Log request details for debugging
     console.log(`Enviando e-mail para ${to} com assunto "${subject}"`);
-    console.log(`Modo de desenvolvimento: ${devMode ? 'Sim' : 'Não'}`);
+    console.log(`Modo de teste: ${testMode ? 'Sim' : 'Não'}`);
     
     // Extract verification code if available (before sending)
     let verificationCode = null;
@@ -76,12 +76,12 @@ serve(async (req) => {
       ...data
     };
     
-    // Only add verification code to the response if devMode is true
-    if (verificationCode && devMode) {
+    // Only add verification code to the response if testMode is true
+    if (verificationCode && testMode) {
       response.devCode = verificationCode;
-      console.log("Including verification code in response because devMode is enabled");
+      console.log("Including verification code in response because testMode is enabled");
     } else {
-      console.log("Not including verification code in response because devMode is disabled");
+      console.log("Not including verification code in response because testMode is disabled");
     }
     
     return new Response(

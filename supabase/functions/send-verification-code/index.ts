@@ -45,9 +45,9 @@ serve(async (req) => {
     }
     
     const requestBody = await req.json();
-    const { email, processNumber, devMode } = requestBody;
+    const { email, processNumber, testMode } = requestBody;
     
-    console.log(`Processing request for email: ${email}, process: ${processNumber}, devMode: ${devMode}`);
+    console.log(`Processing request for email: ${email}, process: ${processNumber}, testMode: ${testMode}`);
     console.log("Full request body:", JSON.stringify(requestBody));
     
     // Validate email
@@ -91,7 +91,7 @@ serve(async (req) => {
     console.log("To:", email);
     console.log("Process Number:", processNumber);
     console.log("Verification Code:", verificationCode);
-    console.log("Development Mode:", devMode ? "Yes" : "No");
+    console.log("Test Mode:", testMode ? "Yes" : "No");
     
     try {
       // Send the verification email via Resend API
@@ -153,19 +153,19 @@ serve(async (req) => {
       const resendResult = await resendResponse.json();
       console.log("Email sent successfully:", resendResult);
 
-      // Create response with verification code included only in development mode
+      // Create response with verification code included only if testMode is true
       const response = { 
         success: true, 
         message: "Verification code sent",
         token
       };
       
-      // Only include the verification code if devMode is true
-      if (devMode) {
+      // Only include the verification code if testMode is true
+      if (testMode) {
         response.devCode = verificationCode;
-        console.log("Including verification code in response for dev mode");
+        console.log("Including verification code in response because testMode is enabled");
       } else {
-        console.log("Development mode is disabled, not including verification code in response");
+        console.log("Test mode is disabled, not including verification code in response");
       }
 
       return new Response(

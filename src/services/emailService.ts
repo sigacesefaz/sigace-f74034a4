@@ -102,11 +102,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
         body: {
           ...emailData,
           apiKey: config.apiKey,
-          // Determinar se devemos enviar a flag de modo de desenvolvimento
-          // Mandar apenas se estamos em um ambiente de desenvolvimento
-          devMode: window.location.hostname === 'localhost' || 
-                  window.location.hostname === '127.0.0.1' ||
-                  window.location.hostname.includes('preview')
+          // Enviar a flag de modo de teste baseada na configuração do sistema
+          testMode: config.testMode
         }
       });
       
@@ -127,11 +124,6 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
     } catch (edgeFunctionError) {
       console.warn("Tentando o proxy local depois que a Edge Function falhou:", edgeFunctionError);
       
-      // Determinar se estamos em ambiente de desenvolvimento
-      const isDevEnvironment = window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1' ||
-                           window.location.hostname.includes('preview');
-      
       // Usar o proxy local com a chave da API no cabeçalho
       const response = await fetch('/api/resend/emails', {
         method: 'POST',
@@ -142,8 +134,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
         },
         body: JSON.stringify({
           ...emailData,
-          // Mandar devMode apenas em ambiente de desenvolvimento
-          devMode: isDevEnvironment
+          // Enviar a flag de modo de teste baseada na configuração do sistema
+          testMode: config.testMode
         })
       });
 
