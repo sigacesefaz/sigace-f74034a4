@@ -106,37 +106,11 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
     console.log("Enviando email:", emailData);
     console.log("Modo de teste ativado:", config.testMode);
 
-    // Tentar usar uma Edge Function primeiro, se falhar, usar o proxy local
+    // INVERTENDO A ORDEM - Primeiro tentar usar o proxy local, se falhar, usar a Edge Function
     try {
-      // Usar a Edge Function para enviar o email
-      const { data, error } = await supabase.functions.invoke("send-email", {
-        body: {
-          ...emailData,
-          apiKey: config.apiKey,
-          // Enviar a flag de modo de teste baseada na configuração do sistema
-          testMode: config.testMode
-        }
-      });
-      
-      if (error) {
-        console.warn("Erro ao chamar a Edge Function:", error);
-        throw new Error("Edge Function falhou, tentando proxy local");
-      }
-      
-      console.log("Email enviado com sucesso via Edge Function:", data);
-      
-      // Se tiver um código de verificação, mostre no console e exiba em toast
-      if (data.devCode && config.testMode) {
-        console.log("Código de verificação:", data.devCode);
-        toast.info(`Código de verificação (modo teste): ${data.devCode}`);
-      }
-      
-      toast.success("Email enviado com sucesso");
-      return true;
-    } catch (edgeFunctionError) {
-      console.warn("Tentando o proxy local depois que a Edge Function falhou:", edgeFunctionError);
-      
       // Usar o proxy local com a chave da API no cabeçalho
+      console.log("Tentando enviar email via proxy local...");
+      
       const response = await fetch('/api/resend/emails', {
         method: 'POST',
         headers: {
@@ -155,7 +129,7 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       if (!response.ok) {
         // Obter a resposta como texto primeiro
         const text = await response.text();
-        console.error("Erro na resposta:", text);
+        console.error("Erro na resposta do proxy:", text);
         
         try {
           // Tentar converter para JSON
@@ -175,8 +149,7 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       // Verificar se a resposta parece ser HTML
       if (responseText.trim().startsWith('<!DOCTYPE html>') || responseText.trim().startsWith('<html>')) {
         console.error("Resposta recebida é HTML, não JSON");
-        toast.error("Erro: servidor retornou HTML em vez de JSON");
-        return false;
+        throw new Error("Erro: servidor retornou HTML em vez de JSON");
       }
       
       // Tentar converter para JSON
@@ -186,11 +159,46 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       } catch (error) {
         console.error("Erro ao analisar resposta como JSON:", error);
         console.error("Resposta recebida:", responseText.substring(0, 500));
-        toast.error("Erro no formato da resposta do servidor");
-        return false;
+        throw new Error("Erro no formato da resposta do servidor");
       }
 
       console.log("Email enviado com sucesso via proxy:", responseData);
+      
+      // Se tiver um código de verificação, mostre no console e exiba em toast
+      if (responseData.devCode && config.testMode) {
+        console.log("Código de verificação (proxy):", responseData.devCode);
+        toast.info(`Código de verificação (modo teste): ${responseData.devCode}`);
+      }
+      
+      toast.success("Email enviado com sucesso");
+      return true;
+    } catch (proxyError) {
+      console.warn("Erro ao usar o proxy local, tentando Edge Function como fallback:", proxyError);
+      
+      // FALLBACK: Usar a Edge Function para enviar o email
+      const { data, error } = await supabase.functions.invoke("send-email", {
+        body: {
+          ...emailData,
+          apiKey: config.apiKey,
+          // Enviar a flag de modo de teste baseada na configuração do sistema
+          testMode: config.testMode
+        }
+      });
+      
+      if (error) {
+        console.error("Erro ao chamar a Edge Function:", error);
+        toast.error(`Erro ao enviar email: ${error.message}`);
+        return false;
+      }
+      
+      console.log("Email enviado com sucesso via Edge Function (fallback):", data);
+      
+      // Se tiver um código de verificação, mostre no console e exiba em toast
+      if (data.devCode && config.testMode) {
+        console.log("Código de verificação (Edge Function):", data.devCode);
+        toast.info(`Código de verificação (modo teste): ${data.devCode}`);
+      }
+      
       toast.success("Email enviado com sucesso");
       return true;
     }

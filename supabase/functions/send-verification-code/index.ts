@@ -154,7 +154,7 @@ serve(async (req) => {
       console.log("Email sent successfully:", resendResult);
 
       // Create response with verification code included only if testMode is true
-      const response = { 
+      const response: any = { 
         success: true, 
         message: "Verification code sent",
         token
