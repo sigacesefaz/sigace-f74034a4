@@ -95,50 +95,84 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
 
     console.log("Enviando email:", emailData);
 
-    // Usar o proxy local com a chave da API no cabeçalho
-    const response = await fetch('/api/resend/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Resend-API-Key': config.apiKey
-      },
-      body: JSON.stringify(emailData)
-    });
-
-    // Obter a resposta como texto primeiro para poder debugar se não for JSON
-    const responseText = await response.text();
-    
-    console.log("Resposta bruta do servidor:", responseText);
-    
-    // Tentar converter para JSON
-    let responseData;
+    // Tentar usar uma Edge Function primeiro, se falhar, usar o proxy local
     try {
-      responseData = JSON.parse(responseText);
-    } catch (error) {
-      console.error("Erro ao analisar resposta como JSON:", error);
-      console.error("Resposta recebida:", responseText);
-      toast.error("Erro no formato da resposta do servidor");
-      return false;
-    }
-
-    if (!response.ok) {
-      console.error("Erro no envio do email:", responseData);
+      // Usar a Edge Function para enviar o email
+      const { data, error } = await supabase.functions.invoke("send-email", {
+        body: {
+          ...emailData,
+          apiKey: config.apiKey
+        }
+      });
       
-      // Mensagem de erro mais específica para modo de teste
-      if (config.testMode && responseData.statusCode === 403) {
-        toast.error(`Em modo de teste, só é possível enviar emails para ${config.verifiedEmail}`);
-      } else {
-        toast.error(`Erro ao enviar email: ${responseData.message || responseData.error || 'Erro desconhecido'}`);
+      if (error) {
+        console.warn("Erro ao chamar a Edge Function:", error);
+        throw new Error("Edge Function falhou, tentando proxy local");
       }
-      return false;
-    }
+      
+      console.log("Email enviado com sucesso via Edge Function:", data);
+      toast.success("Email enviado com sucesso");
+      return true;
+    } catch (edgeFunctionError) {
+      console.warn("Tentando o proxy local depois que a Edge Function falhou:", edgeFunctionError);
+      
+      // Usar o proxy local com a chave da API no cabeçalho
+      const response = await fetch('/api/resend/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Resend-API-Key': config.apiKey
+        },
+        body: JSON.stringify(emailData)
+      });
 
-    console.log("Email enviado com sucesso:", responseData);
-    toast.success("Email enviado com sucesso");
-    return true;
+      // Verificar se a resposta é 200 OK
+      if (!response.ok) {
+        // Obter a resposta como texto primeiro
+        const text = await response.text();
+        console.error("Erro na resposta:", text);
+        
+        try {
+          // Tentar converter para JSON
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.error || errorData.message || `Erro ${response.status}`);
+        } catch (e) {
+          // Se não for JSON, retornar o texto
+          throw new Error(`Erro na resposta: ${text.substring(0, 100)}...`);
+        }
+      }
+
+      // Obter a resposta como texto primeiro para poder debugar se não for JSON
+      const responseText = await response.text();
+      
+      console.log("Resposta bruta do servidor:", responseText.substring(0, 500));
+      
+      // Verificar se a resposta parece ser HTML
+      if (responseText.trim().startsWith('<!DOCTYPE html>') || responseText.trim().startsWith('<html>')) {
+        console.error("Resposta recebida é HTML, não JSON");
+        toast.error("Erro: servidor retornou HTML em vez de JSON");
+        return false;
+      }
+      
+      // Tentar converter para JSON
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (error) {
+        console.error("Erro ao analisar resposta como JSON:", error);
+        console.error("Resposta recebida:", responseText.substring(0, 500));
+        toast.error("Erro no formato da resposta do servidor");
+        return false;
+      }
+
+      console.log("Email enviado com sucesso via proxy:", responseData);
+      toast.success("Email enviado com sucesso");
+      return true;
+    }
   } catch (error) {
     console.error("Erro em sendEmail:", error);
-    toast.error("Erro ao enviar email");
+    toast.error(`Erro ao enviar email: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     return false;
   }
 }

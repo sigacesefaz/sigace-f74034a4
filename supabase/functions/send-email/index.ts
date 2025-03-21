@@ -5,7 +5,7 @@ import { Resend } from "npm:resend@2.0.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
 serve(async (req) => {
@@ -28,20 +28,15 @@ serve(async (req) => {
   }
 
   try {
-    // Obter a chave de API do Resend das variáveis de ambiente
-    const apiKey = Deno.env.get("RESEND_API_KEY");
+    const { from, to, subject, html, headers, apiKey } = await req.json();
+    
     if (!apiKey) {
-      throw new Error("RESEND_API_KEY não está definido nas variáveis de ambiente");
+      throw new Error("API key não fornecida");
     }
 
-    const resend = new Resend(apiKey);
-    
-    // Obter dados do corpo da requisição
-    const { from, to, subject, html, headers } = await req.json();
-    
     if (!to || !subject || !html) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields (to, subject, html)" }),
+        JSON.stringify({ error: "Campos obrigatórios faltando (to, subject, html)" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -49,6 +44,8 @@ serve(async (req) => {
       );
     }
 
+    const resend = new Resend(apiKey);
+    
     // Enviar e-mail
     console.log(`Enviando e-mail para ${to} com assunto "${subject}"`);
     
@@ -74,7 +71,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : "Erro desconhecido",
         details: error
       }),
       {
