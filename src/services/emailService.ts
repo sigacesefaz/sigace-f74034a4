@@ -101,7 +101,9 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
           ...emailData,
-          apiKey: config.apiKey
+          apiKey: config.apiKey,
+          // Adicionar flag de desenvolvimento para mostrar código de verificação se necessário
+          devMode: import.meta.env.DEV
         }
       });
       
@@ -124,7 +126,11 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
           'Accept': 'application/json',
           'X-Resend-API-Key': config.apiKey
         },
-        body: JSON.stringify(emailData)
+        body: JSON.stringify({
+          ...emailData,
+          // Adicionar flag de desenvolvimento para mostrar código de verificação se necessário
+          devMode: import.meta.env.DEV
+        })
       });
 
       // Verificar se a resposta é 200 OK

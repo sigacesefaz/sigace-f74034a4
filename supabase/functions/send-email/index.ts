@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { from, to, subject, html, headers, apiKey } = await req.json();
+    const { from, to, subject, html, headers, apiKey, devMode } = await req.json();
     
     if (!apiKey) {
       throw new Error("API key não fornecida");
@@ -59,8 +59,24 @@ serve(async (req) => {
 
     console.log("Resposta do Resend:", data);
     
+    // Se estiver em modo de desenvolvimento e o assunto contém "verificação",
+    // extrair e retornar o código de verificação
+    let devInfo = {};
+    if (devMode && subject.toLowerCase().includes("verificação")) {
+      // Extrair código de verificação do HTML com uma expressão regular
+      const codeMatch = html.match(/(\d{6})/);
+      if (codeMatch && codeMatch[1]) {
+        devInfo = {
+          devCode: codeMatch[1]
+        };
+      }
+    }
+    
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        ...data,
+        ...devInfo
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }

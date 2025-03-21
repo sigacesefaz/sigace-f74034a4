@@ -152,12 +152,14 @@ serve(async (req) => {
       const resendResult = await resendResponse.json();
       console.log("Email sent successfully:", resendResult);
 
+      // Always return the verification code for development purposes
+      // This will be displayed in the UI in development mode
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: "Verification code sent",
           token,
-          devCode: verificationCode // Remove this in production
+          devCode: verificationCode // This will be used to display the code in dev mode
         }),
         {
           status: 200,

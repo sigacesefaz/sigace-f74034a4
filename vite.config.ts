@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { IncomingMessage, ServerResponse } from "http";
-import { Connect } from "vite/types/connect";
+import type { Connect } from "connect";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({

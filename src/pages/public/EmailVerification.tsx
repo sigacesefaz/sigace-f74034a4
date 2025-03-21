@@ -69,6 +69,7 @@ export default function EmailVerification() {
       
       // In development mode, we directly get the code for testing
       if (data.devCode) {
+        console.log("Got development verification code:", data.devCode);
         setDevCode(data.devCode);
       }
       
