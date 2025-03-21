@@ -25,13 +25,23 @@ import {
 
 const ListItem = React.forwardRef<
   React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<"a"> & { href: string }
+>(({ className, title, children, href, ...props }, ref) => {
+  const navigate = useNavigate();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log("Navigating to:", href); // Debug log
+    navigate(href);
+  };
+
   return (
     <li>
       <NavigationMenuLink asChild>
         <a
           ref={ref}
+          href={href}
+          onClick={handleClick}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
             className
@@ -128,13 +138,8 @@ export function NavMenu() {
       items: [
         {
           title: "Configurações do Sistema",
-          href: "/dashboard?tab=settings",
+          href: "/settings",
           description: "Configurações gerais do sistema"
-        },
-        {
-          title: "Perfil de Usuário",
-          href: "/dashboard?tab=settings&type=profile",
-          description: "Edite seu perfil e preferências"
         }
       ]
     }
@@ -175,7 +180,10 @@ export function NavMenu() {
                     <Link
                       to={item.href}
                       className="block py-2 text-sm hover:text-primary"
-                      onClick={() => setIsDrawerOpen(false)}
+                      onClick={() => {
+                        console.log("Mobile menu navigating to:", item.href); // Debug log
+                        setIsDrawerOpen(false);
+                      }}
                     >
                       {item.title}
                     </Link>

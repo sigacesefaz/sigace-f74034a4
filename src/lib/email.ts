@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { supabase } from './supabase';
 
 export interface EmailOptions {
   to: string;
@@ -14,13 +15,64 @@ interface ReportDetail {
   new_movements?: number;
 }
 
-const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY);
+interface SystemConfig {
+  resend_api_key: string;
+  resend_verified_email: string;
+  resend_test_mode: boolean;
+}
+
+// Email de teste do Resend (sempre verificado)
+const TEST_EMAIL = 'onboarding@resend.dev';
+
+let resendInstance: Resend | null = null;
+let config: {
+  apiKey: string;
+  verifiedEmail: string;
+  testMode: boolean;
+} | null = null;
+
+async function getResendConfig() {
+  if (!config) {
+    const { data, error } = await supabase
+      .from('system_configuration')
+      .select('resend_api_key, resend_verified_email, resend_test_mode')
+      .single();
+
+    if (error) throw error;
+
+    const typedData = data as SystemConfig;
+
+    if (!typedData?.resend_api_key) {
+      throw new Error('Resend não está configurado no sistema');
+    }
+
+    config = {
+      apiKey: typedData.resend_api_key,
+      verifiedEmail: typedData.resend_verified_email || TEST_EMAIL,
+      testMode: typedData.resend_test_mode
+    };
+
+    resendInstance = new Resend(config.apiKey);
+  }
+
+  return config;
+}
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
   try {
-    await resend.emails.send({
-      from: 'SIGACE <onboarding@resend.dev>',
-      ...options
+    const currentConfig = await getResendConfig();
+    
+    if (!resendInstance || !currentConfig) {
+      throw new Error('Resend não está configurado');
+    }
+
+    const fromEmail = currentConfig.testMode ? TEST_EMAIL : currentConfig.verifiedEmail;
+    const fromName = 'SIGACE';
+
+    await resendInstance.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      ...options,
+      subject: currentConfig.testMode ? `[TESTE] ${options.subject}` : options.subject
     });
   } catch (error) {
     console.error('Erro ao enviar email:', error);

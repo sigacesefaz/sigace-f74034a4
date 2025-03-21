@@ -13,7 +13,7 @@ export function useProcessImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
 
-  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<boolean> => {
+  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<DatajudMovimentoProcessual[] | false> => {
     setIsLoading(true);
     setImportComplete(false);
     try {
@@ -34,15 +34,15 @@ export function useProcessImport() {
       
       console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
       
-      // Armazenamos todos os movimentos - não filtramos mais por número de processo
-      // Isso é importante para capturar todos os hits relacionados
+      // Armazenamos os movimentos no estado (para manter compatibilidade)
       setProcessMovimentos(movimentos);
       setSelectedCourt(courtEndpoint);
-      return true;
+      
+      return movimentos;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
       toast.error("Erro ao importar processo");
-      setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
+      setShowManualEntry(true);
       return false;
     } finally {
       setIsLoading(false);
@@ -78,36 +78,81 @@ export function useProcessImport() {
     return "Em andamento";
   };
 
-  const handleSaveProcess = async () => {
+  const handleSaveProcess = async (movimentos?: DatajudMovimentoProcessual[], court?: string) => {
+    console.log("=== INICIANDO handleSaveProcess ===");
     try {
-      if (!processMovimentos || processMovimentos.length === 0) {
+      // Use os movimentos passados como parâmetro ou os do estado
+      const processMovimentosToUse = movimentos || processMovimentos;
+      const courtToUse = court || selectedCourt;
+
+      if (!processMovimentosToUse || processMovimentosToUse.length === 0) {
+        console.error("Nenhum processo para importar", { processMovimentos: processMovimentosToUse });
         toast.error('Nenhum processo selecionado para importação');
         return false;
       }
 
-      const mainProcess = processMovimentos[0].process;
+      if (!courtToUse) {
+        console.error("Tribunal não especificado");
+        toast.error('Tribunal não especificado');
+        return false;
+      }
+
+      console.log("Dados do processo para importar:", {
+        movimentos: processMovimentosToUse.length,
+        tribunal: courtToUse,
+        primeiroMovimento: {
+          id: processMovimentosToUse[0].id,
+          processo: processMovimentosToUse[0].process.numeroProcesso
+        }
+      });
+
+      const mainProcess = processMovimentosToUse[0].process;
       
       // Verificar se o processo já existe usando apenas o número do processo limpo
       const numeroProcessoLimpo = mainProcess.numeroProcesso.replace(/\D/g, '');
-      const { data: existingProcess } = await supabase
+      console.log("Verificando processo existente:", numeroProcessoLimpo);
+
+      const { data: existingProcess, error: checkError } = await supabase
         .from('processes')
         .select('id')
         .eq('number', numeroProcessoLimpo)
         .maybeSingle();
 
+      if (checkError) {
+        console.error("Erro ao verificar processo existente:", checkError);
+        toast.error(`Erro ao verificar processo: ${checkError.message}`);
+        return false;
+      }
+
       if (existingProcess) {
+        console.log("Processo já existe:", existingProcess);
         return 'PROCESS_EXISTS';
       }
 
       // Determinar o status do processo com base nos movimentos
-      const processStatus = checkProcessStatus(processMovimentos);
+      const processStatus = checkProcessStatus(processMovimentosToUse);
+      console.log("Status determinado:", processStatus);
       
+      console.log("Chamando saveProcess com:", {
+        movimentos: processMovimentosToUse.length,
+        tribunal: courtToUse,
+        status: processStatus
+      });
+
       // Use the saveProcess function from processService, passing the determined status
-      const result = await saveProcess(processMovimentos, selectedCourt || '', processStatus, setImportProgress);
+      const result = await saveProcess(processMovimentosToUse, courtToUse, processStatus, setImportProgress);
       
+      console.log("Resultado do saveProcess:", result);
+
       if (result === true) {
         setImportComplete(true);
         toast.success('Processo importado com sucesso!');
+      } else if (result === 'PROCESS_EXISTS') {
+        console.log("Processo já existe (retorno do saveProcess)");
+        toast.error("Este processo já foi cadastrado anteriormente");
+      } else {
+        console.error("Falha ao salvar processo");
+        toast.error("Erro ao salvar processo");
       }
       
       return result;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Filters } from '@/components/ui/filters';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AutoUpdateConfig } from '@/components/settings/AutoUpdateConfig';
+import { ResendConfig } from '@/components/settings/ResendConfig';
 
 // Fix interface for DateRangePicker
 interface DateRange {
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedProcessType, setSelectedProcessType] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
+  const navigate = useNavigate();
 
   // Get tab parameter from URL
   useEffect(() => {
@@ -269,220 +271,24 @@ export default function Dashboard() {
   const renderSettingsTab = () => {
     const settingsType = searchParams.get('type') || 'general';
     return <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[#2e3092]">Configurações do Sistema</h2>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
-            searchParams.set('type', 'general');
-            setSearchParams(searchParams);
-          }} className={settingsType === 'general' || !settingsType ? 'bg-[#2e3092] text-white' : ''}>
-              <SettingsIcon className="h-4 w-4 mr-1" />
-              Geral
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => {
-            searchParams.set('type', 'profile');
-            setSearchParams(searchParams);
-          }} className={settingsType === 'profile' ? 'bg-[#2e3092] text-white' : ''}>
-              <UserCogIcon className="h-4 w-4 mr-1" />
-              Perfil
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => {
-            searchParams.set('type', 'notifications');
-            setSearchParams(searchParams);
-          }} className={settingsType === 'notifications' ? 'bg-[#2e3092] text-white' : ''}>
-              <BellIcon className="h-4 w-4 mr-1" />
-              Notificações
-            </Button>
-          </div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-[#2e3092]">Configurações do Sistema</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
+            <SettingsIcon className="h-4 w-4 mr-1" />
+            Ir para Configurações
+          </Button>
         </div>
-
-        {settingsType === 'general' || !settingsType ? <Card>
-            <CardHeader>
-              <CardTitle>Configurações Gerais</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="font-medium">Integração com API</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="api_url">URL da API</Label>
-                    <Input id="api_url" placeholder="https://api.exemplo.com.br" defaultValue="https://datajud.cnj.jus.br/api" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="api_key">Chave de API</Label>
-                    <Input id="api_key" type="password" placeholder="Sua chave de API" defaultValue="********" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-medium">Configurações de Sistema</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <AutoUpdateConfig />
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="backup_auto">Backup Automático</Label>
-                      <p className="text-sm text-gray-500">Realizar backup automático dos dados</p>
-                    </div>
-                    <Switch id="backup_auto" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="notifications_enabled">Notificações por Email</Label>
-                      <p className="text-sm text-gray-500">Receber notificações por email</p>
-                    </div>
-                    <Switch id="notifications_enabled" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="dark_mode">Modo Escuro</Label>
-                      <p className="text-sm text-gray-500">Ativar tema escuro</p>
-                    </div>
-                    <Switch id="dark_mode" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-medium">Informações do Sistema</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-md">
-                    <p className="text-sm font-medium">Versão</p>
-                    <p className="text-sm text-gray-500">1.0.0</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-md">
-                    <p className="text-sm font-medium">Última Atualização</p>
-                    <p className="text-sm text-gray-500">10/05/2024</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button variant="outline">Cancelar</Button>
-              <Button>Salvar Alterações</Button>
-            </CardFooter>
-          </Card> : settingsType === 'profile' ? <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Perfil</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="font-medium">Informações Pessoais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="user_name">Nome</Label>
-                    <Input id="user_name" placeholder="Seu nome" defaultValue="Usuário Padrão" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user_email">Email</Label>
-                    <Input id="user_email" type="email" placeholder="seu@email.com" defaultValue="usuario@sefaz.to.gov.br" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user_department">Departamento</Label>
-                    <Input id="user_department" placeholder="Seu departamento" defaultValue="Jurídico" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user_position">Cargo</Label>
-                    <Input id="user_position" placeholder="Seu cargo" defaultValue="Analista Jurídico" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-medium">Alterar Senha</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current_password">Senha Atual</Label>
-                    <Input id="current_password" type="password" placeholder="Sua senha atual" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new_password">Nova Senha</Label>
-                    <Input id="new_password" type="password" placeholder="Nova senha" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm_password">Confirmar Senha</Label>
-                    <Input id="confirm_password" type="password" placeholder="Confirmar nova senha" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button variant="outline">Cancelar</Button>
-              <Button>Atualizar Perfil</Button>
-            </CardFooter>
-          </Card> : <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Notificações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="font-medium">Preferências de Notificação</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="notify_new_process">Novos Processos</Label>
-                      <p className="text-sm text-gray-500">Receber notificações sobre novos processos</p>
-                    </div>
-                    <Switch id="notify_new_process" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="notify_deadlines">Prazos</Label>
-                      <p className="text-sm text-gray-500">Receber alertas sobre prazos processuais</p>
-                    </div>
-                    <Switch id="notify_deadlines" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="notify_movements">Movimentações</Label>
-                      <p className="text-sm text-gray-500">Receber notificações sobre movimentações processuais</p>
-                    </div>
-                    <Switch id="notify_movements" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="notify_decisions">Decisões</Label>
-                      <p className="text-sm text-gray-500">Receber alertas sobre novas decisões</p>
-                    </div>
-                    <Switch id="notify_decisions" defaultChecked />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-medium">Canais de Notificação</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="channel_email">Email</Label>
-                      <p className="text-sm text-gray-500">Receber notificações por email</p>
-                    </div>
-                    <Switch id="channel_email" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="channel_system">Sistema</Label>
-                      <p className="text-sm text-gray-500">Receber notificações no sistema</p>
-                    </div>
-                    <Switch id="channel_system" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="channel_mobile">Dispositivo Móvel</Label>
-                      <p className="text-sm text-gray-500">Receber notificações no celular</p>
-                    </div>
-                    <Switch id="channel_mobile" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button variant="outline">Cancelar</Button>
-              <Button>Salvar Preferências</Button>
-            </CardFooter>
-          </Card>}
-      </div>;
+      </div>
+      <Card>
+        <CardContent className="py-6">
+          <p className="text-center text-gray-500">
+            As configurações do sistema foram movidas para uma nova página.
+            Clique no botão acima para acessar todas as configurações.
+          </p>
+        </CardContent>
+      </Card>
+    </div>;
   };
 
   // Render the main dashboard content

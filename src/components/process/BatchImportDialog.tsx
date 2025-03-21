@@ -354,6 +354,9 @@ export function BatchImportDialog({ open, onOpenChange }: BatchImportDialogProps
   };
 
   const startImport = async (processesToImport: ProcessPreview[]) => {
+    console.log("=== INICIANDO IMPORTAÇÃO EM LOTE ===");
+    console.log(`Total de processos para importar: ${processesToImport.length}`);
+    
     setIsUploading(true);
     setProgress(0);
 
@@ -362,33 +365,62 @@ export function BatchImportDialog({ open, onOpenChange }: BatchImportDialogProps
     const totalProcesses = processesToImport.length;
 
     for (const process of processesToImport) {
+      console.log(`\n=== Processando: ${process.numero_processo} ===`);
       try {
         // Verifica se o processo já existe
-        const { data: existingProcess } = await supabase
+        const { data: existingProcess, error: checkError } = await supabase
           .from('processes')
           .select('id')
           .eq('number', process.numero_processo.replace(/\D/g, ''))
           .maybeSingle();
 
+        if (checkError) {
+          console.error("Erro ao verificar processo existente:", checkError);
+          continue;
+        }
+
         if (existingProcess) {
+          console.log("Processo já existe:", existingProcess);
           alreadyImportedCount++;
         } else {
+          console.log("Buscando dados do processo...");
           // Primeiro busca os dados do processo
-          const selectSuccess = await handleProcessSelect(process.numero_processo, "tjto");
-          if (selectSuccess) {
+          const movimentos = await handleProcessSelect(process.numero_processo, "tjto");
+          
+          if (movimentos) {
+            console.log("Dados encontrados, tentando salvar...");
             // Se encontrou os dados, tenta salvar o processo
-            const saveResult = await handleSaveProcess();
+            const saveResult = await handleSaveProcess(movimentos, "tjto");
+            console.log("Resultado do salvamento:", saveResult);
+            
             if (saveResult === true) {
+              console.log("Processo importado com sucesso!");
               importedCount++;
+            } else if (saveResult === 'PROCESS_EXISTS') {
+              console.log("Processo já existia!");
+              alreadyImportedCount++;
+            } else {
+              console.error("Falha ao salvar processo");
             }
+          } else {
+            console.error("Falha ao buscar dados do processo");
           }
         }
         
-        setProgress(Math.round(((importedCount + alreadyImportedCount) / totalProcesses) * 100));
+        const currentProgress = Math.round(((importedCount + alreadyImportedCount) / totalProcesses) * 100);
+        console.log(`Progresso: ${currentProgress}%`);
+        setProgress(currentProgress);
       } catch (error) {
-        console.error("Erro ao importar processo:", process.numero_processo, error);
+        console.error("Erro ao importar processo:", {
+          numero: process.numero_processo,
+          error: error instanceof Error ? error.message : error
+        });
       }
     }
+
+    console.log("=== IMPORTAÇÃO CONCLUÍDA ===");
+    console.log(`Importados: ${importedCount}`);
+    console.log(`Já existentes: ${alreadyImportedCount}`);
 
     setImportResults({ imported: importedCount, alreadyImported: alreadyImportedCount });
     setIsUploading(false);

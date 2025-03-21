@@ -1,0 +1,19 @@
+Tabela process_details
+
+Name				Data Type			Format
+id 				uuid				uuid	
+process_id			uuid				uuid	
+tribunal 			character varying		varchar	
+data ajuizamento 		timestamp with time zone	timestamptz	
+grau 				character varying		varchar	
+nivele sigilo			integer				int4	
+formato 			jsonb				jsonb	
+sistema 			jsonb				jsonb	
+classe 				jsonb				jsonb	
+assuntos 			jsonb				jsonb	
+orgao_julgador 			jsonb				jsonb	
+movimentos 			jsonb				jsonb	
+partes 				jsonb				jsonb	
+data_hora_ultima_atualizacao 	timestamp with time zone	timestamptz	
+created_at 			timestamp with time zone	timestamptz	
+updated_at 			timestamp with time zone	timestamptz
