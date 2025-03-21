@@ -11,15 +11,13 @@ export interface Document {
   fileType: string;
   createdAt: string;
   updatedAt: string;
-  movementId?: string;
 }
 
 export async function uploadDocument(
   processId: string,
   file: File,
   title: string,
-  description: string,
-  movementId?: string
+  description: string
 ): Promise<Document> {
   // Generate a unique file name
   const fileName = `${processId}/${Date.now()}-${file.name}`;
@@ -48,7 +46,6 @@ export async function uploadDocument(
       file_name: fileName,
       file_url: publicUrl,
       file_type: file.type,
-      movement_id: movementId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -68,8 +65,7 @@ export async function uploadDocument(
     fileUrl: document.file_url,
     fileType: document.file_type,
     createdAt: document.created_at,
-    updatedAt: document.updated_at,
-    movementId: document.movement_id
+    updatedAt: document.updated_at
   };
 }
 
@@ -100,8 +96,7 @@ export async function updateDocument(
     fileUrl: document.file_url,
     fileType: document.file_type,
     createdAt: document.created_at,
-    updatedAt: document.updated_at,
-    movementId: document.movement_id
+    updatedAt: document.updated_at
   };
 }
 
@@ -137,22 +132,12 @@ export async function deleteDocument(documentId: string): Promise<void> {
   }
 }
 
-export async function getProcessDocuments(processId: string, movementId?: string): Promise<Document[]> {
-  let query = supabase
+export async function getProcessDocuments(processId: string): Promise<Document[]> {
+  const { data: documents, error } = await supabase
     .from('documents')
     .select()
     .eq('process_id', processId)
     .order('created_at', { ascending: false });
-
-  // If movement ID is provided, filter by it
-  if (movementId) {
-    query = query.eq('movement_id', movementId);
-  } else {
-    // If no movement ID, only get documents not associated with a movement
-    query = query.is('movement_id', null);
-  }
-
-  const { data: documents, error } = await query;
 
   if (error) {
     throw new Error(`Error fetching documents: ${error.message}`);
@@ -167,48 +152,6 @@ export async function getProcessDocuments(processId: string, movementId?: string
     fileUrl: doc.file_url,
     fileType: doc.file_type,
     createdAt: doc.created_at,
-    updatedAt: doc.updated_at,
-    movementId: doc.movement_id
+    updatedAt: doc.updated_at
   }));
-}
-
-export async function deleteProcessDocuments(processId: string): Promise<void> {
-  // Get all documents for this process
-  const { data: documents, error: fetchError } = await supabase
-    .from('documents')
-    .select('file_name')
-    .eq('process_id', processId);
-
-  if (fetchError) {
-    throw new Error(`Error fetching documents: ${fetchError.message}`);
-  }
-
-  // If there are documents, delete them from storage
-  if (documents && documents.length > 0) {
-    const filePaths = documents.map(doc => doc.file_name);
-    
-    // Delete files from storage in batches (Supabase has a limit)
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
-      const batch = filePaths.slice(i, i + BATCH_SIZE);
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove(batch);
-
-      if (storageError) {
-        console.error(`Error deleting files from storage: ${storageError.message}`);
-        // Continue with other batches even if one fails
-      }
-    }
-  }
-
-  // Delete all document records for this process
-  const { error: dbError } = await supabase
-    .from('documents')
-    .delete()
-    .eq('process_id', processId);
-
-  if (dbError) {
-    throw new Error(`Error deleting document records: ${dbError.message}`);
-  }
 }

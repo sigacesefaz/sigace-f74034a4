@@ -1,75 +1,97 @@
 
-import { supabase } from '@/lib/supabase';
-import { deleteProcessDocuments } from './document';
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { ProcessUpdateHistory } from "@/types/process";
 
-export const updateProcess = async (processId: string): Promise<boolean> => {
+export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
-    console.log("Update process initiated for process ID:", processId);
+    toast.loading("Updating process...");
     
-    // First, get the process
-    const { data: process, error: processError } = await supabase
-      .from('processes')
-      .select('number, court')
-      .eq('id', processId)
+    const { data, error } = await supabase.functions.invoke("update-process", {
+      body: { processId, courtEndpoint }
+    });
+    
+    if (error) {
+      console.error("Error updating process:", error);
+      toast.dismiss();
+      toast.error(`Error updating process: ${error.message}`);
+      return false;
+    }
+    
+    toast.dismiss();
+    
+    if (data.newHits > 0) {
+      toast.success(`Process updated successfully! ${data.newHits} new movement(s) found.`);
+    } else {
+      toast.success("Process updated, but no new movements found.");
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in updateProcess:", error);
+    toast.dismiss();
+    toast.error("Error updating process");
+    return false;
+  }
+}
+
+export async function getProcessUpdateHistory(processId: string | number): Promise<ProcessUpdateHistory[]> {
+  try {
+    const { data, error } = await supabase
+      .from("process_update_history")
+      .select("*")
+      .eq("process_id", processId)
+      .order("update_date", { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching process update history:", error);
+      throw error;
+    }
+    
+    // Cast the data to ProcessUpdateHistory type
+    return (data || []) as ProcessUpdateHistory[];
+  } catch (error) {
+    console.error("Error in getProcessUpdateHistory:", error);
+    throw error;
+  }
+}
+
+export async function getSystemConfiguration() {
+  try {
+    const { data, error } = await supabase
+      .from("system_configuration")
+      .select("*")
       .single();
-
-    if (processError) {
-      console.error("Error fetching process:", processError);
-      throw new Error(`Failed to fetch process: ${processError.message}`);
-    }
-
-    // For now, we're just logging that the process should be updated
-    console.log(`Would update process ${process.number} from ${process.court}`);
     
-    // Return true to indicate successful update
-    return true;
+    if (error) {
+      console.error("Error fetching system configuration:", error);
+      throw error;
+    }
+    
+    return data;
   } catch (error) {
-    console.error("Error updating process:", error);
+    console.error("Error in getSystemConfiguration:", error);
     throw error;
   }
-};
+}
 
-export const deleteProcess = async (processId: string): Promise<boolean> => {
+export async function updateSystemConfiguration(updates: any) {
   try {
-    console.log("Delete process initiated for process ID:", processId);
-
-    // Delete all documents for this process from storage and database
-    await deleteProcessDocuments(processId);
-
-    // Delete related entities
-    const tables = [
-      'process_movements',
-      'process_subjects',
-      'process_details',
-      'process_parties',
-      'process_judicial_decisions',
-      'process_hits'
-    ];
-
-    for (const table of tables) {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('process_id', processId);
-        
-      if (error) {
-        console.warn(`Error deleting from ${table}:`, error);
-      }
+    const { data, error } = await supabase
+      .from("system_configuration")
+      .update(updates)
+      .eq("id", updates.id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error updating system configuration:", error);
+      throw error;
     }
     
-    // Finally delete the process itself
-    const { error: deleteError } = await supabase
-      .from('processes')
-      .delete()
-      .eq('id', processId);
-      
-    if (deleteError) {
-      throw new Error(`Failed to delete process: ${deleteError.message}`);
-    }
-    
-    return true;
+    return data;
   } catch (error) {
-    console.error("Error deleting process:", error);
+    console.error("Error in updateSystemConfiguration:", error);
     throw error;
   }
-};
+}
