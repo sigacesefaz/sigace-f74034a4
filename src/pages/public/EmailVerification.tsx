@@ -62,7 +62,8 @@ export default function EmailVerification() {
         body: {
           email,
           processNumber,
-          devMode: true // Always request dev code for testing
+          // Only send devMode flag in dev environment
+          devMode: isDevEnvironment
         }
       });
       
@@ -79,8 +80,8 @@ export default function EmailVerification() {
       // Store the session token in sessionStorage for verification
       sessionStorage.setItem('verificationToken', data.token);
       
-      // Show verification code if available
-      if (data.devCode) {
+      // Show verification code only in development environment
+      if (data.devCode && isDevEnvironment) {
         console.log("Got verification code:", data.devCode);
         setDevCode(data.devCode);
       }
@@ -201,7 +202,8 @@ export default function EmailVerification() {
               </div>
             ) : (
               <div className="space-y-4">
-                {devCode && (
+                {/* Only show verification code in development environment */}
+                {devCode && isDevEnvironment && (
                   <Alert variant="default" className="bg-yellow-50 border-yellow-200">
                     <InfoIcon className="h-4 w-4 text-yellow-600" />
                     <AlertTitle className="text-yellow-800">Modo de desenvolvimento</AlertTitle>

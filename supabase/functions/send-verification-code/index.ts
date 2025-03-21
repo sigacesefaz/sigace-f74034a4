@@ -91,6 +91,7 @@ serve(async (req) => {
     console.log("To:", email);
     console.log("Process Number:", processNumber);
     console.log("Verification Code:", verificationCode);
+    console.log("Development Mode:", devMode ? "Yes" : "No");
     
     try {
       // Send the verification email via Resend API
@@ -152,15 +153,23 @@ serve(async (req) => {
       const resendResult = await resendResponse.json();
       console.log("Email sent successfully:", resendResult);
 
-      // Always return the verification code
-      // This is useful for debugging and testing
+      // Create response with verification code included only in development mode
+      const response = { 
+        success: true, 
+        message: "Verification code sent",
+        token
+      };
+      
+      // Only include the verification code if devMode is true
+      if (devMode) {
+        response.devCode = verificationCode;
+        console.log("Including verification code in response for dev mode");
+      } else {
+        console.log("Development mode is disabled, not including verification code in response");
+      }
+
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Verification code sent",
-          token,
-          devCode: verificationCode // Always return the code for debugging
-        }),
+        JSON.stringify(response),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

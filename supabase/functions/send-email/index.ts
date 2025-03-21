@@ -71,14 +71,17 @@ serve(async (req) => {
 
     console.log("Resposta do Resend:", data);
     
-    // Prepare response with verification code if available
+    // Prepare response
     const response = {
       ...data
     };
     
-    // Add verification code to response if in dev mode or if explicitly requested
-    if (verificationCode && (devMode || true)) { // Always include for debugging
+    // Only add verification code to the response if devMode is true
+    if (verificationCode && devMode) {
       response.devCode = verificationCode;
+      console.log("Including verification code in response because devMode is enabled");
+    } else {
+      console.log("Not including verification code in response because devMode is disabled");
     }
     
     return new Response(
