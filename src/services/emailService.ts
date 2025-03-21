@@ -41,6 +41,11 @@ async function getResendConfig() {
       verifiedEmail: typedData.resend_verified_email || 'sigacesefaz@hotmail.com',
       testMode: typedData.resend_test_mode || false
     };
+    
+    console.log("Config loaded from DB:", {
+      ...config,
+      apiKey: "***" // Don't log the API key
+    });
   }
 
   return config;
@@ -94,6 +99,7 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
     };
 
     console.log("Enviando email:", emailData);
+    console.log("Modo de teste ativado:", config.testMode);
 
     // Tentar usar uma Edge Function primeiro, se falhar, usar o proxy local
     try {
@@ -195,6 +201,12 @@ export async function getEmailStats() {
     if (!config) {
       throw new Error('Resend não está configurado');
     }
+    
+    console.log("Retornando status do email:", {
+      testMode: config.testMode,
+      verifiedEmail: config.verifiedEmail
+    });
+    
     return {
       testMode: config.testMode,
       verifiedEmail: config.verifiedEmail

@@ -77,11 +77,11 @@ serve(async (req) => {
     };
     
     // Only add verification code to the response if testMode is true
-    if (verificationCode && testMode) {
+    if (verificationCode && testMode === true) {
+      console.log("Test mode is enabled, including verification code in response");
       response.devCode = verificationCode;
-      console.log("Including verification code in response because testMode is enabled");
     } else {
-      console.log("Not including verification code in response because testMode is disabled");
+      console.log("Test mode is disabled, not including verification code in response");
     }
     
     return new Response(

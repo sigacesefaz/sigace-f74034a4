@@ -28,7 +28,10 @@ export default function EmailVerification() {
       try {
         const stats = await getEmailStats();
         setIsTestMode(stats.testMode);
-        console.log("Email settings:", { testMode: stats.testMode, verifiedEmail: stats.verifiedEmail });
+        console.log("Email settings loaded:", { 
+          testMode: stats.testMode, 
+          verifiedEmail: stats.verifiedEmail 
+        });
       } catch (error) {
         console.error("Error checking email settings:", error);
         // Default to false if there's an error
@@ -92,6 +95,8 @@ export default function EmailVerification() {
       if (data.devCode && isTestMode) {
         console.log("Got verification code in test mode:", data.devCode);
         setDevCode(data.devCode);
+      } else {
+        console.log("No verification code received or test mode disabled");
       }
       
       toast({

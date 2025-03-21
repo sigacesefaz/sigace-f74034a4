@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
-import { sendEmail } from '@/services/emailService';
 
-interface ResendConfig {
+import React, { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
+
+interface ResendConfigData {
   resend_api_key: string;
   resend_verified_email: string;
   resend_test_mode: boolean;
@@ -16,13 +16,12 @@ interface ResendConfig {
 
 export function ResendConfig() {
   const { toast } = useToast();
-  const [config, setConfig] = useState<ResendConfig>({
-    resend_api_key: '',
-    resend_verified_email: '',
-    resend_test_mode: false
-  });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [verifiedEmail, setVerifiedEmail] = useState('');
+  const [testMode, setTestMode] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -31,32 +30,33 @@ export function ResendConfig() {
   const loadConfig = async () => {
     try {
       setLoading(true);
+      
       const { data, error } = await supabase
         .from('system_configuration')
-        .select('id, resend_api_key, resend_verified_email, resend_test_mode')
-        .single() as { 
-          data: { 
-            id: number;
-            resend_api_key: string | null; 
-            resend_verified_email: string | null; 
-            resend_test_mode: boolean | null; 
-          } | null; 
-          error: any; 
-        };
-
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 é o código para nenhum resultado encontrado
-
-      setConfig({
-        resend_api_key: data?.resend_api_key || '',
-        resend_verified_email: data?.resend_verified_email || '',
-        resend_test_mode: data?.resend_test_mode || false
-      });
-    } catch (error: any) {
-      console.error('Erro ao carregar configurações:', error);
+        .select('resend_api_key, resend_verified_email, resend_test_mode')
+        .single();
+      
+      if (error) {
+        console.error('Error loading Resend config:', error);
+        toast({
+          title: 'Erro ao carregar configurações',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (data) {
+        setApiKey(data.resend_api_key || '');
+        setVerifiedEmail(data.resend_verified_email || '');
+        setTestMode(data.resend_test_mode || false);
+      }
+    } catch (error) {
+      console.error('Error in loadConfig:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar as configurações do Resend.',
-        variant: 'destructive'
+        title: 'Erro ao carregar configurações',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -67,153 +67,119 @@ export function ResendConfig() {
     try {
       setSaving(true);
       
-      // Primeiro, verifica se já existe alguma configuração
-      const { data: existingConfig } = await supabase
+      const configData: ResendConfigData = {
+        resend_api_key: apiKey,
+        resend_verified_email: verifiedEmail,
+        resend_test_mode: testMode
+      };
+      
+      const { error } = await supabase
         .from('system_configuration')
-        .select('id')
-        .single() as { data: { id: string } | null };
-
-      let error;
+        .update(configData)
+        .eq('id', 1);
       
-      if (existingConfig?.id) {
-        // Se existe, atualiza
-        const { error: updateError } = await supabase
-          .from('system_configuration')
-          .update({
-            resend_api_key: config.resend_api_key,
-            resend_verified_email: config.resend_verified_email,
-            resend_test_mode: config.resend_test_mode
-          })
-          .eq('id', existingConfig.id);
-        error = updateError;
-      } else {
-        // Se não existe, cria
-        const { error: insertError } = await supabase
-          .from('system_configuration')
-          .insert({
-            resend_api_key: config.resend_api_key,
-            resend_verified_email: config.resend_verified_email,
-            resend_test_mode: config.resend_test_mode
-          });
-        error = insertError;
+      if (error) {
+        throw error;
       }
-
-      if (error) throw error;
-
+      
       toast({
-        title: 'Sucesso',
-        description: 'Configurações do Resend salvas com sucesso.',
+        title: 'Configurações salvas',
+        description: 'As configurações do Resend foram atualizadas com sucesso.',
       });
       
-      // Recarrega as configurações após salvar
+      // Reload config to ensure we have the latest data
       await loadConfig();
-    } catch (error: any) {
-      console.error('Erro ao salvar configurações:', error);
+    } catch (error) {
+      console.error('Error saving Resend config:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar as configurações do Resend.',
-        variant: 'destructive'
+        title: 'Erro ao salvar configurações',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const testEmail = async () => {
-    try {
-      setSaving(true);
-      
-      const success = await sendEmail({
-        to: config.resend_verified_email,
-        subject: 'Teste de Configuração do Resend',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2e3092; margin-bottom: 20px;">Teste de Configuração do Resend</h2>
-            <p style="margin-bottom: 15px;">Este é um email de teste para verificar as configurações do Resend no SIGACE.</p>
-            <p style="margin-bottom: 15px;">Se você está recebendo este email, significa que as configurações estão corretas!</p>
-            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 20px;">
-              <p style="margin: 0;"><strong>Configurações atuais:</strong></p>
-              <p style="margin: 5px 0;">Modo de teste: ${config.resend_test_mode ? 'Ativado' : 'Desativado'}</p>
-              <p style="margin: 5px 0;">Email verificado: ${config.resend_verified_email}</p>
-            </div>
-          </div>
-        `
-      });
-
-      if (!success) {
-        throw new Error('Falha ao enviar email de teste');
-      }
-
-    } catch (error: any) {
-      console.error('Erro ao enviar email de teste:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível enviar o email de teste.',
-        variant: 'destructive'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between pb-2 border-b">
+        <h3 className="text-lg font-semibold">Configuração do Resend</h3>
+      </div>
+      
+      <div className="space-y-3">
         <div className="space-y-2">
-          <Label htmlFor="resend_api_key">Chave da API do Resend</Label>
-          <Input
-            id="resend_api_key"
-            type="password"
-            value={config.resend_api_key}
-            onChange={(e) => setConfig(prev => ({ ...prev, resend_api_key: e.target.value }))}
-            placeholder="re_xxxxxxxxxxxx"
-          />
+          <Label htmlFor="resend_api_key">Chave de API do Resend</Label>
+          <div className="flex gap-2">
+            <Input
+              id="resend_api_key"
+              type={showApiKey ? "text" : "password"}
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              placeholder="re_123..."
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowApiKey(!showApiKey)}
+            >
+              {showApiKey ? "Ocultar" : "Mostrar"}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Obtenha sua chave API em <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">resend.com/api-keys</a>
+          </p>
         </div>
-
+        
         <div className="space-y-2">
-          <Label htmlFor="resend_verified_email">Email Verificado</Label>
+          <Label htmlFor="resend_verified_email">Email Verificado do Resend</Label>
           <Input
             id="resend_verified_email"
             type="email"
-            value={config.resend_verified_email}
-            onChange={(e) => setConfig(prev => ({ ...prev, resend_verified_email: e.target.value }))}
-            placeholder="seu@email.com"
+            value={verifiedEmail}
+            onChange={e => setVerifiedEmail(e.target.value)}
+            placeholder="seu@dominio.com"
           />
-          <p className="text-sm text-muted-foreground">
-            Este email deve ser verificado no painel do Resend para produção
+          <p className="text-xs text-gray-500">
+            Email verificado no Resend para envio de mensagens
           </p>
         </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
+        
+        <div className="flex items-center justify-between py-2">
+          <div>
             <Label htmlFor="resend_test_mode">Modo de Teste</Label>
-            <p className="text-sm text-muted-foreground">
-              Ative para usar o ambiente de teste do Resend
-            </p>
+            <p className="text-sm text-gray-500">Ative para usar o ambiente de teste do Resend</p>
           </div>
-          <Switch
-            id="resend_test_mode"
-            checked={config.resend_test_mode}
-            onCheckedChange={(checked) => setConfig(prev => ({ ...prev, resend_test_mode: checked }))}
+          <Switch 
+            id="resend_test_mode" 
+            checked={testMode}
+            onCheckedChange={setTestMode}
           />
         </div>
-
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button
-            variant="outline"
-            onClick={testEmail}
-            disabled={loading || saving || !config.resend_api_key || !config.resend_verified_email}
+        
+        <div className="flex justify-end pt-2">
+          <Button 
+            onClick={saveConfig} 
+            disabled={saving}
+            className="bg-primary text-white"
           >
-            Testar Email
-          </Button>
-          <Button
-            onClick={saveConfig}
-            disabled={loading || saving}
-          >
-            {saving ? 'Salvando...' : 'Salvar'}
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : 'Salvar Configurações'}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
-} 
+}
