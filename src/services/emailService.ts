@@ -23,29 +23,34 @@ let config: {
 
 async function getResendConfig() {
   if (!config) {
-    const { data, error } = await supabase
-      .from('system_configuration')
-      .select('resend_api_key, resend_verified_email, resend_test_mode')
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('system_configuration')
+        .select('resend_api_key, resend_verified_email, resend_test_mode')
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    const typedData = data as SystemConfig;
+      const typedData = data as SystemConfig;
 
-    if (!typedData?.resend_api_key) {
-      throw new Error('Resend não está configurado no sistema');
+      if (!typedData?.resend_api_key) {
+        throw new Error('Resend não está configurado no sistema');
+      }
+
+      config = {
+        apiKey: typedData.resend_api_key,
+        verifiedEmail: typedData.resend_verified_email || 'sigacesefaz@hotmail.com',
+        testMode: typedData.resend_test_mode || false
+      };
+      
+      console.log("Config loaded from DB:", {
+        ...config,
+        apiKey: "***" // Don't log the API key
+      });
+    } catch (error) {
+      console.error("Error loading Resend config:", error);
+      throw error;
     }
-
-    config = {
-      apiKey: typedData.resend_api_key,
-      verifiedEmail: typedData.resend_verified_email || 'sigacesefaz@hotmail.com',
-      testMode: typedData.resend_test_mode || false
-    };
-    
-    console.log("Config loaded from DB:", {
-      ...config,
-      apiKey: "***" // Don't log the API key
-    });
   }
 
   return config;
@@ -120,9 +125,10 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       
       console.log("Email enviado com sucesso via Edge Function:", data);
       
-      // Se tiver um código de verificação, mostre no console
-      if (data.devCode) {
+      // Se tiver um código de verificação, mostre no console e exiba em toast
+      if (data.devCode && config.testMode) {
         console.log("Código de verificação:", data.devCode);
+        toast.info(`Código de verificação (modo teste): ${data.devCode}`);
       }
       
       toast.success("Email enviado com sucesso");

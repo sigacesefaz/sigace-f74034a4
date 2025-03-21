@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
@@ -14,7 +14,6 @@ import { getEmailStats } from "@/services/emailService";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [showOTP, setShowOTP] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,11 +52,7 @@ export default function EmailVerification() {
 
   const handleSendCode = async () => {
     if (!validateEmail(email)) {
-      toast({
-        title: "Email inválido",
-        description: "Por favor, informe um email válido",
-        variant: "destructive",
-      });
+      toast.error("Email inválido. Por favor, informe um email válido");
       return;
     }
 
@@ -91,28 +86,20 @@ export default function EmailVerification() {
       // Store the session token in sessionStorage for verification
       sessionStorage.setItem('verificationToken', data.token);
       
-      // Only show verification code if we're in test mode and got a code
-      if (data.devCode && isTestMode) {
-        console.log("Got verification code in test mode:", data.devCode);
+      // Check for verification code in test mode
+      if (data.devCode) {
+        console.log("Verification code received:", data.devCode);
         setDevCode(data.devCode);
       } else {
-        console.log("No verification code received or test mode disabled");
+        console.log("No verification code received in response");
       }
       
-      toast({
-        title: "Código enviado",
-        description: "Verifique seu email e informe o código recebido",
-      });
-      
+      toast.success("Código enviado. Verifique seu email e informe o código recebido");
       setShowOTP(true);
     } catch (error) {
       console.error("Error sending verification code:", error);
       const errorMessage = error instanceof Error ? error.message : "Não foi possível enviar o código de verificação. Tente novamente.";
-      toast({
-        title: "Erro ao enviar código",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erro ao enviar código: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -120,11 +107,7 @@ export default function EmailVerification() {
 
   const handleVerifyCode = async () => {
     if (verificationCode.length !== 6) {
-      toast({
-        title: "Código incompleto",
-        description: "O código de verificação deve conter 6 dígitos",
-        variant: "destructive",
-      });
+      toast.error("O código de verificação deve conter 6 dígitos");
       return;
     }
 
@@ -157,16 +140,13 @@ export default function EmailVerification() {
       }
       
       // Navigate to process view with email in query param for additional verification
+      sessionStorage.setItem('publicVerifiedEmail', email);
       navigate(`/public/process-view?email=${encodeURIComponent(email)}`);
       
     } catch (error) {
       console.error("Error verifying code:", error);
       const errorMessage = error instanceof Error ? error.message : "Código inválido ou expirado. Tente novamente.";
-      toast({
-        title: "Erro na verificação",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erro na verificação: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -224,7 +204,7 @@ export default function EmailVerification() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Only show verification code in test mode */}
+                {/* Show verification code in test mode */}
                 {devCode && isTestMode && (
                   <Alert variant="default" className="bg-yellow-50 border-yellow-200">
                     <InfoIcon className="h-4 w-4 text-yellow-600" />

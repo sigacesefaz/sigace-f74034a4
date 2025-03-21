@@ -46,18 +46,18 @@ serve(async (req) => {
 
     const resend = new Resend(apiKey);
     
-    // Log request details for debugging
+    // Debug logs
     console.log(`Enviando e-mail para ${to} com assunto "${subject}"`);
     console.log(`Modo de teste: ${testMode ? 'Sim' : 'Não'}`);
     
-    // Extract verification code if available (before sending)
+    // Extract verification code if available
     let verificationCode = null;
     if (html && (subject.toLowerCase().includes("verifica") || subject.toLowerCase().includes("código"))) {
       // Look for 6 digit codes in the HTML
       const matches = html.match(/\b(\d{6})\b/g);
       if (matches && matches.length > 0) {
         verificationCode = matches[0];
-        console.log("Extracted verification code:", verificationCode);
+        console.log("Código de verificação extraído:", verificationCode);
       }
     }
     
@@ -76,12 +76,12 @@ serve(async (req) => {
       ...data
     };
     
-    // Only add verification code to the response if testMode is true
+    // Add verification code to response if testMode is true
     if (verificationCode && testMode === true) {
-      console.log("Test mode is enabled, including verification code in response");
+      console.log("Modo de teste está ativado, incluindo código de verificação na resposta");
       response.devCode = verificationCode;
     } else {
-      console.log("Test mode is disabled, not including verification code in response");
+      console.log("Modo de teste está desativado ou não há código de verificação");
     }
     
     return new Response(
