@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -28,32 +29,78 @@ export default defineConfig(({ mode }) => ({
             
             if (!apiKey) {
               res.statusCode = 401;
+              res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ error: 'API key is required' }));
               return;
             }
 
+            // Registrar a requisição sendo enviada (para fins de depuração)
+            console.log(`Proxy: enviando requisição para ${targetUrl}`);
+            console.log(`Método: ${req.method}`);
+
+            // Preparar o corpo da requisição
+            let body;
+            if (req.method !== 'GET' && req.method !== 'HEAD') {
+              body = await new Promise((resolve) => {
+                let data = '';
+                req.on('data', chunk => { data += chunk; });
+                req.on('end', () => resolve(data));
+              });
+              
+              // Log do corpo sendo enviado
+              console.log(`Corpo da requisição: ${body}`);
+            }
+
+            // Realizar a requisição para a API do Resend
             const response = await fetch(targetUrl, {
               method: req.method,
               headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
               },
-              body: req.method !== 'GET' ? await new Promise((resolve) => {
-                let body = '';
-                req.on('data', chunk => { body += chunk; });
-                req.on('end', () => resolve(body));
-              }) : undefined
+              body: body || undefined
             });
 
-            const data = await response.json();
+            // Obter o conteúdo da resposta
+            const responseText = await response.text();
             
+            // Log da resposta
+            console.log(`Status da resposta: ${response.status}`);
+            console.log(`Cabeçalhos da resposta: ${JSON.stringify([...response.headers])}`);
+            console.log(`Corpo da resposta: ${responseText}`);
+
+            // Verificar se a resposta é JSON válido
+            let responseData;
+            try {
+              responseData = JSON.parse(responseText);
+            } catch (e) {
+              console.error("Resposta não é JSON válido:", e);
+              console.error("Resposta recebida:", responseText);
+              
+              // Retornar um erro em formato JSON
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ 
+                error: 'Invalid response from Resend API', 
+                details: responseText.substring(0, 200) // Incluir o início da resposta para diagnóstico
+              }));
+              return;
+            }
+            
+            // Definir os cabeçalhos da resposta
             res.statusCode = response.status;
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(data));
+            
+            // Enviar a resposta como JSON
+            res.end(JSON.stringify(responseData));
           } catch (error) {
-            console.error('Proxy error:', error);
+            console.error('Erro no proxy:', error);
             res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Internal proxy error' }));
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ 
+              error: 'Internal proxy error', 
+              message: error instanceof Error ? error.message : 'Unknown error'
+            }));
           }
         });
       }

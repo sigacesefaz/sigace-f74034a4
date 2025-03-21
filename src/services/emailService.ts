@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -80,6 +81,20 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       </div>
     `;
 
+    // Preparar os dados para envio
+    const emailData = {
+      from: fromEmail,
+      to: [toEmail],
+      subject: `[Sigace] ${subject}`, // Adicionar prefixo para identificação
+      html: htmlWithFooter,
+      headers: {
+        "List-Unsubscribe": `<mailto:${config.verifiedEmail}?subject=unsubscribe>`,
+        "Precedence": "bulk"
+      }
+    };
+
+    console.log("Enviando email:", emailData);
+
     // Usar o proxy local com a chave da API no cabeçalho
     const response = await fetch('/api/resend/emails', {
       method: 'POST',
@@ -87,37 +102,42 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
         'Content-Type': 'application/json',
         'X-Resend-API-Key': config.apiKey
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [toEmail],
-        subject: `[Sigace] ${subject}`, // Adicionar prefixo para identificação
-        html: htmlWithFooter,
-        headers: {
-          "List-Unsubscribe": `<mailto:${config.verifiedEmail}?subject=unsubscribe>`,
-          "Precedence": "bulk"
-        }
-      })
+      body: JSON.stringify(emailData)
     });
 
+    // Obter a resposta como texto primeiro para poder debugar se não for JSON
+    const responseText = await response.text();
+    
+    console.log("Resposta bruta do servidor:", responseText);
+    
+    // Tentar converter para JSON
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Erro ao analisar resposta como JSON:", error);
+      console.error("Resposta recebida:", responseText);
+      toast.error("Erro no formato da resposta do servidor");
+      return false;
+    }
+
     if (!response.ok) {
-      const error = await response.json();
-      console.error("Error sending email:", error);
+      console.error("Erro no envio do email:", responseData);
       
       // Mensagem de erro mais específica para modo de teste
-      if (config.testMode && error.statusCode === 403) {
+      if (config.testMode && responseData.statusCode === 403) {
         toast.error(`Em modo de teste, só é possível enviar emails para ${config.verifiedEmail}`);
       } else {
-        toast.error(`Erro ao enviar email: ${error.message || 'Erro desconhecido'}`);
+        toast.error(`Erro ao enviar email: ${responseData.message || responseData.error || 'Erro desconhecido'}`);
       }
       return false;
     }
 
-    const data = await response.json();
-    console.log("Email sent successfully:", data);
+    console.log("Email enviado com sucesso:", responseData);
     toast.success("Email enviado com sucesso");
     return true;
   } catch (error) {
-    console.error("Error in sendEmail:", error);
+    console.error("Erro em sendEmail:", error);
     toast.error("Erro ao enviar email");
     return false;
   }
@@ -134,7 +154,7 @@ export async function getEmailStats() {
       verifiedEmail: config.verifiedEmail
     };
   } catch (error) {
-    console.error("Error in getEmailStats:", error);
+    console.error("Erro em getEmailStats:", error);
     throw error;
   }
 }
