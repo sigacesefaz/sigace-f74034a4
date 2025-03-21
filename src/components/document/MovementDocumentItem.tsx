@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { File, Eye, Trash2, FileText, FilePdf, FileImage } from "lucide-react";
+import { File, Eye, Trash2, FileText, FileImage } from "lucide-react";
 import { DocumentViewer } from "@/components/ui/document-viewer";
 import { deleteDocument } from "@/services/document";
 import { toast } from "@/components/ui/use-toast";
@@ -37,7 +37,7 @@ export function MovementDocumentItem({ document, onDelete }: MovementDocumentIte
     if (document.fileType.startsWith("image/")) {
       return <FileImage className="h-4 w-4" />;
     } else if (document.fileType === "application/pdf") {
-      return <FilePdf className="h-4 w-4" />;
+      return <File className="h-4 w-4" />;
     } else {
       return <FileText className="h-4 w-4" />;
     }
