@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -102,8 +101,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
         body: {
           ...emailData,
           apiKey: config.apiKey,
-          // Adicionar flag de desenvolvimento para mostrar código de verificação se necessário
-          devMode: import.meta.env.DEV
+          // Sempre enviar flag de desenvolvimento para facilitar debugging
+          devMode: true
         }
       });
       
@@ -113,6 +112,12 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
       }
       
       console.log("Email enviado com sucesso via Edge Function:", data);
+      
+      // Se tiver um código de verificação, mostre no console
+      if (data.devCode) {
+        console.log("Código de verificação:", data.devCode);
+      }
+      
       toast.success("Email enviado com sucesso");
       return true;
     } catch (edgeFunctionError) {
@@ -128,8 +133,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailParams): P
         },
         body: JSON.stringify({
           ...emailData,
-          // Adicionar flag de desenvolvimento para mostrar código de verificação se necessário
-          devMode: import.meta.env.DEV
+          // Sempre enviar flag de desenvolvimento para facilitar debugging
+          devMode: true
         })
       });
 

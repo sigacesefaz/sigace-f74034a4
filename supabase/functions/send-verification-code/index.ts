@@ -45,9 +45,9 @@ serve(async (req) => {
     }
     
     const requestBody = await req.json();
-    const { email, processNumber } = requestBody;
+    const { email, processNumber, devMode } = requestBody;
     
-    console.log(`Processing request for email: ${email}, process: ${processNumber}`);
+    console.log(`Processing request for email: ${email}, process: ${processNumber}, devMode: ${devMode}`);
     console.log("Full request body:", JSON.stringify(requestBody));
     
     // Validate email
@@ -152,14 +152,14 @@ serve(async (req) => {
       const resendResult = await resendResponse.json();
       console.log("Email sent successfully:", resendResult);
 
-      // Always return the verification code for development purposes
-      // This will be displayed in the UI in development mode
+      // Always return the verification code
+      // This is useful for debugging and testing
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: "Verification code sent",
           token,
-          devCode: verificationCode // This will be used to display the code in dev mode
+          devCode: verificationCode // Always return the code for debugging
         }),
         {
           status: 200,

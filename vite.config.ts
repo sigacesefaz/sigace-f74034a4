@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { IncomingMessage, ServerResponse } from "http";
-import type { Connect } from "connect";
+import type { NextFunction } from "connect";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     {
       name: 'configure-proxy',
       configureServer(server: any) {
-        server.middlewares.use('/api/resend', async (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
+        server.middlewares.use('/api/resend', async (req: IncomingMessage, res: ServerResponse, next: NextFunction) => {
           try {
             // Remover o prefixo /api/resend da URL
             const targetPath = req.url?.replace('/api/resend', '') || '';

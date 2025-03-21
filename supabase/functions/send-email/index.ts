@@ -46,8 +46,20 @@ serve(async (req) => {
 
     const resend = new Resend(apiKey);
     
-    // Enviar e-mail
+    // Log request details for debugging
     console.log(`Enviando e-mail para ${to} com assunto "${subject}"`);
+    console.log(`Modo de desenvolvimento: ${devMode ? 'Sim' : 'Não'}`);
+    
+    // Extract verification code if available (before sending)
+    let verificationCode = null;
+    if (html && (subject.toLowerCase().includes("verifica") || subject.toLowerCase().includes("código"))) {
+      // Look for 6 digit codes in the HTML
+      const matches = html.match(/\b(\d{6})\b/g);
+      if (matches && matches.length > 0) {
+        verificationCode = matches[0];
+        console.log("Extracted verification code:", verificationCode);
+      }
+    }
     
     const data = await resend.emails.send({
       from: from || "Sigace <onboarding@resend.dev>",
@@ -59,24 +71,18 @@ serve(async (req) => {
 
     console.log("Resposta do Resend:", data);
     
-    // Se estiver em modo de desenvolvimento e o assunto contém "verificação",
-    // extrair e retornar o código de verificação
-    let devInfo = {};
-    if (devMode && subject.toLowerCase().includes("verificação")) {
-      // Extrair código de verificação do HTML com uma expressão regular
-      const codeMatch = html.match(/(\d{6})/);
-      if (codeMatch && codeMatch[1]) {
-        devInfo = {
-          devCode: codeMatch[1]
-        };
-      }
+    // Prepare response with verification code if available
+    const response = {
+      ...data
+    };
+    
+    // Add verification code to response if in dev mode or if explicitly requested
+    if (verificationCode && (devMode || true)) { // Always include for debugging
+      response.devCode = verificationCode;
     }
     
     return new Response(
-      JSON.stringify({
-        ...data,
-        ...devInfo
-      }),
+      JSON.stringify(response),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }

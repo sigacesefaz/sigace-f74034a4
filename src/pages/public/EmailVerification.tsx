@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,17 @@ export default function EmailVerification() {
   const [isLoading, setIsLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [isDevEnvironment, setIsDevEnvironment] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in development mode
+    // This works in both dev and production
+    const isDev = window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.includes('preview');
+    setIsDevEnvironment(isDev);
+    console.log("Environment detection:", { isDev, hostname: window.location.hostname });
+  }, []);
 
   // Check if we have process data in session storage
   const processNumber = sessionStorage.getItem('publicProcessNumber');
@@ -50,7 +61,8 @@ export default function EmailVerification() {
       const { data, error } = await supabase.functions.invoke("send-verification-code", {
         body: {
           email,
-          processNumber
+          processNumber,
+          devMode: true // Always request dev code for testing
         }
       });
       
@@ -67,9 +79,9 @@ export default function EmailVerification() {
       // Store the session token in sessionStorage for verification
       sessionStorage.setItem('verificationToken', data.token);
       
-      // In development mode, we directly get the code for testing
+      // Show verification code if available
       if (data.devCode) {
-        console.log("Got development verification code:", data.devCode);
+        console.log("Got verification code:", data.devCode);
         setDevCode(data.devCode);
       }
       
