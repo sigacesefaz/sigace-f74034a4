@@ -481,57 +481,6 @@ export type Database = {
           },
         ]
       }
-      process_movement_documents: {
-        Row: {
-          created_at: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          id: string
-          mime_type: string
-          movement_id: string
-          process_id: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          id?: string
-          mime_type: string
-          movement_id: string
-          process_id: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          mime_type?: string
-          movement_id?: string
-          process_id?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_movement"
-            columns: ["movement_id"]
-            isOneToOne: false
-            referencedRelation: "process_movements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_process"
-            columns: ["process_id"]
-            isOneToOne: false
-            referencedRelation: "processes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       process_movements: {
         Row: {
           codigo: number | null
@@ -843,9 +792,6 @@ export type Database = {
           google_auth_client_id: string | null
           google_auth_client_secret: string | null
           id: string
-          resend_api_key: string | null
-          resend_test_mode: boolean | null
-          resend_verified_email: string | null
           update_processes_day: number
           updated_at: string | null
         }
@@ -855,9 +801,6 @@ export type Database = {
           google_auth_client_id?: string | null
           google_auth_client_secret?: string | null
           id?: string
-          resend_api_key?: string | null
-          resend_test_mode?: boolean | null
-          resend_verified_email?: string | null
           update_processes_day?: number
           updated_at?: string | null
         }
@@ -867,9 +810,6 @@ export type Database = {
           google_auth_client_id?: string | null
           google_auth_client_secret?: string | null
           id?: string
-          resend_api_key?: string | null
-          resend_test_mode?: boolean | null
-          resend_verified_email?: string | null
           update_processes_day?: number
           updated_at?: string | null
         }

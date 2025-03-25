@@ -36,31 +36,13 @@ export function ProcessHeader({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">{currentProcess.classe?.nome || "Processo"}</h1>
-            {currentProcess.movimentos && currentProcess.movimentos.length > 0 && (
-              <Badge variant="secondary" className="text-sm">
-                {currentProcess.movimentos.length} movimentações
-              </Badge>
-            )}
+            <Badge variant="secondary" className="text-sm">
+              {currentProcess.movimentos && currentProcess.movimentos.length > 0 
+                ? `${currentProcess.movimentos.length} eventos`
+                : "Sem eventos"}
+            </Badge>
           </div>
           <div className="font-mono text-gray-700 mt-1">{formatProcessNumber(currentProcess.numeroProcesso)}</div>
-          
-          {/* Badges das classes de movimentação */}
-          {uniqueClasses.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {uniqueClasses.map((classe, index) => {
-                const isCurrentClass = currentMovement?.nome === classe;
-                return (
-                  <Badge 
-                    key={index} 
-                    variant={isCurrentClass ? "default" : "outline"}
-                    className={isCurrentClass ? "bg-primary text-primary-foreground" : ""}
-                  >
-                    {classe}
-                  </Badge>
-                );
-              })}
-            </div>
-          )}
         </div>
         
         {!isPublicView && handleImportProcess && (

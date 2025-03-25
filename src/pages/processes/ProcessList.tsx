@@ -643,15 +643,30 @@ export function ProcessList({
           return <div key={groupId} className="space-y-1">
                 <Card className="overflow-hidden border-gray-200 shadow-sm">
                   <CardHeader className="bg-gray-50 p-2">
-                    <div className="flex flex-wrap items-start gap-1 justify-between">
-                      <div className="flex items-start gap-1">
+                    <div className="flex flex-wrap items-start gap-3 justify-between">
+                      <div className="flex items-start gap-3">
                         <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
                         <div>
-                          <CardTitle className="text-lg font-medium text-gray-900 flex items-baseline gap-2">
-                            {parentProcess.title || "Processo"}
+                          <CardTitle className="text-lg font-medium text-gray-900 flex items-baseline gap-1 mb-1">
                             <span className="font-mono text-base text-gray-600">
-                              {formatProcessNumber(parentProcess.number).replace(/^0+/, '')}
+                              {formatProcessNumber(parentProcess.number)}
                             </span>
+                            {parentProcess.hits && parentProcess.hits.length > 0 && (
+                              <>
+                                <Badge 
+                                  variant="secondary" 
+                                  className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90"
+                                >
+                                  Movimentação Atual
+                                </Badge>
+                                <Badge 
+                                  variant="default"
+                                  className="h-6 px-2 bg-green-600 text-white hover:bg-green-700"
+                                >
+                                  {parentProcess.hits[0].classe?.nome || "Classe não informada"}
+                                </Badge>
+                              </>
+                            )}
                             <Badge 
                               variant={getStatusBadgeVariant(parentProcess.status)}
                               className={cn(
@@ -665,7 +680,7 @@ export function ProcessList({
                             </Badge>
                           </CardTitle>
                           <div className="flex flex-col space-y-1">
-                            <div className="flex flex-wrap items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1 mb-1">
                               {/* Badge de eventos */}
                               {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 && (
                                 <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
@@ -697,7 +712,7 @@ export function ProcessList({
                                 );
                               })}
                             </div>
-                            <div className="flex flex-wrap items-baseline gap-1">
+                            <div className="flex flex-wrap items-baseline gap-1 mb-1">
                               {/* Badge de assuntos */}
                               {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? (
                                 <>

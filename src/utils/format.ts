@@ -1,4 +1,3 @@
-
 export function formatProcessNumber(number: string | null | undefined): string {
   if (!number) return "Não informado";
   
