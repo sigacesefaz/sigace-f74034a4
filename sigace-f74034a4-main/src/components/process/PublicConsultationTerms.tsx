@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -21,7 +21,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { getEmailStats } from "@/services/emailService";
 
 interface PublicConsultationTermsProps {
   open: boolean;
@@ -38,24 +37,6 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
   const [verificationCode, setVerificationCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [devCode, setDevCode] = useState<string | null>(null);
-  const [isTestMode, setIsTestMode] = useState(false);
-
-  useEffect(() => {
-    // Check the Resend test mode settings from the system
-    const checkTestMode = async () => {
-      try {
-        const stats = await getEmailStats();
-        setIsTestMode(stats.testMode);
-        console.log("Email settings:", { testMode: stats.testMode, verifiedEmail: stats.verifiedEmail });
-      } catch (error) {
-        console.error("Error checking email settings:", error);
-        // Default to false if there's an error
-        setIsTestMode(false);
-      }
-    };
-    
-    checkTestMode();
-  }, []);
 
   const handleStepClick = (step: string) => {
     if (step === "terms" || 
@@ -95,14 +76,12 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
     try {
       console.log("Sending verification code to:", email);
       console.log("Process Number:", processNumber);
-      console.log("Test Mode enabled:", isTestMode);
       
       // Call the original working edge function to send verification email
       const { data, error } = await supabase.functions.invoke("send-verification-code", {
         body: {
           email,
-          processNumber,
-          testMode: isTestMode
+          processNumber
         }
       });
       
@@ -119,8 +98,8 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
       // Store the session token for verification
       sessionStorage.setItem('verificationToken', data.token);
       
-      // Only show verification code in test mode
-      if (data.devCode && isTestMode) {
+      // In development mode, we directly get the code for testing
+      if (data.devCode) {
         setDevCode(data.devCode);
       }
       
@@ -371,16 +350,6 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
                       Para acessar os dados do processo, precisamos verificar sua identidade.
                     </p>
                     
-                    {isTestMode && (
-                      <Alert variant="info" className="mb-4 bg-blue-50 border-blue-200">
-                        <InfoIcon className="h-4 w-4 text-blue-600" />
-                        <AlertTitle className="text-blue-800">Modo de teste ativado</AlertTitle>
-                        <AlertDescription className="text-blue-800">
-                          O sistema está configurado em modo de teste.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="email">Seu Email</Label>
@@ -405,15 +374,14 @@ export function PublicConsultationTerms({ open, onOpenChange }: PublicConsultati
                         {isLoading ? "Enviando..." : "Enviar código de verificação"}
                       </Button>
                       
-                      {/* Only show verification code in test mode */}
-                      {devCode && isTestMode && (
+                      {devCode && (
                         <Alert variant="default" className="bg-yellow-50 border-yellow-200">
                           <InfoIcon className="h-4 w-4 text-yellow-600" />
-                          <AlertTitle className="text-yellow-800">Modo de teste</AlertTitle>
+                          <AlertTitle className="text-yellow-800">Modo de desenvolvimento</AlertTitle>
                           <AlertDescription className="text-yellow-800">
                             Código de verificação: <strong>{devCode}</strong>
                             <p className="text-xs mt-1">
-                              Este código é exibido apenas em modo de teste para fins de verificação.
+                              Este código é exibido apenas em ambiente de desenvolvimento para fins de teste.
                             </p>
                           </AlertDescription>
                         </Alert>

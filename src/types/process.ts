@@ -94,6 +94,15 @@ export interface Process {
   last_check?: string;
   user_id: string;
   schedule_config?: ScheduleConfig;
+  parent_id?: string | null;
+  movimentacoes?: Array<{
+    id: string;
+    nome: string;
+    data_hora: string;
+    complemento?: string;
+    codigo?: string;
+    tipo?: string;
+  }>;
 }
 
 export interface ProcessNotification {

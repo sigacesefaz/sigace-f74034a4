@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DatajudProcess } from "@/types/datajud";
 import { formatProcessNumber } from "@/utils/format";
+import { Badge } from "@/components/ui/badge";
 
 interface ProcessHeaderProps {
   currentProcess: DatajudProcess;
@@ -10,6 +11,7 @@ interface ProcessHeaderProps {
   isImporting?: boolean;
   handleImportProcess?: () => Promise<void>;
   isPublicView?: boolean;
+  currentMovementIndex?: number;
 }
 
 export function ProcessHeader({ 
@@ -17,14 +19,48 @@ export function ProcessHeader({
   importProgress = 0,
   isImporting = false,
   handleImportProcess,
-  isPublicView = false
+  isPublicView = false,
+  currentMovementIndex = 0
 }: ProcessHeaderProps) {
+  // Função para obter classes únicas das movimentações
+  const getUniqueClasses = (movements: any[] = []) => {
+    return [...new Set(movements.map(m => m.nome))];
+  };
+
+  const currentMovement = currentProcess.movimentos?.[currentMovementIndex];
+  const uniqueClasses = getUniqueClasses(currentProcess.movimentos || []);
+
   return (
     <div className="mb-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">{currentProcess.classe?.nome || "Processo"}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{currentProcess.classe?.nome || "Processo"}</h1>
+            {currentProcess.movimentos && currentProcess.movimentos.length > 0 && (
+              <Badge variant="secondary" className="text-sm">
+                {currentProcess.movimentos.length} movimentações
+              </Badge>
+            )}
+          </div>
           <div className="font-mono text-gray-700 mt-1">{formatProcessNumber(currentProcess.numeroProcesso)}</div>
+          
+          {/* Badges das classes de movimentação */}
+          {uniqueClasses.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {uniqueClasses.map((classe, index) => {
+                const isCurrentClass = currentMovement?.nome === classe;
+                return (
+                  <Badge 
+                    key={index} 
+                    variant={isCurrentClass ? "default" : "outline"}
+                    className={isCurrentClass ? "bg-primary text-primary-foreground" : ""}
+                  >
+                    {classe}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         {!isPublicView && handleImportProcess && (

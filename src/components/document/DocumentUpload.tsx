@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
 
 interface DocumentUploadProps {
   processId: string;
@@ -103,25 +101,7 @@ export function DocumentUpload({ processId, isOpen, onClose, onUpload }: Documen
 
     try {
       setIsLoading(true);
-      
-      // Upload to Supabase Storage
-      const fileName = `${processId}/${Date.now()}-${file.name}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file);
-        
-      if (uploadError) {
-        throw new Error(`Erro ao fazer upload: ${uploadError.message}`);
-      }
-      
-      // Get the file URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(fileName);
-        
       await onUpload(processId, file, title.trim(), description.trim());
-      
       resetForm();
       onClose();
       toast({

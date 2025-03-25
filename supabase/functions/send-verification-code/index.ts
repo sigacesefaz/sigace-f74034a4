@@ -45,9 +45,9 @@ serve(async (req) => {
     }
     
     const requestBody = await req.json();
-    const { email, processNumber, testMode } = requestBody;
+    const { email, processNumber } = requestBody;
     
-    console.log(`Processing request for email: ${email}, process: ${processNumber}, testMode: ${testMode}`);
+    console.log(`Processing request for email: ${email}, process: ${processNumber}`);
     console.log("Full request body:", JSON.stringify(requestBody));
     
     // Validate email
@@ -91,7 +91,6 @@ serve(async (req) => {
     console.log("To:", email);
     console.log("Process Number:", processNumber);
     console.log("Verification Code:", verificationCode);
-    console.log("Test Mode:", testMode ? "Yes" : "No");
     
     try {
       // Send the verification email via Resend API
@@ -153,23 +152,13 @@ serve(async (req) => {
       const resendResult = await resendResponse.json();
       console.log("Email sent successfully:", resendResult);
 
-      // Create response with verification code included only if testMode is true
-      const response: any = { 
-        success: true, 
-        message: "Verification code sent",
-        token
-      };
-      
-      // CRITICAL: Always include the verification code if testMode is true
-      if (testMode === true) {
-        response.devCode = verificationCode;
-        console.log("Test mode is enabled, including verification code in response");
-      } else {
-        console.log("Test mode is disabled, not including verification code in response");
-      }
-
       return new Response(
-        JSON.stringify(response),
+        JSON.stringify({ 
+          success: true, 
+          message: "Verification code sent",
+          token,
+          devCode: verificationCode // Remove this in production
+        }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -200,7 +189,6 @@ serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        
       }
     );
   }

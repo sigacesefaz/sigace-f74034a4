@@ -90,7 +90,7 @@ export default function Index() {
                 duration: 0.5
               }} className="inline-flex items-center px-4 py-2 rounded-full text-secondary-800 text-sm font-medium border border-secondary/30 shadow-sm bg-amber-400">
                 <span className="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
-                Um Sistema Oficial da SEFAZ-TO
+                Um Sistema Oficial SEFAZ-TO
               </motion.div>
               
               <motion.h1 initial={{
