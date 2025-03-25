@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ProcessItem } from "@/components/dashboard/ProcessItem";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,7 @@ export function ProcessList({ onSelectProcess }: ProcessListProps) {
       ) : (
         filteredProcesses.map((process) => (
           <div key={process.id}>
-            <div className="text-blue-600 font-medium">
+            <div className="font-mono text-base text-gray-600">
               {formatProcessNumber(process.number || process.numeroProcesso)}
             </div>
           </div>
