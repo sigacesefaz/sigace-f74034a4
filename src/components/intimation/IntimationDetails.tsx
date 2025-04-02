@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,19 +11,21 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DatePicker } from "@/components/ui/date-picker";
+import { toast } from "@/hooks/use-toast";
 
-// Updated interface to ensure correct types
 export interface IntimationDetailsProps {
   process?: DatajudProcess;
   intimation?: Partial<{
     title: string;
-    description: string;
+    content: string;
     type: string;
     deadline: string;
   }>;
   onConfirm: (formData: any) => Promise<void>;
   onBack: () => void;
 }
+
 export function IntimationDetails({
   process,
   intimation,
@@ -30,12 +33,13 @@ export function IntimationDetails({
   onBack
 }: IntimationDetailsProps) {
   const [title, setTitle] = useState(intimation?.title || process?.classe?.nome || "");
-  const [description, setDescription] = useState(intimation?.description || "");
-  const [type, setType] = useState(intimation?.type || "notice");
+  const [description, setDescription] = useState(intimation?.content || "");
+  const [type, setType] = useState<"citation" | "subpoena" | "sentence" | "decision" | "defense" | "other">(
+    (intimation?.type as any) || "subpoena"
+  );
   const [deadline, setDeadline] = useState(intimation?.deadline || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Intimated person fields
   const [intimatedName, setIntimatedName] = useState("");
   const [intimatedDocument, setIntimatedDocument] = useState("");
   const [intimatedAddress, setIntimatedAddress] = useState("");
@@ -44,7 +48,6 @@ export function IntimationDetails({
   const [intimatedRegistration, setIntimatedRegistration] = useState("");
   const [intimatedPersonType, setIntimatedPersonType] = useState("physical");
 
-  // Creator fields
   const [creatorIsIntimated, setCreatorIsIntimated] = useState(false);
   const [creatorName, setCreatorName] = useState("");
   const [creatorDocument, setCreatorDocument] = useState("");
@@ -52,10 +55,11 @@ export function IntimationDetails({
   const [creatorPhone, setCreatorPhone] = useState("");
   const [creatorEmail, setCreatorEmail] = useState("");
 
-  // Intimation method and receipt
   const [intimationMethod, setIntimationMethod] = useState("electronic");
   const [receiptType, setReceiptType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  
+  const [intimationDate, setIntimationDate] = useState<Date | undefined>(new Date());
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -70,22 +74,72 @@ export function IntimationDetails({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!title.trim()) {
+      toast({
+        title: "Dados incompletos",
+        description: "O título da intimação é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!intimatedName.trim() || !intimatedDocument.trim()) {
+      toast({
+        title: "Dados incompletos",
+        description: "Nome e documento da pessoa intimada são obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      console.log("Iniciando submissão do formulário");
+      
+      let validatedDeadline = deadline;
+      if (deadline) {
+        try {
+          const deadlineDate = new Date(deadline);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (isNaN(deadlineDate.getTime())) {
+            validatedDeadline = null;
+          } else if (deadlineDate < today) {
+            toast({
+              title: "Data inválida",
+              description: "O prazo não pode ser uma data anterior à data atual.",
+              variant: "destructive"
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (error) {
+          validatedDeadline = null;
+        }
+      }
+      
+      const validIntimationDate = intimationDate 
+        ? intimationDate.toISOString() 
+        : new Date().toISOString();
+      
       const formData = {
         title,
-        description,
+        content: description,
         type,
-        deadline,
+        deadline: validatedDeadline || null,
         process_id: process?.numeroProcesso ? process.numeroProcesso : null,
+        process_number: process?.numeroProcesso || null,
         
-        // Process data from API
         subject: process?.assuntos && process.assuntos.length > 0 ? process.assuntos[0].nome : null,
         filing_date: process?.dataAjuizamento,
         instance: process?.grau,
         judgment_body: process?.orgaoJulgador?.nome,
         
-        // Intimated person data
+        court: process?.tribunal || "Não informado",
+        court_division: process?.orgaoJulgador?.nome || "Vara Geral",
+        
         intimated_name: intimatedName,
         intimated_document: intimatedDocument,
         intimated_address: intimatedAddress,
@@ -93,7 +147,6 @@ export function IntimationDetails({
         intimated_email: intimatedEmail,
         intimated_registration: intimatedRegistration,
         
-        // Creator data
         creator_is_intimated: creatorIsIntimated,
         creator_name: creatorIsIntimated ? intimatedName : creatorName,
         creator_document: creatorIsIntimated ? intimatedDocument : creatorDocument,
@@ -101,14 +154,46 @@ export function IntimationDetails({
         creator_phone: creatorIsIntimated ? intimatedPhone : creatorPhone,
         creator_email: creatorIsIntimated ? intimatedEmail : creatorEmail,
         
-        // Intimation method and receipt
         intimation_method: intimationMethod,
         receipt_type: receiptType,
-        // Note: We'll need to handle file upload separately
+        receipt_file: receiptFile,
+        
+        intimation_date: validIntimationDate,
       };
+      
+      console.log("Enviando dados do formulário:", formData);
+      
       await onConfirm(formData);
+    } catch (error) {
+      console.error("Erro ao processar formulário:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Houve um problema ao salvar a intimação. Tente novamente.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const getDaysUntilDeadline = (deadlineDate?: string) => {
+    if (!deadlineDate) return null;
+    
+    const deadline = new Date(deadlineDate);
+    const today = new Date();
+    
+    deadline.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = deadline.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return `Prazo expirado há ${Math.abs(diffDays)} dia(s)`;
+    } else if (diffDays === 0) {
+      return "Prazo vence hoje";
+    } else {
+      return `${diffDays} dia(s) restante(s)`;
     }
   };
 
@@ -179,23 +264,51 @@ export function IntimationDetails({
 
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
-              <Select value={type} onValueChange={setType}>
+              <Select value={type} onValueChange={setType as any}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="notice">Notificação</SelectItem>
                   <SelectItem value="citation">Citação</SelectItem>
                   <SelectItem value="subpoena">Intimação</SelectItem>
                   <SelectItem value="sentence">Sentença</SelectItem>
                   <SelectItem value="decision">Decisão</SelectItem>
+                  <SelectItem value="defense">Defesa</SelectItem>
+                  <SelectItem value="other">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deadline">Prazo</Label>
-              <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+              <Label htmlFor="intimation_date">Data da Intimação</Label>
+              <div className="relative">
+                <Input 
+                  type="text" 
+                  id="intimation_date" 
+                  value={intimationDate ? formatDate(intimationDate.toISOString()) : ""} 
+                  readOnly 
+                  className="bg-gray-100" 
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  A data da intimação é definida automaticamente e não pode ser alterada.
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deadline">Prazo para Cumprimento</Label>
+              <Input 
+                id="deadline" 
+                type="date" 
+                value={deadline} 
+                onChange={e => setDeadline(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              {deadline && (
+                <div className="text-sm text-blue-600 font-medium mt-1">
+                  {getDaysUntilDeadline(deadline)}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

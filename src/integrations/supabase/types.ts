@@ -57,144 +57,6 @@ export type Database = {
         }
         Relationships: []
       }
-      intimations: {
-        Row: {
-          attachments: Json
-          content: string
-          court: string
-          court_division: string
-          created_at: string
-          created_by: string
-          creator_address: string | null
-          creator_document: string | null
-          creator_email: string | null
-          creator_is_intimated: boolean | null
-          creator_name: string | null
-          creator_phone: string | null
-          deadline: string
-          filing_date: string | null
-          history: Json
-          id: string
-          instance: string | null
-          intimated_address: string | null
-          intimated_document: string | null
-          intimated_email: string | null
-          intimated_name: string
-          intimated_phone: string | null
-          intimated_registration: string | null
-          intimation_date: string
-          intimation_method: string
-          judgment_body: string | null
-          observations: string | null
-          parties: Json
-          process_id: string
-          process_number: string
-          receipt: Json | null
-          receipt_file: string | null
-          receipt_type: string | null
-          related_appeal: Json | null
-          related_decision: Json | null
-          related_hearing: Json | null
-          response: string | null
-          status: Database["public"]["Enums"]["intimation_status"]
-          subject: string | null
-          title: string
-          type: Database["public"]["Enums"]["intimation_type"]
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          attachments?: Json
-          content: string
-          court: string
-          court_division: string
-          created_at?: string
-          created_by: string
-          creator_address?: string | null
-          creator_document?: string | null
-          creator_email?: string | null
-          creator_is_intimated?: boolean | null
-          creator_name?: string | null
-          creator_phone?: string | null
-          deadline: string
-          filing_date?: string | null
-          history?: Json
-          id?: string
-          instance?: string | null
-          intimated_address?: string | null
-          intimated_document?: string | null
-          intimated_email?: string | null
-          intimated_name?: string
-          intimated_phone?: string | null
-          intimated_registration?: string | null
-          intimation_date: string
-          intimation_method?: string
-          judgment_body?: string | null
-          observations?: string | null
-          parties?: Json
-          process_id: string
-          process_number: string
-          receipt?: Json | null
-          receipt_file?: string | null
-          receipt_type?: string | null
-          related_appeal?: Json | null
-          related_decision?: Json | null
-          related_hearing?: Json | null
-          response?: string | null
-          status?: Database["public"]["Enums"]["intimation_status"]
-          subject?: string | null
-          title: string
-          type: Database["public"]["Enums"]["intimation_type"]
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          attachments?: Json
-          content?: string
-          court?: string
-          court_division?: string
-          created_at?: string
-          created_by?: string
-          creator_address?: string | null
-          creator_document?: string | null
-          creator_email?: string | null
-          creator_is_intimated?: boolean | null
-          creator_name?: string | null
-          creator_phone?: string | null
-          deadline?: string
-          filing_date?: string | null
-          history?: Json
-          id?: string
-          instance?: string | null
-          intimated_address?: string | null
-          intimated_document?: string | null
-          intimated_email?: string | null
-          intimated_name?: string
-          intimated_phone?: string | null
-          intimated_registration?: string | null
-          intimation_date?: string
-          intimation_method?: string
-          judgment_body?: string | null
-          observations?: string | null
-          parties?: Json
-          process_id?: string
-          process_number?: string
-          receipt?: Json | null
-          receipt_file?: string | null
-          receipt_type?: string | null
-          related_appeal?: Json | null
-          related_decision?: Json | null
-          related_hearing?: Json | null
-          response?: string | null
-          status?: Database["public"]["Enums"]["intimation_status"]
-          subject?: string | null
-          title?: string
-          type?: Database["public"]["Enums"]["intimation_type"]
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       party_types: {
         Row: {
           created_at: string | null
@@ -421,6 +283,126 @@ export type Database = {
           },
         ]
       }
+      process_intimations: {
+        Row: {
+          content: string
+          court: string
+          court_division: string
+          created_at: string
+          created_by: string
+          creator_address: string | null
+          creator_document: string | null
+          creator_email: string | null
+          creator_is_intimated: boolean | null
+          creator_name: string | null
+          creator_phone: string | null
+          deadline: string
+          filing_date: string | null
+          id: string
+          instance: string | null
+          intimated_address: string | null
+          intimated_document: string | null
+          intimated_email: string | null
+          intimated_name: string
+          intimated_phone: string | null
+          intimated_registration: string | null
+          intimation_date: string
+          intimation_method: string
+          judgment_body: string | null
+          process_id: string
+          process_number: string
+          receipt: Json | null
+          receipt_data: string | null
+          receipt_file: string | null
+          receipt_mime_type: string | null
+          receipt_type: string | null
+          status: Database["public"]["Enums"]["intimation_status"]
+          subject: string | null
+          title: string
+          type: Database["public"]["Enums"]["intimation_type"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content: string
+          court: string
+          court_division: string
+          created_at?: string
+          created_by: string
+          creator_address?: string | null
+          creator_document?: string | null
+          creator_email?: string | null
+          creator_is_intimated?: boolean | null
+          creator_name?: string | null
+          creator_phone?: string | null
+          deadline: string
+          filing_date?: string | null
+          id?: string
+          instance?: string | null
+          intimated_address?: string | null
+          intimated_document?: string | null
+          intimated_email?: string | null
+          intimated_name?: string
+          intimated_phone?: string | null
+          intimated_registration?: string | null
+          intimation_date: string
+          intimation_method?: string
+          judgment_body?: string | null
+          process_id: string
+          process_number: string
+          receipt?: Json | null
+          receipt_data?: string | null
+          receipt_file?: string | null
+          receipt_mime_type?: string | null
+          receipt_type?: string | null
+          status?: Database["public"]["Enums"]["intimation_status"]
+          subject?: string | null
+          title: string
+          type: Database["public"]["Enums"]["intimation_type"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          court?: string
+          court_division?: string
+          created_at?: string
+          created_by?: string
+          creator_address?: string | null
+          creator_document?: string | null
+          creator_email?: string | null
+          creator_is_intimated?: boolean | null
+          creator_name?: string | null
+          creator_phone?: string | null
+          deadline?: string
+          filing_date?: string | null
+          id?: string
+          instance?: string | null
+          intimated_address?: string | null
+          intimated_document?: string | null
+          intimated_email?: string | null
+          intimated_name?: string
+          intimated_phone?: string | null
+          intimated_registration?: string | null
+          intimation_date?: string
+          intimation_method?: string
+          judgment_body?: string | null
+          process_id?: string
+          process_number?: string
+          receipt?: Json | null
+          receipt_data?: string | null
+          receipt_file?: string | null
+          receipt_mime_type?: string | null
+          receipt_type?: string | null
+          status?: Database["public"]["Enums"]["intimation_status"]
+          subject?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["intimation_type"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       process_judicial_decisions: {
         Row: {
           attachments: Json | null
@@ -474,6 +456,57 @@ export type Database = {
           },
           {
             foreignKeyName: "process_judicial_decisions_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_movement_documents: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          movement_id: string
+          process_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          movement_id: string
+          process_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          movement_id?: string
+          process_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_movement"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "process_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_process"
             columns: ["process_id"]
             isOneToOne: false
             referencedRelation: "processes"
@@ -706,6 +739,7 @@ export type Database = {
           parent_id: number | null
           plaintiff: string | null
           plaintiff_document: string | null
+          schedule_config: Json | null
           status: string | null
           title: string | null
           updated_at: string | null
@@ -723,6 +757,7 @@ export type Database = {
           parent_id?: number | null
           plaintiff?: string | null
           plaintiff_document?: string | null
+          schedule_config?: Json | null
           status?: string | null
           title?: string | null
           updated_at?: string | null
@@ -740,6 +775,7 @@ export type Database = {
           parent_id?: number | null
           plaintiff?: string | null
           plaintiff_document?: string | null
+          schedule_config?: Json | null
           status?: string | null
           title?: string | null
           updated_at?: string | null
@@ -792,6 +828,9 @@ export type Database = {
           google_auth_client_id: string | null
           google_auth_client_secret: string | null
           id: string
+          resend_api_key: string | null
+          resend_test_mode: boolean | null
+          resend_verified_email: string | null
           update_processes_day: number
           updated_at: string | null
         }
@@ -801,6 +840,9 @@ export type Database = {
           google_auth_client_id?: string | null
           google_auth_client_secret?: string | null
           id?: string
+          resend_api_key?: string | null
+          resend_test_mode?: boolean | null
+          resend_verified_email?: string | null
           update_processes_day?: number
           updated_at?: string | null
         }
@@ -810,8 +852,32 @@ export type Database = {
           google_auth_client_id?: string | null
           google_auth_client_secret?: string | null
           id?: string
+          resend_api_key?: string | null
+          resend_test_mode?: boolean | null
+          resend_verified_email?: string | null
           update_processes_day?: number
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string | null
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -820,13 +886,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_process_status_based_on_movements: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       court_instance: "primeira" | "segunda" | "superior" | "supremo"
       intimation_method: "official_gazette" | "mail" | "officer" | "electronic"
       intimation_status: "pending" | "completed" | "expired"
-      intimation_type: "defense" | "hearing" | "payment" | "document" | "other"
+      intimation_type:
+        | "defense"
+        | "hearing"
+        | "payment"
+        | "document"
+        | "other"
+        | "notification"
+        | "citation"
+        | "subpoena"
+        | "sentence"
+        | "decision"
       process_class:
         | "Ação Civil Pública"
         | "Ação Trabalhista"

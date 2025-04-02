@@ -9,6 +9,9 @@ import { formatProcessNumber } from "@/utils/format";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { useBreakpoint } from "@/hooks/use-mobile";
+import { ProcessBadge, EventBadge, MovementBadge, SubjectBadge, StatusBadge, DateInfoBadge } from "@/components/process/ProcessBadge";
 
 interface ProcessCardCompactProps {
   process: Process;
@@ -38,6 +41,9 @@ export function ProcessCardCompact({
   disabled = false
 }: ProcessCardCompactProps) {
   const [loading, setLoading] = useState(false);
+  const breakpoint = useBreakpoint();
+  const isSmallScreen = breakpoint === 'xsmall' || breakpoint === 'mobile';
+  const isXSmall = breakpoint === 'xsmall';
 
   const handleDelete = async () => {
     if (disabled || !onDelete) return;
@@ -50,40 +56,36 @@ export function ProcessCardCompact({
     }
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string, includeTime = false) => {
     if (!dateString) return "Não informada";
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+      const formatString = includeTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy';
+      return format(new Date(dateString), formatString, { locale: ptBR });
     } catch {
       return "Data inválida";
     }
   };
 
-  const getStatusColor = (status?: string) => {
-    if (!status) return "bg-gray-500";
+  const getStatusBadgeProps = (status?: string) => {
+    if (!status) return { variant: "secondary" as const };
     
-    switch (status.toLowerCase()) {
-      case "active":
-      case "ativo":
-      case "em andamento":
-        return "bg-green-500";
-      case "pending":
-      case "pendente":
-        return "bg-yellow-500";
-      case "closed":
-      case "fechado":
-      case "arquivado":
-        return "bg-gray-500";
-      default:
-        return "bg-blue-500";
-    }
+    if (status === "Baixado") {
+      return { 
+        variant: "destructive" as const,
+        className: "bg-red-600 text-white"
+      };
+    } 
+    return { variant: "secondary" as const };
   };
 
   const assunto = process.metadata?.assuntos?.[0];
+  const movimentacoes = process.movimentacoes || [];
+  const movimentacoesCount = movimentacoes.length;
+  const eventosCount = process.metadata?.eventos?.length || 0;
 
   return (
     <Card className="overflow-hidden border-gray-200 shadow-sm hover:shadow-md transition-all">
-      <CardHeader className="bg-gray-50 p-3">
+      <CardHeader className={cn("bg-gray-50", isXSmall ? "p-2" : isSmallScreen ? "p-2.5" : "p-3")}>
         <div className="flex flex-wrap items-start gap-2 justify-between">
           <div className="flex items-start gap-2">
             {onToggleSelect && (
@@ -93,125 +95,96 @@ export function ProcessCardCompact({
                 className="mt-1"
               />
             )}
-            <div>
-              <CardTitle className="text-lg font-medium text-gray-900">
-                {process.title || `Processo ${formatProcessNumber(process.number)}`}
-              </CardTitle>
-              <div className="flex flex-col space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={process.status === "Em andamento" ? "secondary" : "outline"}>
-                    {process.status || "Não informado"}
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    {formatProcessNumber(process.number)}
-                  </span>
-                </div>
+            <div className="flex-1 min-w-0"> {/* min-w-0 é crucial para permitir que os filhos com texto façam wrap */}
+              <div className="flex items-center flex-wrap gap-1">
+                <span className={cn(
+                  "font-medium text-gray-700 break-all", 
+                  isXSmall ? "text-xs" : isSmallScreen ? "text-sm" : ""
+                )}>
+                  {formatProcessNumber(process.number)}
+                </span>
+                {!isSmallScreen && (
+                  <StatusBadge 
+                    label={process.status || "Em andamento"} 
+                    className={cn(
+                      "ml-2",
+                      process.status === "Baixado" && "bg-red-600"
+                    )}
+                  />
+                )}
+              </div>
+              
+              <div className="flex flex-wrap mt-1 gap-1">
+                {eventosCount > 0 && (
+                  <EventBadge 
+                    count={eventosCount} 
+                    label="eventos" 
+                    className={isSmallScreen ? "max-w-[95px]" : ""}
+                  />
+                )}
+                {movimentacoesCount > 0 && (
+                  <MovementBadge 
+                    count={movimentacoesCount} 
+                    label={isSmallScreen ? "mov." : "movimentação processual"}
+                    className={isSmallScreen ? "max-w-[95px]" : ""} 
+                  />
+                )}
+              </div>
+
+              <div className="flex flex-wrap mt-1 gap-1">
+                <StatusBadge 
+                  label={process.title || `Mandado de Segurança Cível`}
+                  className={isSmallScreen ? "max-w-[95px]" : ""}
+                />
                 
                 {assunto && (
-                  <Badge 
-                    variant="default" 
-                    className="bg-indigo-500 hover:bg-indigo-600 font-medium whitespace-normal text-xs text-white max-w-fit"
-                    title={`${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}`}
-                  >
-                    {assunto.nome}
-                    {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
-                  </Badge>
+                  <SubjectBadge 
+                    label={assunto.nome} 
+                    code={assunto.codigo}
+                    className={isSmallScreen ? "max-w-[95px]" : ""}
+                  />
                 )}
+              </div>
+
+              <div className="flex flex-wrap mt-2 gap-1">
+                <DateInfoBadge 
+                  label="Data Ajuizamento" 
+                  value={formatDate(process.metadata?.dataAjuizamento || "")} 
+                />
                 
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-1">
-                  <Badge variant="outline">
-                    Data Ajuizamento: {formatDate(process.metadata?.dataAjuizamento)}
-                  </Badge>
-                  <Badge variant="outline">
-                    Tribunal: {process.court || "Não informado"}
-                  </Badge>
-                  <Badge variant="outline">
-                    Grau: {process.metadata?.grau || "G1"}
-                  </Badge>
+                <DateInfoBadge 
+                  label="Tribunal" 
+                  value={process.court || "Não informado"} 
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1">
+                <DateInfoBadge 
+                  label="Grau" 
+                  value={process.metadata?.grau || "G1"} 
+                />
+              </div>
+
+              <div className="flex flex-wrap text-xs text-gray-500 mt-1">
+                <div className={cn("mr-4", isXSmall ? "text-[0.6rem]" : "")}>
+                  Criado em: {formatDate(process.created_at || "", true)}
+                </div>
+                <div className={isXSmall ? "text-[0.6rem]" : ""}>
+                  Última Atualização: {formatDate(process.updated_at || "", true)}
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
-            {onRefresh && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onRefresh(process.id)}
-                disabled={loading || disabled}
-                className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                title="Atualizar processo"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onPrint && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onPrint(process)}
-                className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                title="Imprimir processo"
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onView && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onView(process)}
-                className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50"
-                title="Visualizar processo"
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onShare && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onShare(process)}
-                className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-                title="Compartilhar processo"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onDelete && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDelete}
-                disabled={loading || disabled}
-                className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
-                title="Excluir processo"
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onToggleDetails && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onToggleDetails(process.id)}
-                className="h-7 px-2 text-gray-700"
-                title={showDetails ? "Ocultar detalhes" : "Mostrar detalhes"}
-              >
-                {showDetails ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-          </div>
+          {isSmallScreen ? (
+            <div className="flex items-center flex-wrap justify-end gap-1 w-full mt-2">
+              {renderActionButtons()}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              {renderActionButtons()}
+            </div>
+          )}
         </div>
       </CardHeader>
       
@@ -293,4 +266,94 @@ export function ProcessCardCompact({
       )}
     </Card>
   );
+  
+  function renderActionButtons() {
+    return (
+      <>
+        {onRefresh && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onRefresh(process.id)}
+            disabled={loading || disabled}
+            className={cn("text-blue-500 hover:text-blue-700 hover:bg-blue-50", 
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Atualizar processo"
+          >
+            <RefreshCw className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onPrint && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onPrint(process)}
+            className={cn("text-gray-500 hover:text-gray-700 hover:bg-gray-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Imprimir processo"
+          >
+            <Printer className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onView && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onView(process)}
+            className={cn("text-green-500 hover:text-green-700 hover:bg-green-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Visualizar processo"
+          >
+            <Eye className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onShare && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onShare(process)}
+            className={cn("text-orange-500 hover:text-orange-700 hover:bg-orange-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Compartilhar processo"
+          >
+            <Share2 className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onDelete && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={loading || disabled}
+            className={cn("text-red-500 hover:text-red-700 hover:bg-red-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Excluir processo"
+          >
+            <Trash className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onToggleDetails && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onToggleDetails(process.id)}
+            className={cn("text-gray-700",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title={showDetails ? "Ocultar detalhes" : "Mostrar detalhes"}
+          >
+            {showDetails ? (
+              <ChevronUp className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+            ) : (
+              <ChevronDown className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+            )}
+          </Button>
+        )}
+      </>
+    );
+  }
 }

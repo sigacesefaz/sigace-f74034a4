@@ -1,161 +1,192 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CalendarIcon, ChevronDown, ChevronUp, ChevronRight, FileText } from "lucide-react";
+import { Chrono } from "react-chrono";
 
-export interface TimelineEvent {
+interface ProcessMovement {
   id: string;
-  date: string;
-  title: string;
-  description?: string;
-  type: "document" | "hearing" | "decision" | "movement" | "deadline";
-  status?: "completed" | "pending" | "canceled";
-  metadata?: any;
+  process_id: number;
+  nome: string;
+  data_hora: string;
+  codigo?: number;
+  tipo?: string;
+  complemento?: string;
+}
+
+interface ProcessHit {
+  id: string;
+  nome: string;
+  data_hora: string;
 }
 
 interface ProcessTimelineProps {
-  events: TimelineEvent[];
-  isLoading?: boolean;
-  title?: string;
-  emptyMessage?: string;
-  maxItems?: number;
-  onLoadMore?: () => void;
-  hasMoreEvents?: boolean;
+  processId: string;
+  hitId?: string;
+  hits?: ProcessHit[];
+  filter?: {
+    startDate?: Date;
+    endDate?: Date;
+    ascending?: boolean;
+  };
 }
 
+const getBadgeColor = (code: string) => {
+  // Gera uma cor consistente baseada no código
+  const colors = [
+    '#FFD700', // Amarelo
+    '#87CEEB', // Azul claro
+    '#98FB98', // Verde claro
+    '#FFA07A', // Salmão
+    '#9370DB', // Roxo
+    '#FF6347', // Tomate
+    '#40E0D0', // Turquesa
+    '#FF69B4', // Rosa
+  ];
+  
+  // Gera um índice estável baseado no código
+  const hash = code.split('').reduce((acc, char) => {
+    return acc + char.charCodeAt(0);
+  }, 0);
+  
+  return colors[hash % colors.length];
+};
+
 export function ProcessTimeline({
-  events,
-  isLoading = false,
-  title = "Timeline do Processo",
-  emptyMessage = "Não há eventos registrados",
-  maxItems = 5,
-  onLoadMore,
-  hasMoreEvents = false
+  processId,
+  hitId,
+  filter,
 }: ProcessTimelineProps) {
-  const [visibleEvents, setVisibleEvents] = useState<TimelineEvent[]>([]);
-  const [showAll, setShowAll] = useState(false);
+  const [movements, setMovements] = useState<ProcessMovement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    if (events) {
-      setVisibleEvents(showAll ? events : events.slice(0, maxItems));
-    }
-  }, [events, showAll, maxItems]);
+    fetchMovements();
+  }, [processId, hitId, filter]);
 
-  const formatEventDate = (dateString: string) => {
+  const fetchMovements = async () => {
     try {
-      const date = new Date(dateString);
-      return format(date, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
+      setLoading(true);
+      
+      let query = supabase
+        .from('process_movements')
+        .select('id, process_id, nome, data_hora, codigo, tipo, complemento')
+        .eq('process_id', processId)
+        .order('data_hora', { ascending: filter?.ascending ?? false });
+
+      if (hitId) {
+        query = query.eq('hit_id', hitId);
+      }
+
+      if (filter?.startDate) {
+        query = query.gte('data_hora', filter.startDate.toISOString());
+      }
+
+      if (filter?.endDate) {
+        query = query.lte('data_hora', filter.endDate.toISOString());
+      }
+
+      const { data, error } = await query.returns<ProcessMovement[]>();
+      
+      if (error) throw error;
+      
+      setMovements(data as ProcessMovement[] || []);
     } catch (error) {
-      console.error("Error formatting date:", error);
+      console.error("Erro ao buscar movimentos:", error);
+      toast.error("Não foi possível carregar a timeline");
+      setMovements([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", {
+        locale: ptBR
+      });
+    } catch {
       return "Data inválida";
     }
   };
 
-  // Fix string concatenation operations
-  const getTimeAgo = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
-      if (diffMins < 60) {
-        return `há ${diffMins} ${diffMins === 1 ? 'minuto' : 'minutos'}`;
-      } else if (diffHours < 24) {
-        return `há ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
-      } else {
-        return `há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
-      }
-    } catch (error) {
-      return "data desconhecida";
-    }
+  const handlePrev = () => {
+    setActiveIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setActiveIndex(prev => Math.min(movements.length - 1, prev + 1));
   };
 
   return (
-    <Card className="w-full">
-      <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold">{title}</h3>
-      </div>
-      <div className="relative">
-        {isLoading ? (
-          <div className="p-6 space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden">
-                  <Skeleton className="w-full h-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-[250px]" />
-                  <Skeleton className="h-4 w-[200px]" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : events && events.length > 0 ? (
-          <ul className="divide-y divide-gray-200">
-            {visibleEvents.map((event) => (
-              <li key={event.id} className="py-4 px-6">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <div className="text-gray-500 text-sm">{getTimeAgo(event.date)}</div>
-                    <div className="text-gray-500 text-sm">{formatEventDate(event.date)}</div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-md font-semibold">{event.title}</h4>
-                      {event.type === "deadline" && (
-                        <Badge variant="destructive">Prazo</Badge>
-                      )}
-                    </div>
-                    {event.description && (
-                      <p className="text-sm text-gray-600 mt-1">{event.description}</p>
-                    )}
-                    {event.metadata && event.metadata.documentType && (
-                      <div className="flex items-center mt-2">
-                        <FileText className="h-4 w-4 mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-500">
-                          {event.metadata.documentType}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="p-6 text-center text-gray-500">{emptyMessage}</div>
-        )}
-
-        {events && events.length > maxItems && (
-          <div className="p-4 flex justify-center">
-            {onLoadMore && hasMoreEvents ? (
-              <Button onClick={onLoadMore}>Carregar Mais</Button>
-            ) : (
-              <Button onClick={() => setShowAll(!showAll)}>
-                {showAll ? (
-                  <>
-                    <ChevronUp className="w-4 h-4 mr-2" />
-                    Ver Menos
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4 mr-2" />
-                    Ver Mais
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-    </Card>
+    <div className="h-[400px] flex flex-col">
+      {movements.length === 0 ? (
+        <p className="text-center text-gray-500">Nenhum movimento encontrado</p>
+      ) : (
+        <Chrono
+          items={movements.map(mov => ({
+            title: format(new Date(mov.data_hora), "dd/MM/yyyy"),
+            cardTitle: mov.nome,
+            cardSubtitle: mov.codigo ? `Código: ${mov.codigo}` : undefined,
+            cardDetailedText: mov.complemento,
+          }))}
+          mode="HORIZONTAL"
+          activeItemIndex={activeIndex}
+          onItemSelected={({ index }: { index: number }) => setActiveIndex(index)}
+          theme={{
+            primary: '#3b82f6',
+            secondary: '#f3f4f6',
+            cardBgColor: '#ffffff',
+            titleColor: '#1f2937',
+            titleColorActive: '#3b82f6',
+            cardTitleColor: '#1f2937',
+            cardSubtitleColor: '#6b7280',
+            cardTextColor: '#374151',
+          }}
+          scrollable={{ scrollbar: true }}
+          cardHeight={100}
+          cardWidth={200}
+          cardPositionHorizontal="TOP"
+          cardPositionVertical="ALTERNATE"
+          fontSizes={{
+            title: '14px',
+            cardTitle: '12px',
+            cardSubtitle: '11px',
+            cardText: '11px'
+          }}
+          classNames={{
+            timeline: 'mx-auto',
+            card: 'shadow-sm p-2',
+          }}
+          cardTitle={(item: {cardTitle: string; cardSubtitle?: string}) => (
+            <div className="flex flex-col gap-1">
+              <span>{item.cardTitle}</span>
+              {item.cardSubtitle && (
+                <Badge 
+                  variant="outline" 
+                  className="w-fit"
+                  style={{
+                    backgroundColor: getBadgeColor(item.cardSubtitle.replace('Código: ', ''))
+                  }}
+                >
+                  Código: {item.cardSubtitle.replace('Código: ', '')}
+                </Badge>
+              )}
+            </div>
+          )}
+        />
+      )}
+    </div>
   );
 }

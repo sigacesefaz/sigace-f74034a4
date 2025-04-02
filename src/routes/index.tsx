@@ -1,4 +1,3 @@
-
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -10,6 +9,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/dashboard/index";
+import Settings from "@/pages/settings/index";
 import NotFound from "@/pages/NotFound";
 import ProcessListPage from "@/pages/processes/ProcessListPage";
 import NewProcess from "@/pages/processes/NewProcess";
@@ -47,6 +47,17 @@ export const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Settings />
+                </MainLayout>
               </ProtectedRoute>
             } 
           />

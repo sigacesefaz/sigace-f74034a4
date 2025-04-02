@@ -47,6 +47,19 @@ export function ProcessItem({
   };
 
   const isExpanded = expandedProcess === process.id;
+  
+  // Helper function to determine badge styling based on status
+  const getStatusBadgeProps = (status?: string) => {
+    if (!status) return { variant: "secondary" as const };
+    
+    if (status === "Baixado") {
+      return { 
+        variant: "destructive" as const,
+        className: "bg-red-600 text-white"
+      };
+    } 
+    return { variant: "secondary" as const };
+  };
 
   return (
     <Card className="mb-4">
@@ -59,8 +72,8 @@ export function ProcessItem({
               {process.description}
             </div>
             <Badge
-              variant="secondary"
-              className="mt-2"
+              {...getStatusBadgeProps(process.status)}
+              className={cn("mt-2", getStatusBadgeProps(process.status).className)}
             >
               {process.status}
             </Badge>

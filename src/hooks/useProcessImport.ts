@@ -3,7 +3,7 @@ import { getProcessById } from "@/services/datajud";
 import { saveProcess } from "@/services/processService";
 import { toast } from "sonner";
 import { DatajudMovimentoProcessual } from "@/types/datajud";
-import { supabase, checkProcessStatus } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export function useProcessImport() {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,13 +13,17 @@ export function useProcessImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
 
-  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<boolean> => {
+  const handleProcessSelect = async (processNumber: string, courtEndpoint: string): Promise<DatajudMovimentoProcessual[] | false> => {
     setIsLoading(true);
     setImportComplete(false);
     try {
       console.log(`Buscando processo ${processNumber} no tribunal ${courtEndpoint}`);
       
-      const movimentos = await getProcessById(courtEndpoint, processNumber);
+      // Normalize the process number by removing non-numeric characters
+      const normalizedNumber = processNumber.replace(/\D/g, '');
+      console.log(`Normalized process number: ${normalizedNumber}`);
+      
+      const movimentos = await getProcessById(courtEndpoint, normalizedNumber);
       
       if (!movimentos || movimentos.length === 0) {
         toast.error("Processo não encontrado");
@@ -30,167 +34,128 @@ export function useProcessImport() {
       
       console.log(`Processo encontrado com ${movimentos.length} movimento(s):`, movimentos);
       
-      // Armazenamos todos os movimentos - não filtramos mais por número de processo
-      // Isso é importante para capturar todos os hits relacionados
+      // Armazenamos os movimentos no estado (para manter compatibilidade)
       setProcessMovimentos(movimentos);
       setSelectedCourt(courtEndpoint);
-      return true;
+      
+      return movimentos;
     } catch (error) {
       console.error("Erro ao importar processo:", error);
       toast.error("Erro ao importar processo");
-      setShowManualEntry(true); // Mostrar opção de cadastro manual também em caso de erro
+      setShowManualEntry(true);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSaveProcess = async () => {
+  // Função para verificar se o processo possui os códigos 22 ou 848 nos movimentos
+  const checkProcessStatus = (movimentos: DatajudMovimentoProcessual[]): string => {
+    // Se não temos movimentos, consideramos o processo em andamento
+    if (!movimentos || movimentos.length === 0) {
+      return "Em andamento";
+    }
+    
+    // Verificar todos os hits por movimentos com código 22 ou 848
+    for (const hit of movimentos) {
+      // Verificar se o hit tem movimentos e se é um array
+      if (!hit.process?.movimentos || !Array.isArray(hit.process.movimentos)) {
+        continue;
+      }
+      
+      // Verificar se existe algum movimento com código 22 ou 848
+      const hasBaixaMovement = hit.process.movimentos.some(
+        movimento => movimento.codigo === 22 || movimento.codigo === 848
+      );
+      
+      // Se encontrou algum movimento de baixa, retorna "Baixado"
+      if (hasBaixaMovement) {
+        return "Baixado";
+      }
+    }
+    
+    // Se não encontrou movimento de baixa em nenhum hit, retorna "Em andamento"
+    return "Em andamento";
+  };
+
+  const handleSaveProcess = async (movimentos?: DatajudMovimentoProcessual[], court?: string) => {
+    console.log("=== INICIANDO handleSaveProcess ===");
     try {
-      if (!processMovimentos || processMovimentos.length === 0) {
+      // Use os movimentos passados como parâmetro ou os do estado
+      const processMovimentosToUse = movimentos || processMovimentos;
+      const courtToUse = court || selectedCourt;
+
+      if (!processMovimentosToUse || processMovimentosToUse.length === 0) {
+        console.error("Nenhum processo para importar", { processMovimentos: processMovimentosToUse });
         toast.error('Nenhum processo selecionado para importação');
         return false;
       }
 
-      const mainProcess = processMovimentos[0].process;
+      if (!courtToUse) {
+        console.error("Tribunal não especificado");
+        toast.error('Tribunal não especificado');
+        return false;
+      }
+
+      console.log("Dados do processo para importar:", {
+        movimentos: processMovimentosToUse.length,
+        tribunal: courtToUse,
+        primeiroMovimento: {
+          id: processMovimentosToUse[0].id,
+          processo: processMovimentosToUse[0].process.numeroProcesso
+        }
+      });
+
+      const mainProcess = processMovimentosToUse[0].process;
       
       // Verificar se o processo já existe usando apenas o número do processo limpo
       const numeroProcessoLimpo = mainProcess.numeroProcesso.replace(/\D/g, '');
-      const { data: existingProcess } = await supabase
+      console.log("Verificando processo existente:", numeroProcessoLimpo);
+
+      const { data: existingProcess, error: checkError } = await supabase
         .from('processes')
         .select('id')
         .eq('number', numeroProcessoLimpo)
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Erro ao verificar processo existente:", checkError);
+        toast.error(`Erro ao verificar processo: ${checkError.message}`);
+        return false;
+      }
 
       if (existingProcess) {
+        console.log("Processo já existe:", existingProcess);
         return 'PROCESS_EXISTS';
       }
 
-      // Criar o processo principal com o número limpo
-      const { data: process, error: processError } = await supabase
-        .from('processes')
-        .insert({
-          number: numeroProcessoLimpo,
-          title: mainProcess.classe?.nome || 'Processo',
-          description: '',
-          court: selectedCourt,
-          status: 'Em andamento', // Status inicial padrão
-          type: mainProcess.classe?.nome || 'Não especificado',
-          value: 0,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select()
-        .single();
+      // Determinar o status do processo com base nos movimentos
+      const processStatus = checkProcessStatus(processMovimentosToUse);
+      console.log("Status determinado:", processStatus);
+      
+      console.log("Chamando saveProcess com:", {
+        movimentos: processMovimentosToUse.length,
+        tribunal: courtToUse,
+        status: processStatus
+      });
 
-      if (processError) throw processError;
+      // Use the saveProcess function from processService, passing the determined status
+      const result = await saveProcess(processMovimentosToUse, courtToUse, processStatus, setImportProgress);
+      
+      console.log("Resultado do saveProcess:", result);
 
-      // Criar o hit inicial
-      const { data: hit, error: hitError } = await supabase
-        .from('process_hits')
-        .insert({
-          process_id: process.id,
-          hit_index: 'process',
-          hit_id: mainProcess.id,
-          hit_score: 1,
-          tribunal: selectedCourt,
-          numero_processo: mainProcess.numeroProcesso,
-          data_ajuizamento: mainProcess.dataAjuizamento,
-          grau: mainProcess.grau,
-          nivel_sigilo: mainProcess.nivelSigilo,
-          formato: mainProcess.formato,
-          sistema: mainProcess.sistema,
-          classe: mainProcess.classe,
-          orgao_julgador: mainProcess.orgaoJulgador,
-          data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
-          valor_causa: mainProcess.valorCausa || 0,
-          situacao: mainProcess.situacao,
-          user_id: process.user_id
-        })
-        .select()
-        .single();
-
-      if (hitError) throw hitError;
-
-      // Salvar os detalhes do processo
-      const { error: detailsError } = await supabase
-        .from('process_details')
-        .insert({
-          process_id: process.id,
-          tribunal: selectedCourt,
-          data_ajuizamento: mainProcess.dataAjuizamento,
-          grau: mainProcess.grau,
-          nivel_sigilo: mainProcess.nivelSigilo,
-          formato: mainProcess.formato,
-          sistema: mainProcess.sistema,
-          classe: mainProcess.classe,
-          assuntos: mainProcess.assuntos,
-          orgao_julgador: mainProcess.orgaoJulgador,
-          movimentos: mainProcess.movimentos,
-          partes: mainProcess.partes,
-          data_hora_ultima_atualizacao: mainProcess.dataHoraUltimaAtualizacao,
-          json_completo: mainProcess,
-          user_id: process.user_id
-        });
-
-      if (detailsError) throw detailsError;
-
-      // Salvar os movimentos do processo
-      if (mainProcess.movimentos && mainProcess.movimentos.length > 0) {
-        const movements = mainProcess.movimentos.map(mov => ({
-          process_id: process.id,
-          hit_id: hit.id,
-          codigo: mov.codigo,
-          nome: mov.nome,
-          data_hora: mov.dataHora,
-          tipo: mov.tipo || null,
-          complemento: mov.complemento ? (Array.isArray(mov.complemento) ? mov.complemento.join(', ') : mov.complemento) : null,
-          complementos_tabelados: mov.complementosTabelados || [],
-          orgao_julgador: mov.orgaoJulgador || null,
-          user_id: process.user_id
-        }));
-
-        const { error: movementsError } = await supabase
-          .from('process_movements')
-          .insert(movements);
-
-        if (movementsError) throw movementsError;
-
-        // Após salvar os movimentos, verificar se tem os códigos 22 e 848
-        const hasCodigo22 = movements.some(mov => mov.codigo === 22);
-        const hasCodigo848 = movements.some(mov => mov.codigo === 848);
-
-        // Atualizar o status do processo se necessário
-        if (hasCodigo22 && hasCodigo848) {
-          const { error: updateError } = await supabase
-            .from('processes')
-            .update({ status: 'Baixado' })
-            .eq('id', process.id);
-
-          if (updateError) throw updateError;
-        }
+      if (result === true) {
+        setImportComplete(true);
+        toast.success('Processo importado com sucesso!');
+      } else if (result === 'PROCESS_EXISTS') {
+        console.log("Processo já existe (retorno do saveProcess)");
+        toast.error("Este processo já foi cadastrado anteriormente");
+      } else {
+        console.error("Falha ao salvar processo");
+        toast.error("Erro ao salvar processo");
       }
-
-      // Salvar os assuntos do processo
-      if (mainProcess.assuntos && mainProcess.assuntos.length > 0) {
-        const subjects = mainProcess.assuntos.map(subject => ({
-          process_id: process.id,
-          hit_id: hit.id,
-          codigo: parseInt(subject.codigo) || 0,
-          nome: subject.nome,
-          principal: subject.principal || false,
-          user_id: process.user_id
-        }));
-
-        const { error: subjectsError } = await supabase
-          .from('process_subjects')
-          .insert(subjects);
-
-        if (subjectsError) throw subjectsError;
-      }
-
-      setImportComplete(true);
-      toast.success('Processo importado com sucesso!');
-      return true;
+      
+      return result;
     } catch (error) {
       console.error('Erro ao salvar processo:', error);
       toast.error('Erro ao salvar processo');
@@ -219,6 +184,7 @@ export function useProcessImport() {
     setProcessMovimentos,
     handleProcessSelect,
     handleSaveProcess,
-    resetImportState
+    resetImportState,
+    checkProcessStatus
   };
 }

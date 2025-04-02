@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -46,31 +47,29 @@ export default function EmailVerification() {
       console.log("Process Number:", processNumber);
       
       // Call the edge function to send verification email
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ 
+      const { data, error } = await supabase.functions.invoke("send-verification-code", {
+        body: {
           email,
-          processNumber 
-        })
+          processNumber
+        }
       });
       
-      const result = await response.json();
+      if (error) {
+        console.error("Error from Supabase function:", error);
+        throw new Error(error.message || "Erro ao enviar código de verificação");
+      }
       
-      if (!response.ok) {
-        console.error("Error response from server:", result);
-        throw new Error(result.error || result.details || "Erro ao enviar código de verificação");
+      if (!data.success) {
+        console.error("Error response from server:", data);
+        throw new Error(data.error || data.details?.message || data.details || "Erro ao enviar código de verificação");
       }
       
       // Store the session token in sessionStorage for verification
-      sessionStorage.setItem('verificationToken', result.token);
+      sessionStorage.setItem('verificationToken', data.token);
       
       // In development mode, we directly get the code for testing
-      if (result.devCode) {
-        setDevCode(result.devCode);
+      if (data.devCode) {
+        setDevCode(data.devCode);
       }
       
       toast({
@@ -81,9 +80,10 @@ export default function EmailVerification() {
       setShowOTP(true);
     } catch (error) {
       console.error("Error sending verification code:", error);
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível enviar o código de verificação. Tente novamente.";
       toast({
         title: "Erro ao enviar código",
-        description: error.message || "Não foi possível enviar o código de verificação. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -111,24 +111,22 @@ export default function EmailVerification() {
         throw new Error("Token de verificação não encontrado. Solicite um novo código.");
       }
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ 
+      const { data, error } = await supabase.functions.invoke("verify-code", {
+        body: {
           email,
           code: verificationCode,
           token
-        })
+        }
       });
       
-      const result = await response.json();
+      if (error) {
+        console.error("Error from Supabase function:", error);
+        throw new Error(error.message || "Código inválido ou expirado");
+      }
       
-      if (!response.ok) {
-        console.error("Error response from verification server:", result);
-        throw new Error(result.error || "Código inválido ou expirado");
+      if (!data.success) {
+        console.error("Error response from verification server:", data);
+        throw new Error(data.error || "Código inválido ou expirado");
       }
       
       // Navigate to process view with email in query param for additional verification
@@ -136,9 +134,10 @@ export default function EmailVerification() {
       
     } catch (error) {
       console.error("Error verifying code:", error);
+      const errorMessage = error instanceof Error ? error.message : "Código inválido ou expirado. Tente novamente.";
       toast({
         title: "Erro na verificação",
-        description: error.message || "Código inválido ou expirado. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

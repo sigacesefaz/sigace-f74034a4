@@ -105,15 +105,39 @@ export function ProcessDetails({
     });
   };
   return <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <ProcessHeader currentProcess={currentProcess} importProgress={importProgress} isImporting={isLoading} isPublicView={isPublicView} />
+      <div className="flex items-center gap-2 justify-end">
+        {mainProcess.assuntos && mainProcess.assuntos.length === 0 && (
+          <div className="w-64 p-2 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
+            <AlertCircle className="text-yellow-500 w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-yellow-700">
+              Este processo não possui assuntos cadastrados no DataJud. 
+              Você poderá adicionar assuntos manualmente após a importação.
+            </p>
+          </div>
+        )}
         
-        {isImport && !isPublicView && <Button onClick={handleImportProcess} disabled={isLoading} className="bg-primary text-white ml-2" size="sm">
-            {isLoading ? <>Importando...</> : <>
+        {isImport && !isPublicView && (
+          <Button 
+            onClick={handleImportProcess} 
+            disabled={isLoading} 
+            className="bg-primary text-white" 
+            size="sm"
+          >
+            {isLoading ? (
+              <>Importando...</>
+            ) : (
+              <>
                 <Save className="w-3 h-3 mr-1" /> 
-                Importar Processo
-              </>}
-          </Button>}
+                <span className="hidden sm:inline">Importar Processo</span>
+                <span className="sm:hidden">+</span>
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      <div className="relative">
+        <ProcessHeader currentProcess={currentProcess} importProgress={importProgress} isImporting={isLoading} isPublicView={isPublicView} />
       </div>
       
       <ProcessNavigation currentMovimentoIndex={currentMovimentoIndex} totalMovimentos={totalMovimentos} handlePrevMovimento={handlePrevMovimento} handleNextMovimento={handleNextMovimento} />
@@ -122,11 +146,13 @@ export function ProcessDetails({
       
       <div className="border-t pt-2">
         <Collapsible open={isDetailsOpen} onOpenChange={setIsDetailsOpen} className="w-full">
-          <CollapsibleTrigger className="w-full flex justify-between items-center py-1 hover:bg-gray-100 px-2 rounded-md">
-            <span className="font-semibold">Detalhes do Processo</span>
-            {isDetailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </CollapsibleTrigger>
-          
+          <div className="flex justify-between items-center">
+            <CollapsibleTrigger className="w-full flex justify-between items-center py-1 hover:bg-gray-100 px-2 rounded-md">
+              <span className="font-semibold">Detalhes do Processo</span>
+              {isDetailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </CollapsibleTrigger>
+          </div>
+
           <CollapsibleContent className="mt-2">
             <Tabs defaultValue="eventos" className="w-full">
               <TabsList className="w-full grid grid-cols-6">
@@ -144,12 +170,10 @@ export function ProcessDetails({
                     <div className="flex-1">
                       {allEventsSorted.length > 0 && <Pagination currentPage={currentEventPage} totalPages={getTotalPages(allEventsSorted)} onPageChange={setCurrentEventPage} className="my-1 justify-start" />}
                     </div>
-                    
                   </div>
                   
                   {showEventFilter && <div className="bg-gray-50 p-3 rounded-md space-y-2 mb-3 border">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Filtros de eventos aqui */}
                         <p className="text-sm text-gray-500">Filtros em desenvolvimento...</p>
                       </div>
                     </div>}
@@ -258,13 +282,6 @@ export function ProcessDetails({
         </Collapsible>
       </div>
       
-      {mainProcess.assuntos && mainProcess.assuntos.length === 0 && <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
-          <AlertCircle className="text-yellow-500 w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-yellow-700">
-            Este processo não possui assuntos cadastrados no DataJud. 
-            Você poderá adicionar assuntos manualmente após a importação.
-          </p>
-        </div>}
       
       {isPublicView && <p className="text-xs text-gray-500 text-center">
           Esta consulta pública é fornecida apenas para fins informativos.

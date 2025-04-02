@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -9,15 +8,22 @@ const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const resend = new Resend(resendApiKey);
 
+// Configurar os headers CORS para permitir requisições do localhost e da origem de produção
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "*", // Permitir todas as origens em desenvolvimento
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Max-Age": "86400", // Cache preflight por 24 horas
+  "Access-Control-Allow-Credentials": "true"
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
   try {

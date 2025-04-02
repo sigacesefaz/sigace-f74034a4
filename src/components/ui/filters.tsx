@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Search, X } from "lucide-react";
+import { useIsMobileOrTablet } from "@/hooks/use-mobile";
 
 interface FiltersProps {
   onFilter: (filters: { startDate?: Date; endDate?: Date; code?: string; text?: string; }) => void;
@@ -25,6 +26,7 @@ export function Filters({
   const [endDate, setEndDate] = useState<Date | undefined>(initialValues.endDate);
   const [codeFilter, setCodeFilter] = useState<string>(initialValues.code || "");
   const [textFilter, setTextFilter] = useState<string>(initialValues.text || "");
+  const isMobileOrTablet = useIsMobileOrTablet();
 
   const handleApplyFilter = () => {
     const filters: { startDate?: Date; endDate?: Date; code?: string; text?: string; } = {};
@@ -47,25 +49,27 @@ export function Filters({
 
   return (
     <div className="bg-gray-50 p-3 rounded-md space-y-4 mb-4 border">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${isMobileOrTablet ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
         <div>
-          <Label htmlFor="textFilter">Pesquisar por texto</Label>
+          <Label htmlFor="textFilter" className="mb-1 block">Pesquisar por texto</Label>
           <Input
             id="textFilter"
             value={textFilter}
             onChange={(e) => setTextFilter(e.target.value)}
             placeholder="Buscar por texto..."
+            className="w-full"
           />
         </div>
         
         {showCodeFilter && (
           <div>
-            <Label htmlFor="codeFilter">Código</Label>
+            <Label htmlFor="codeFilter" className="mb-1 block">Código</Label>
             <Input
               id="codeFilter"
               value={codeFilter}
               onChange={(e) => setCodeFilter(e.target.value)}
               placeholder="Filtrar por código..."
+              className="w-full"
             />
           </div>
         )}
@@ -73,7 +77,7 @@ export function Filters({
         {showDateFilter && (
           <>
             <div>
-              <Label htmlFor="startDate">Data inicial</Label>
+              <Label htmlFor="startDate" className="mb-1 block">Data inicial</Label>
               <DatePicker
                 selected={startDate}
                 onSelect={setStartDate}
@@ -82,7 +86,7 @@ export function Filters({
             </div>
             
             <div>
-              <Label htmlFor="endDate">Data final</Label>
+              <Label htmlFor="endDate" className="mb-1 block">Data final</Label>
               <DatePicker
                 selected={endDate}
                 onSelect={setEndDate}
@@ -92,15 +96,17 @@ export function Filters({
           </>
         )}
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap gap-2 justify-end">
         <Button 
           variant="outline" 
           onClick={handleResetFilter}
+          className="w-full sm:w-auto"
         >
           <X className="mr-2 h-4 w-4" /> Limpar
         </Button>
         <Button 
           onClick={handleApplyFilter}
+          className="w-full sm:w-auto"
         >
           <Search className="mr-2 h-4 w-4" /> Aplicar
         </Button>

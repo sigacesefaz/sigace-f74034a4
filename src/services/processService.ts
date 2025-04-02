@@ -5,94 +5,150 @@ import { saveProcessMovements } from "./process-movements";
 import { saveProcessSubjects } from "./process-subjects";
 import { saveProcessDetails } from "./process-details";
 import { saveProcessParties } from "./process-parties";
+import { determineStatusFromHits } from "@/utils/processStatus";
 
-export async function saveProcess(processMovimentos: DatajudMovimentoProcessual[], selectedCourt: string, setImportProgress: (progress: number) => void): Promise<boolean | 'PROCESS_EXISTS'> {
+export async function saveProcess(
+  processMovimentos: DatajudMovimentoProcessual[], 
+  selectedCourt: string, 
+  processStatus: string = "Em andamento",
+  setImportProgress: (progress: number) => void
+): Promise<boolean | 'PROCESS_EXISTS'> {
+  console.log("=== INÍCIO DA IMPORTAÇÃO ===");
+  console.log("Dados recebidos:", { 
+    movimentos: processMovimentos.length, 
+    court: selectedCourt,
+    firstMovimento: processMovimentos[0] ? {
+      id: processMovimentos[0].id,
+      numeroProcesso: processMovimentos[0].process.numeroProcesso,
+      tribunal: processMovimentos[0].process.tribunal
+    } : null
+  });
+
   if (!processMovimentos || processMovimentos.length === 0 || !selectedCourt) {
+    console.error("Dados do processo incompletos", { 
+      temMovimentos: !!processMovimentos, 
+      qtdMovimentos: processMovimentos?.length, 
+      court: selectedCourt 
+    });
     toast.error("Dados do processo incompletos");
     return false;
   }
   
-  setImportProgress(5); // Start progress bar
+  setImportProgress(5);
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
+      console.error("Usuário não autenticado");
       toast.error("Usuário não autenticado");
       setImportProgress(0);
       return false;
     }
+
+    console.log("Usuário autenticado:", user.id);
 
     // Get the main process (first procedural movement)
     const mainMovimento = processMovimentos[0];
     const mainProcess = mainMovimento.process;
     const numeroProcesso = mainProcess.numeroProcesso;
     
+    console.log("=== DADOS DO PROCESSO ===");
+    console.log({
+      numeroProcesso,
+      tribunal: mainProcess.tribunal,
+      classe: mainProcess.classe,
+      assuntos: mainProcess.assuntos,
+      partes: mainProcess.partes,
+      movimentos: mainProcess.movimentos?.length
+    });
+    
     setImportProgress(10);
 
     // Check if the process already exists
-    const { data: existingProcess } = await supabase
+    console.log("Verificando se o processo já existe:", numeroProcesso);
+    const { data: existingProcess, error: checkError } = await supabase
       .from("processes")
       .select("id")
       .eq("number", numeroProcesso)
       .maybeSingle();
 
+    if (checkError) {
+      console.error("Erro ao verificar processo existente:", checkError);
+      toast.error(`Erro ao verificar processo: ${checkError.message}`);
+      setImportProgress(0);
+      return false;
+    }
+
     if (existingProcess) {
+      console.log("Processo já existe:", existingProcess);
       toast.error("Este processo já foi cadastrado anteriormente");
       setImportProgress(0);
       return 'PROCESS_EXISTS';
     }
+
+    console.log("Processo não existe, prosseguindo com a importação");
     
     setImportProgress(15);
 
-    console.log("Process data to be inserted:", {
+    // Determine the status based on movement codes
+    const determinedStatus = determineStatusFromHits(processMovimentos);
+    console.log("Status determinado:", determinedStatus);
+
+    const processData = {
       number: numeroProcesso,
       title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
       description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-      status: mainProcess.situacao?.nome || "Em andamento",
+      status: determinedStatus,
       court: mainProcess.tribunal,
       user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
-      plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || ""
-    });
+      plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
+      is_parent: true,
+      parent_id: null
+    };
+
+    console.log("=== TENTANDO INSERIR PROCESSO ===");
+    console.log(JSON.stringify(processData, null, 2));
 
     // Insert the main process - STEP 1
     const { data: newProcess, error: insertError } = await supabase
       .from("processes")
-      .insert({
-        number: numeroProcesso,
-        title: `${mainProcess.classe?.nome || 'Processo'} - ${numeroProcesso}`,
-        description: mainProcess.assuntos?.map(a => a.nome).join(", ") || "",
-        status: mainProcess.situacao?.nome || "Em andamento",
-        court: mainProcess.tribunal,
-        user_id: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        plaintiff: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.nome || "",
-        plaintiff_document: mainProcess.partes?.find(p => p.papel?.includes("AUTOR") || p.papel?.includes("REQUERENTE"))?.documento || "",
-        is_parent: true,
-        parent_id: null
-      })
+      .insert(processData)
       .select()
       .single();
-      
-    setImportProgress(20);
 
     if (insertError) {
-      console.error("Error inserting main process:", insertError);
+      console.error("=== ERRO AO INSERIR PROCESSO ===");
+      console.error({
+        error: insertError,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+        message: insertError.message
+      });
       toast.error(`Erro ao importar processo: ${insertError.message}`);
       setImportProgress(0);
       return false;
     }
 
     if (!newProcess?.id) {
+      console.error("=== PROCESSO CRIADO SEM ID ===");
+      console.error("Resposta da inserção:", newProcess);
       toast.error("Erro ao obter ID do processo principal criado");
       setImportProgress(0);
       return false;
     }
 
     const mainProcessId = newProcess.id;
-    console.log("Main process created with ID:", mainProcessId);
+    console.log("=== PROCESSO CRIADO COM SUCESSO ===");
+    console.log({
+      id: mainProcessId,
+      numero: newProcess.number,
+      titulo: newProcess.title
+    });
     
     // STEP 2: Store process details
     try {
@@ -253,6 +309,11 @@ export async function createManualProcess(processData: any) {
       return false;
     }
     
+    // Remove any type field if it exists in the processData
+    if ('type' in processData) {
+      delete processData.type;
+    }
+    
     const {
       error
     } = await supabase.from("processes").insert({
@@ -277,14 +338,38 @@ export async function createManualProcess(processData: any) {
 
 export async function deleteProcess(processId: string) {
   try {
-    // First delete related data - these will cascade due to our FK constraints
-    // but we're being explicit to ensure data is properly cleaned up
-    await supabase.from('process_movements').delete().eq('process_id', processId);
-    await supabase.from('process_subjects').delete().eq('process_id', processId);
-    await supabase.from('process_details').delete().eq('process_id', processId);
-    await supabase.from('process_parties').delete().eq('process_id', processId);
-    await supabase.from('process_hits').delete().eq('process_id', processId);
-    await supabase.from('process_judicial_decisions').delete().eq('process_id', processId);
+    // First get all documents for this process
+    const { data: documents, error: docError } = await supabase
+      .from('documents')
+      .select('file_name')
+      .eq('process_id', processId.toString());
+
+    if (docError) {
+      console.error("Error fetching process documents:", docError);
+      throw docError;
+    }
+
+    // Delete all files from storage if there are any
+    if (documents && documents.length > 0) {
+      const fileNames = documents.map(doc => doc.file_name as string);
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove(fileNames);
+
+      if (storageError) {
+        console.error("Error deleting files from storage:", storageError);
+        throw storageError;
+      }
+    }
+
+    // Then delete related data - these will cascade due to our FK constraints
+    await supabase.from('process_movements').delete().eq('process_id', processId.toString());
+    await supabase.from('process_subjects').delete().eq('process_id', processId.toString());
+    await supabase.from('process_details').delete().eq('process_id', processId.toString());
+    await supabase.from('process_parties').delete().eq('process_id', processId.toString());
+    await supabase.from('process_hits').delete().eq('process_id', processId.toString());
+    await supabase.from('process_judicial_decisions').delete().eq('process_id', processId.toString());
+    await supabase.from('documents').delete().eq('process_id', processId.toString());
     
     // Then delete the process itself
     const { error } = await supabase.from('processes').delete().eq('id', processId);

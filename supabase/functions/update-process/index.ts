@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 import { searchProcesses, getProcessById } from "../shared/datajud.ts";
@@ -10,6 +9,24 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+/**
+ * Checks movement codes in a list of movements to determine process status
+ * @param movements Array of process movements
+ * @returns "Baixado" if any movement has code 22 or 848, "Em andamento" otherwise
+ */
+function determineStatusFromMovements(movements: any[]): string {
+  if (!movements || !Array.isArray(movements) || movements.length === 0) {
+    return "Em andamento";
+  }
+  
+  // Check for movements with codes 22 or 848
+  const hasBaixadoMovement = movements.some(
+    (movimento: any) => movimento.codigo === 22 || movimento.codigo === 848
+  );
+  
+  return hasBaixadoMovement ? "Baixado" : "Em andamento";
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -115,6 +132,24 @@ serve(async (req) => {
                     }
                   }
                 }
+                
+                // Collect all movements to determine process status
+                const allMovements = [];
+                for (const hit of updatedData) {
+                  if (hit.process?.movimentos && Array.isArray(hit.process.movimentos)) {
+                    allMovements.push(...hit.process.movimentos);
+                  }
+                }
+                
+                // Determine and update process status
+                const processStatus = determineStatusFromMovements(allMovements);
+                await supabase
+                  .from("processes")
+                  .update({ 
+                    status: processStatus,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("id", process.id);
                 
                 results.push({
                   processId: process.id,
@@ -249,12 +284,31 @@ serve(async (req) => {
           }
         }
         
+        // Collect all movements to determine process status
+        const allMovements = [];
+        for (const hit of updatedData) {
+          if (hit.process?.movimentos && Array.isArray(hit.process.movimentos)) {
+            allMovements.push(...hit.process.movimentos);
+          }
+        }
+        
+        // Determine and update process status
+        const processStatus = determineStatusFromMovements(allMovements);
+        await supabase
+          .from("processes")
+          .update({ 
+            status: processStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", processId);
+        
         return new Response(
           JSON.stringify({ 
             success: true, 
             processId,
             processNumber: process.number,
-            newHits: newHits.length 
+            newHits: newHits.length,
+            status: processStatus
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

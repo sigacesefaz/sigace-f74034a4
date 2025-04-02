@@ -54,64 +54,52 @@ export interface Movement {
   data_hora?: string; // Add the data_hora property that's being used
 }
 
+export interface ProcessMovement {
+  data: string;
+  descricao: string;
+}
+
+export interface ProcessStatus {
+  nome: string;
+  data?: string;
+}
+
 export interface ProcessHit {
-  id: string;
-  hit_index?: string;
-  hit_id?: string;
+  hit_id: string;
   hit_score?: number;
-  tribunal?: string;
-  numero_processo?: string;
-  data_ajuizamento?: string;
-  grau?: string;
-  nivel_sigilo?: number;
-  formato?: any;
-  sistema?: any;
-  classe?: {
-    nome?: string;
-    codigo?: string;
-  };
-  orgao_julgador?: {
-    nome?: string;
-    codigo?: string;
-  };
-  data_hora_ultima_atualizacao?: string;
-  valor_causa?: number;
-  situacao?: any;
-  created_at?: string;
-  updated_at?: string;
-  status?: string;
-  assuntos?: Array<{
-    codigo?: string | number;
-    nome: string;
-  }>;
-  movimentos?: Array<{
-    codigo: number;
-    nome: string;
-    data_hora?: string;
-    tipo?: string;
-    complemento?: string;
-  }>;
+  data?: any;
+  situacao: { nome: string; codigo?: number };
+  movimentos?: { data: string; descricao: string }[];
+  [key: string]: any;
+}
+
+export interface ScheduleConfig {
+  enabled: boolean;
+  frequency: 'daily' | 'weekly' | 'custom';
+  time?: string;
+  dayOfWeek?: number;
+  interval?: number;
+  lastCheck?: string;
+  nextCheck?: string;
+  days?: number[];
 }
 
 export interface Process {
   id: string;
   number: string;
-  court: string;
-  title?: string;
-  status?: string;
+  title: string;
   description?: string;
-  is_parent?: boolean;
-  parent_id?: string;
-  metadata: ProcessMetadata;
-  movimentacoes?: Movement[];
+  status: string;
+  last_movement?: string;
+  movements?: { data: string; descricao: string }[];
   created_at: string;
   updated_at: string;
-  dataHoraUltimaAtualizacao?: string;
-  plaintiff?: string; // Add the plaintiff property that's being used
-  hits?: ProcessHit[]; // Atualizado para usar o tipo ProcessHit
+  last_check?: string;
+  user_id: string;
+  schedule_config?: ScheduleConfig;
+  [key: string]: any;
 }
 
-// Add ProcessNotification type to fix notification error
 export interface ProcessNotification {
   id: string;
   title: string;

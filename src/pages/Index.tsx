@@ -37,7 +37,7 @@ function LandingHeader() {
           <div className="flex items-center space-x-2">
             <Link to="/">
               <img 
-                src="/images/logo_sefaz_estado.png" 
+                src="/images/logo_sefaz.png" 
                 alt="Governo do Tocantins" 
                 style={{filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))"}} 
                 className="h-10 md:h-12 object-fill" 
@@ -45,14 +45,15 @@ function LandingHeader() {
             </Link>
             {!isMobile ? (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-base">SIGACE - Sistema de Gestão de Ações Contra o Estado</span>
-                <span className="text-xs text-gray-500 font-bold">Secretaria da Fazenda do Tocantins</span>
-              </div>
+              <span className="font-bold text-[#2e3092] text-base">SIGACE - Sistema de Gestão de Ações Contra o Estado</span>
+              <span className="text-gray-500 text-xs font-bold">Superintendência de Assuntos Jurídicos</span>
+            </div>
             ) : (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
-                <span className="text-xs text-gray-500 font-bold">SEFAZ-TO</span>
-              </div>
+                  <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
+                  <span className="text-xs text-gray-500 font-bold">SEFAZ-TO</span>
+            </div>
+ 
             )}
           </div>
           <LoginDropdown />
@@ -89,7 +90,7 @@ export default function Index() {
                 duration: 0.5
               }} className="inline-flex items-center px-4 py-2 rounded-full text-secondary-800 text-sm font-medium border border-secondary/30 shadow-sm bg-amber-400">
                 <span className="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
-                Um Sistema Oficial da SEFAZ-TO
+                Um Sistema Oficial SEFAZ-TO
               </motion.div>
               
               <motion.h1 initial={{
@@ -115,7 +116,7 @@ export default function Index() {
                 duration: 0.5,
                 delay: 0.4
               }} className="text-lg md:text-xl text-white/90">
-                Sistema Integrado de Gestão de Ações Contra o Estado
+                Sistema de Gestão de Ações Contra o Estado
               </motion.p>
               
               <motion.div initial={{
@@ -378,15 +379,39 @@ export default function Index() {
                       <h3 className="text-xl font-bold">Valores</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-primary border-primary">
-                        Transparência
-                      </Badge>
-                      <Badge variant="outline" className="text-primary border-primary">
-                        Eficiência
-                      </Badge>
-                      <Badge variant="outline" className="text-primary border-primary">
-                        Integridade
-                      </Badge>
+                    <Badge variant="outline" className="text-blue-600 border-blue-600">
+    Transparência
+</Badge>
+<Badge variant="outline" className="text-green-600 border-green-600">
+    Eficiência
+</Badge>
+<Badge variant="outline" className="text-red-600 border-red-600">
+    Integridade
+</Badge>
+<Badge variant="outline" className="text-yellow-600 border-yellow-600">
+    Justiça Fiscal
+</Badge>
+<Badge variant="outline" className="text-purple-600 border-purple-600">
+    Inovação
+</Badge>
+<Badge variant="outline" className="text-pink-600 border-pink-600">
+    Respeito ao Contribuinte
+</Badge>
+<Badge variant="outline" className="text-indigo-600 border-indigo-600">
+    Colaboração
+</Badge>
+<Badge variant="outline" className="text-teal-600 border-teal-600">
+    Sustentabilidade
+</Badge>
+<Badge variant="outline" className="text-orange-600 border-orange-600">
+    Ética
+</Badge>
+<Badge variant="outline" className="text-lime-600 border-lime-600">
+    Profissionalismo
+</Badge>
+<Badge variant="outline" className="text-cyan-600 border-cyan-600">
+    Acessibilidade
+</Badge>
                     </div>
                   </CardContent>
                 </Card>

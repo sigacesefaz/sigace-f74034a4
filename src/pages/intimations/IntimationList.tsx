@@ -1,12 +1,13 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getIntimations } from "@/services/intimations";
+import { getIntimations, deleteIntimation as deleteIntimationService } from "@/services/intimations";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Loader2, FileText, Filter, X, Calendar } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Filter, X, Calendar, Eye, Printer, Share2, RefreshCcw, ChevronDown, FileCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatProcessNumber } from "@/utils/masks";
+import { DocumentViewer } from "@/components/ui/document-viewer";
 
 interface Intimation {
   id: string;
@@ -24,6 +29,32 @@ interface Intimation {
   deadline: string;
   status: string;
   created_at: string;
+  content?: string;
+  court?: string;
+  court_division?: string;
+  intimation_date?: string;
+  type?: string;
+  created_by?: string;
+  intimated_name?: string;
+  observations?: string;
+  intimation_method?: string;
+  receipt_type?: string;
+  receipt_file?: string;
+  intimated_document?: string;
+  intimated_registration?: string;
+  intimated_address?: string;
+  intimated_phone?: string;
+  intimated_email?: string;
+  creator_is_intimated?: boolean;
+  creator_name?: string;
+  creator_document?: string;
+  creator_address?: string;
+  creator_phone?: string;
+  creator_email?: string;
+  subject?: string;
+  filing_date?: string;
+  judgment_body?: string;
+  instance?: string;
 }
 
 export default function IntimationList() {
@@ -44,6 +75,12 @@ export default function IntimationList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deadlineFilter, setDeadlineFilter] = useState<Date | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [openCollapsibles, setOpenCollapsibles] = useState<Record<string, boolean>>({});
+  const [viewingReceipt, setViewingReceipt] = useState<{ open: boolean, url: string, mimeType: string }>({
+    open: false,
+    url: '',
+    mimeType: 'application/pdf'
+  });
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -60,7 +97,6 @@ export default function IntimationList() {
              intimation.deadline && intimation.deadline.toLowerCase().includes(searchLower);
     });
     
-    // Aplicar filtros adicionais
     if (statusFilter !== "all") {
       filtered = filtered.filter(intimation => intimation.status === statusFilter);
     }
@@ -74,7 +110,6 @@ export default function IntimationList() {
       });
     }
     
-    // Aplicar ordenação
     filtered.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
@@ -101,20 +136,23 @@ export default function IntimationList() {
   const handleDeleteIntimation = async (intimationId: string) => {
     try {
       setIsDeleting(true);
-      const { error } = await supabase
-        .from('intimations')
-        .delete()
-        .eq('id', intimationId);
-
-      if (error) throw error;
-
+      console.log("[IntimationListPage.handleDeleteIntimation] Tentando excluir intimação:", intimationId);
+      
+      const result = await deleteIntimationService(intimationId);
+      console.log("[IntimationListPage.handleDeleteIntimation] Exclusão bem-sucedida, resultado:", result);
+      
       setIntimations(prevIntimations => 
         prevIntimations.filter(intimation => intimation.id !== intimationId)
       );
+      
+      setFilteredIntimations(prevFiltered =>
+        prevFiltered.filter(intimation => intimation.id !== intimationId)
+      );
+      
       toast.success("Intimação excluída com sucesso");
     } catch (error) {
-      console.error("Error deleting intimation:", error);
-      toast.error("Erro ao excluir intimação");
+      console.error("[IntimationListPage.handleDeleteIntimation] Erro ao excluir intimação:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir intimação");
     } finally {
       setIsDeleting(false);
       setAlertOpen(false);
@@ -132,28 +170,44 @@ export default function IntimationList() {
 
     try {
       setIsDeleting(true);
+      console.log("[IntimationListPage.handleBulkDelete] Tentando excluir intimações em massa:", selectedIntimations);
 
-      // Delete each selected intimation
+      const failedDeletions: string[] = [];
+      const successfulDeletions: string[] = [];
+      
       for (const intimationId of selectedIntimations) {
-        const { error } = await supabase
-          .from('intimations')
-          .delete()
-          .eq('id', intimationId);
-        
-        if (error) throw error;
+        try {
+          await deleteIntimationService(intimationId);
+          console.log("[IntimationListPage.handleBulkDelete] Intimação excluída com sucesso:", intimationId);
+          successfulDeletions.push(intimationId);
+        } catch (error) {
+          console.error(`[IntimationListPage.handleBulkDelete] Erro ao excluir intimação ${intimationId}:`, error);
+          failedDeletions.push(intimationId);
+          // Continue tentando excluir as outras intimações mesmo se uma falhar
+        }
       }
 
-      // Update the local state
       setIntimations(prevIntimations => 
-        prevIntimations.filter(intimation => !selectedIntimations.includes(intimation.id))
+        prevIntimations.filter(intimation => !successfulDeletions.includes(intimation.id))
       );
       
-      // Clear selection
+      setFilteredIntimations(prevFiltered =>
+        prevFiltered.filter(intimation => !successfulDeletions.includes(intimation.id))
+      );
+      
       setSelectedIntimations([]);
       
-      toast.success(`${selectedIntimations.length} intimações excluídas com sucesso`);
+      if (failedDeletions.length > 0) {
+        if (successfulDeletions.length > 0) {
+          toast.warning(`${successfulDeletions.length} intimações excluídas com sucesso. ${failedDeletions.length} intimações não puderam ser excluídas.`);
+        } else {
+          toast.error(`Nenhuma intimação foi excluída. Verifique os registros para mais detalhes.`);
+        }
+      } else {
+        toast.success(`${successfulDeletions.length} intimações excluídas com sucesso`);
+      }
     } catch (error) {
-      console.error("Error deleting intimations:", error);
+      console.error("[IntimationListPage.handleBulkDelete] Erro ao excluir intimações:", error);
       toast.error("Erro ao excluir intimações");
     } finally {
       setIsDeleting(false);
@@ -162,7 +216,6 @@ export default function IntimationList() {
     }
   };
 
-  // Verificar senha do usuário
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -172,15 +225,11 @@ export default function IntimationList() {
         return false;
       }
       
-      // Aqui você pode implementar a verificação de senha
-      // Como exemplo, estamos apenas verificando se a senha não está vazia
       if (!password.trim()) {
         setPasswordError("A senha não pode estar vazia");
         return false;
       }
       
-      // Em um cenário real, você enviaria a senha para o servidor verificar
-      // Por simplicidade, vamos apenas simular uma verificação bem-sucedida
       return true;
     } catch (error) {
       console.error("Erro ao verificar senha:", error);
@@ -189,7 +238,6 @@ export default function IntimationList() {
     }
   };
 
-  // Função para confirmar exclusão em massa com senha
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
     
@@ -213,22 +261,25 @@ export default function IntimationList() {
 
   const toggleAllIntimations = () => {
     if (selectedIntimations.length === filteredIntimations.length) {
-      // If all are selected, deselect all
       setSelectedIntimations([]);
     } else {
-      // Otherwise, select all
       setSelectedIntimations(filteredIntimations.map(intimation => intimation.id));
     }
   };
 
-  // Resetar filtros
+  const toggleCollapsible = (intimationId: string) => {
+    setOpenCollapsibles(prev => ({
+      ...prev,
+      [intimationId]: !prev[intimationId]
+    }));
+  };
+
   const resetFilters = () => {
     setStatusFilter("all");
     setDeadlineFilter(undefined);
     setSortOrder("desc");
   };
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredIntimations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedIntimations = filteredIntimations.slice(startIndex, startIndex + itemsPerPage);
@@ -261,8 +312,134 @@ export default function IntimationList() {
     return variantMap[status] || 'outline';
   };
 
+  const translateType = (type?: string) => {
+    const typeMap: Record<string, string> = {
+      'defense': 'Defesa',
+      'hearing': 'Audiência',
+      'payment': 'Pagamento',
+      'document': 'Documento',
+      'other': 'Outro',
+      'citation': 'Citação',
+      'subpoena': 'Intimação',
+      'sentence': 'Sentença',
+      'decision': 'Decisão'
+    };
+    return type ? typeMap[type] || type : 'N/A';
+  };
+
+  function translateIntimationMethod(method?: string): string {
+    const methodMap: Record<string, string> = {
+      'electronic': 'Eletrônica',
+      'postal': 'Postal',
+      'officer': 'Oficial de Justiça',
+      'other': 'Outro'
+    };
+    return method ? methodMap[method] || method : 'N/A';
+  }
+
+  function translateReceiptType(type?: string): string {
+    const typeMap: Record<string, string> = {
+      'reading': 'Confirmação de Leitura',
+      'ar': 'AR',
+      'personally': 'Pessoalmente',
+      'other': 'Outro'
+    };
+    return type ? typeMap[type] || type : 'N/A';
+  }
+
+  const handleViewReceipt = async (receiptFilePath: string) => {
+    if (!receiptFilePath) {
+      toast.error("Não há comprovante para visualizar");
+      return;
+    }
+
+    try {
+      setViewingReceipt({
+        open: true,
+        url: '',
+        mimeType: 'application/pdf'
+      });
+      
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(receiptFilePath, 3600);
+      
+      if (error) {
+        console.error("Erro ao gerar URL para o arquivo:", error);
+        toast.error("Não foi possvel acessar o comprovante");
+        setViewingReceipt({
+          ...viewingReceipt,
+          open: false
+        });
+        return;
+      }
+      
+      let mimeType = 'application/pdf';
+      if (receiptFilePath.toLowerCase().endsWith('.pdf')) {
+        mimeType = 'application/pdf';
+      } else if (receiptFilePath.toLowerCase().match(/\.(jpg|jpeg)$/)) {
+        mimeType = 'image/jpeg';
+      } else if (receiptFilePath.toLowerCase().endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (receiptFilePath.toLowerCase().match(/\.(doc|docx)$/)) {
+        mimeType = 'application/msword';
+      } 
+      
+      setViewingReceipt({
+        open: true,
+        url: data.signedUrl,
+        mimeType: mimeType
+      });
+      
+    } catch (error) {
+      console.error("Erro ao visualizar comprovante:", error);
+      toast.error("Não foi possível visualizar o comprovante");
+      setViewingReceipt({
+        ...viewingReceipt,
+        open: false
+      });
+    }
+  };
+
+  const PaginationComponent = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center space-x-2 mt-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          Anterior
+        </Button>
+        <span className="text-sm">
+          Página {currentPage} de {totalPages}
+        </span>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Próximo
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {viewingReceipt.open && (
+        <DocumentViewer
+          open={viewingReceipt.open}
+          onOpenChange={(open) => setViewingReceipt({ ...viewingReceipt, open })}
+          url={viewingReceipt.url}
+          mimeType={viewingReceipt.mimeType}
+        />
+      )}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Intimações</h1>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
@@ -418,174 +595,281 @@ export default function IntimationList() {
       ) : (
         <>
           <div className="space-y-4">
-            <Card>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                    <tr>
-                      <th className="px-4 py-2 w-10 text-left">
-                        <span className="sr-only">Selecionar</span>
-                      </th>
-                      <th className="px-4 py-2 text-left">Processo</th>
-                      <th className="px-4 py-2 text-left">Título</th>
-                      <th className="px-4 py-2 text-left">Prazo</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-left">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {paginatedIntimations.map((intimation) => (
-                      <tr key={intimation.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2">
-                          <Checkbox 
-                            checked={selectedIntimations.includes(intimation.id)}
-                            onCheckedChange={() => toggleIntimationSelection(intimation.id)}
-                          />
-                        </td>
-                        <td className="px-4 py-2 font-medium">{intimation.process_number}</td>
-                        <td className="px-4 py-2">
-                          <div className="font-medium">{intimation.title}</div>
-                          <div className="text-xs text-gray-500">{intimation.description}</div>
-                        </td>
-                        <td className="px-4 py-2">{formatDate(intimation.deadline)}</td>
-                        <td className="px-4 py-2">
-                          <Badge variant={getStatusBadgeVariant(intimation.status)}>
-                            {translateStatus(intimation.status)}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" asChild>
-                              <Link to={`/intimations/${intimation.id}`}>
-                                <FileText className="h-4 w-4" />
-                                <span className="sr-only">Ver</span>
-                              </Link>
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => confirmDelete(intimation.id)}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                              <span className="sr-only">Excluir</span>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            {paginatedIntimations.map((intimation) => (
+              <Card key={intimation.id} className="overflow-hidden">
+                <div className="p-4 md:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+                    <div className="flex items-start gap-2">
+                      <Checkbox 
+                        className="mt-1"
+                        checked={selectedIntimations.includes(intimation.id)}
+                        onCheckedChange={() => toggleIntimationSelection(intimation.id)}
+                      />
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-medium mb-1">{intimation.title}</h3>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-gray-500 mb-2">
+                          <span>Processo: <span className="font-medium">{formatProcessNumber(intimation.process_number)}</span></span>
+                          <span>Prazo: <span className="font-medium">{formatDate(intimation.deadline)}</span></span>
+                          <span>Status: <Badge variant={getStatusBadgeVariant(intimation.status)}>{translateStatus(intimation.status)}</Badge></span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1">
+                      <Button variant="ghost" size="icon" title="Atualizar" onClick={() => {/* handle update */}}>
+                        <RefreshCcw className="h-4 w-4" />
+                        <span className="sr-only">Atualizar</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Imprimir" onClick={() => {/* handle print */}}>
+                        <Printer className="h-4 w-4" />
+                        <span className="sr-only">Imprimir</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Visualizar" asChild>
+                        <Link to={`/intimations/${intimation.id}`}>
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">Visualizar</span>
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Compartilhar" onClick={() => {/* handle share */}}>
+                        <Share2 className="h-4 w-4" />
+                        <span className="sr-only">Compartilhar</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        title="Excluir"
+                        onClick={() => confirmDelete(intimation.id)}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <span className="sr-only">Excluir</span>
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <Collapsible
+                    open={openCollapsibles[intimation.id]}
+                    onOpenChange={() => toggleCollapsible(intimation.id)}
+                    className="border rounded-md"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="flex w-full justify-between p-3 hover:bg-gray-50"
+                      >
+                        <span className="font-medium">Detalhes da Intimação</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${openCollapsibles[intimation.id] ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="p-4 border-t bg-gray-50">
+                      <Tabs defaultValue="process">
+                        <TabsList className="grid w-full grid-cols-4">
+                          <TabsTrigger value="process">Dados do Processo</TabsTrigger>
+                          <TabsTrigger value="general">Dados da Intimação</TabsTrigger>
+                          <TabsTrigger value="intimated">Pessoa Intimada</TabsTrigger>
+                          <TabsTrigger value="creator">Cadastrante</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="process" className="pt-4 space-y-4">
+                          <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <dt className="text-gray-500">Número do Processo:</dt>
+                              <dd>{formatProcessNumber(intimation.process_number)}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Tribunal:</dt>
+                              <dd>{intimation.court || 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Vara/Seção:</dt>
+                              <dd>{intimation.court_division || 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Assunto:</dt>
+                              <dd>{intimation.subject || 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Data da Distribuição:</dt>
+                              <dd>{intimation.filing_date ? formatDate(intimation.filing_date) : 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Órgão Julgador:</dt>
+                              <dd>{intimation.judgment_body || 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Instância:</dt>
+                              <dd>{intimation.instance || 'Primeira Instância'}</dd>
+                            </div>
+                          </dl>
+                        </TabsContent>
 
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <span className="text-sm">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
+                        <TabsContent value="general" className="pt-4 space-y-4">
+                          <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <dt className="text-gray-500">Tipo:</dt>
+                              <dd>{translateType(intimation.type)}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Forma de Intimação:</dt>
+                              <dd>{translateIntimationMethod(intimation.intimation_method)}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Data da Intimação:</dt>
+                              <dd>{formatDate(intimation.intimation_date || '')}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Prazo:</dt>
+                              <dd>{formatDate(intimation.deadline)}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Comprovante de Recebimento:</dt>
+                              <dd className="flex items-center gap-2">
+                                {intimation.receipt_type ? translateReceiptType(intimation.receipt_type) : 'Não informado'}
+                                {intimation.receipt_file && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleViewReceipt(intimation.receipt_file)}
+                                    title="Visualizar comprovante"
+                                  >
+                                    <FileCheck className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                )}
+                              </dd>
+                            </div>
+                            <div className="md:col-span-2">
+                              <dt className="text-gray-500">Conteúdo:</dt>
+                              <dd className="whitespace-pre-line">{intimation.content || 'Não informado'}</dd>
+                            </div>
+                          </dl>
+                        </TabsContent>
+                        
+                        <TabsContent value="intimated" className="pt-4 space-y-4">
+                          <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <dt className="text-gray-500">Nome:</dt>
+                              <dd>{intimation.intimated_name || 'Não informado'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-gray-500">Documento:</dt>
+                              <dd>{intimation.intimated_document || 'Não informado'}</dd>
+                            </div>
+                            {intimation.intimated_registration && (
+                              <div>
+                                <dt className="text-gray-500">Matrícula:</dt>
+                                <dd>{intimation.intimated_registration}</dd>
+                              </div>
+                            )}
+                            {intimation.intimated_address && (
+                              <div>
+                                <dt className="text-gray-500">Endereço:</dt>
+                                <dd>{intimation.intimated_address}</dd>
+                              </div>
+                            )}
+                            {intimation.intimated_phone && (
+                              <div>
+                                <dt className="text-gray-500">Telefone:</dt>
+                                <dd>{intimation.intimated_phone}</dd>
+                              </div>
+                            )}
+                            {intimation.intimated_email && (
+                              <div>
+                                <dt className="text-gray-500">E-mail:</dt>
+                                <dd>{intimation.intimated_email}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </TabsContent>
+                        
+                        <TabsContent value="creator" className="pt-4 space-y-4">
+                          {intimation.creator_is_intimated ? (
+                            <p className="text-sm italic">O cadastrante é a mesma pessoa intimada.</p>
+                          ) : (
+                            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <dt className="text-gray-500">Nome:</dt>
+                                <dd>{intimation.creator_name || 'Não informado'}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-gray-500">Documento:</dt>
+                                <dd>{intimation.creator_document || 'Não informado'}</dd>
+                              </div>
+                              {intimation.creator_address && (
+                                <div>
+                                  <dt className="text-gray-500">Endereço:</dt>
+                                  <dd>{intimation.creator_address}</dd>
+                                </div>
+                              )}
+                              {intimation.creator_phone && (
+                                <div>
+                                  <dt className="text-gray-500">Telefone:</dt>
+                                  <dd>{intimation.creator_phone}</dd>
+                                </div>
+                              )}
+                              {intimation.creator_email && (
+                                <div>
+                                  <dt className="text-gray-500">E-mail:</dt>
+                                  <dd>{intimation.creator_email}</dd>
+                                </div>
+                              )}
+                            </dl>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
-              </div>
-            )}
+              </Card>
+            ))}
           </div>
+          
+          <PaginationComponent />
         </>
       )}
 
-      {/* Diálogo de confirmação para exclusão individual */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Intimação</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta intimação? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir esta intimação?
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => intimationToDelete && handleDeleteIntimation(intimationToDelete)}
+              onClick={() => intimationToDelete && handleDeleteIntimation(intimationToDelete)} 
               className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
-              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Excluir"}
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo de confirmação para exclusão em massa */}
       <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Intimações</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a excluir {selectedIntimations.length} {selectedIntimations.length === 1 ? 'intimação' : 'intimações'}. 
-              Esta ação não pode ser desfeita. Deseja continuar?
+              Tem certeza que deseja excluir {selectedIntimations.length} intimações selecionadas?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
-              Confirmar Exclusão
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Diálogo de confirmação de senha */}
-      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirme sua senha</DialogTitle>
-            <DialogDescription>
-              Por motivos de segurança, digite sua senha para confirmar a exclusão em massa.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                className={passwordError ? "border-red-500" : ""}
-              />
-              {passwordError && (
-                <p className="text-sm text-red-500">{passwordError}</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setPasswordConfirmOpen(false);
-              setPassword("");
-              setPasswordError("");
-            }}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmBulkDeleteWithPassword}>
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

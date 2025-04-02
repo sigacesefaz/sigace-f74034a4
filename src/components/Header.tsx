@@ -16,7 +16,7 @@ export function Header() {
       <div className="container mx-auto flex justify-between items-center px-4">
         <div className="flex items-center gap-4">
           <img 
-            src="/images/logo_sefaz_estado.png" 
+            src="/images/logo_sefaz.png" 
             alt="Logo SEFAZ Tocantins"
             className={`${isMobile ? 'h-12' : 'h-16'}`}
           />

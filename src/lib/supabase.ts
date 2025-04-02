@@ -480,37 +480,42 @@ export async function signOut() {
   return { error };
 }
 
-export async function checkProcessStatus(processId: string | null | undefined): Promise<'Baixado' | 'Em andamento'> {
+export async function checkProcessStatus(processId: string): Promise<string> {
   try {
-    // Validar se o processId é válido
-    if (!processId || typeof processId !== 'string' || !processId.trim()) {
-      return 'Em andamento';
+    // Busca o processo com seus hits
+    const { data: process, error } = await supabase
+      .from('processes')
+      .select('hits')
+      .eq('id', processId)
+      .single();
+      
+    if (error || !process || !process.hits) {
+      return "Em andamento";
     }
-
-    // Limpar o ID do processo de caracteres especiais
-    const cleanProcessId = processId.trim();
-
-    const { data: movements, error } = await supabase
-      .from('process_movements')
-      .select('codigo')
-      .eq('process_id', cleanProcessId);
-
-    if (error) {
-      console.error('Erro ao verificar status do processo:', error);
-      return 'Em andamento';
+    
+    const hits = process.hits;
+    
+    // Sem hits, não temos como verificar
+    if (!Array.isArray(hits) || hits.length === 0) {
+      return "Em andamento";
     }
-
-    if (!movements || !Array.isArray(movements)) {
-      return 'Em andamento';
+    
+    // Pega o hit mais recente (último do array)
+    const latestHit = hits[hits.length - 1];
+    
+    // Verifica se o hit tem movimentos
+    if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
+      return "Em andamento";
     }
-
-    // Verifica se existem os códigos 22 e 848 para o mesmo processo
-    const hasCodigo22 = movements.some(mov => mov.codigo === 22);
-    const hasCodigo848 = movements.some(mov => mov.codigo === 848);
-
-    return (hasCodigo22 && hasCodigo848) ? 'Baixado' : 'Em andamento';
+    
+    // Verifica se existe algum movimento com código 22 ou 848
+    const hasBaixaMovement = latestHit.movimentos.some(
+      movimento => movimento.codigo === 22 || movimento.codigo === 848
+    );
+    
+    return hasBaixaMovement ? "Baixado" : "Em andamento";
   } catch (error) {
-    console.error('Erro ao verificar status do processo:', error);
-    return 'Em andamento';
+    console.error("Erro ao verificar status do processo:", error);
+    return "Em andamento";
   }
 }
