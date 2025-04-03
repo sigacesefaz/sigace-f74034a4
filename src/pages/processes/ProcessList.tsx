@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useBreakpoint } from "@/hooks/use-mobile";
+import { useBreakpoint, useIsMobile, useIsMobileOrTablet, useIsXSmall } from "@/hooks/use-mobile";
 import { ProcessBadge, EventBadge, MovementBadge, SubjectBadge, StatusBadge, DateInfoBadge } from "@/components/process/ProcessBadge";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
