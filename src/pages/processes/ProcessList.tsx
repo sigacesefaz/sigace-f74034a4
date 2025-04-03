@@ -84,6 +84,8 @@ export function ProcessList({
     data_hora_ultima_atualizacao?: string;
   }>>({});
   const itemsPerPage = 5;
+  
+  // Adicionando estados para as novas funcionalidades
   const [filingDateFilter, setFilingDateFilter] = useState<Date | undefined>(undefined);
   const [sortByFilingDate, setSortByFilingDate] = useState<"none" | "oldest" | "recent">("none");
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -745,6 +747,4 @@ export function ProcessList({
               </button>
               <button 
                 onClick={() => setSortByFilingDate("recent")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Ajuiz
+                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:

@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Process } from "@/types/process";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, ChevronUp, Eye, Printer, RefreshCw, Share2, Trash } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Eye, Printer, RefreshCw, Share2, Trash, Archive, ArchiveX } from "lucide-react";
 import { formatProcessNumber } from "@/utils/format";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,6 +24,8 @@ interface ProcessCardCompactProps {
   onPrint?: (process: Process) => void;
   onShare?: (process: Process) => void;
   onRefresh?: (id: string) => void;
+  onArchive?: (id: string) => void; 
+  onUnarchive?: (id: string) => void;
   showDetails?: boolean;
   onToggleDetails?: (id: string) => void;
   disabled?: boolean;
@@ -39,6 +40,8 @@ export function ProcessCardCompact({
   onPrint,
   onShare,
   onRefresh,
+  onArchive,
+  onUnarchive,
   showDetails = false,
   onToggleDetails,
   disabled = false
@@ -116,6 +119,126 @@ export function ProcessCardCompact({
   const movimentacoes = process.movimentacoes || [];
   const movimentacoesCount = movimentacoes.length;
   const eventosCount = process.metadata?.eventos?.length || 0;
+
+  const renderActionButtons = () => {
+    const isArchived = process.status === "Arquivado";
+    
+    return (
+      <>
+        {onRefresh && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleRefresh}
+            disabled={loading || disabled}
+            className={cn("text-blue-500 hover:text-blue-700 hover:bg-blue-50", 
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Atualizar processo"
+          >
+            <RefreshCw className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4", loading && "animate-spin")} />
+          </Button>
+        )}
+        
+        {onPrint && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onPrint(process)}
+            className={cn("text-gray-500 hover:text-gray-700 hover:bg-gray-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Imprimir processo"
+          >
+            <Printer className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onView && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onView(process)}
+            className={cn("text-green-500 hover:text-green-700 hover:bg-green-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Visualizar processo"
+          >
+            <Eye className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onShare && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onShare(process)}
+            className={cn("text-orange-500 hover:text-orange-700 hover:bg-orange-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Compartilhar processo"
+          >
+            <Share2 className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {isArchived && onUnarchive && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onUnarchive(process.id)}
+            disabled={disabled}
+            className={cn("text-purple-500 hover:text-purple-700 hover:bg-purple-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Desarquivar processo"
+          >
+            <ArchiveX className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {!isArchived && onArchive && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onArchive(process.id)}
+            disabled={disabled}
+            className={cn("text-purple-500 hover:text-purple-700 hover:bg-purple-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Arquivar processo"
+          >
+            <Archive className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onDelete && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={loading || disabled}
+            className={cn("text-red-500 hover:text-red-700 hover:bg-red-50",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title="Excluir processo"
+          >
+            <Trash className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+          </Button>
+        )}
+        
+        {onToggleDetails && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onToggleDetails(process.id)}
+            className={cn("text-gray-700",
+              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
+            title={showDetails ? "Ocultar detalhes" : "Mostrar detalhes"}
+          >
+            {showDetails ? (
+              <ChevronUp className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+            ) : (
+              <ChevronDown className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
+            )}
+          </Button>
+        )}
+      </>
+    );
+  };
 
   return (
     <Card className="overflow-hidden border-gray-200 shadow-sm hover:shadow-md transition-all">
@@ -300,94 +423,4 @@ export function ProcessCardCompact({
       )}
     </Card>
   );
-  
-  function renderActionButtons() {
-    return (
-      <>
-        {onRefresh && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleRefresh}
-            disabled={loading || disabled}
-            className={cn("text-blue-500 hover:text-blue-700 hover:bg-blue-50", 
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title="Atualizar processo"
-          >
-            <RefreshCw className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4", loading && "animate-spin")} />
-          </Button>
-        )}
-        
-        {onPrint && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onPrint(process)}
-            className={cn("text-gray-500 hover:text-gray-700 hover:bg-gray-50",
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title="Imprimir processo"
-          >
-            <Printer className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-          </Button>
-        )}
-        
-        {onView && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onView(process)}
-            className={cn("text-green-500 hover:text-green-700 hover:bg-green-50",
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title="Visualizar processo"
-          >
-            <Eye className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-          </Button>
-        )}
-        
-        {onShare && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onShare(process)}
-            className={cn("text-orange-500 hover:text-orange-700 hover:bg-orange-50",
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title="Compartilhar processo"
-          >
-            <Share2 className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-          </Button>
-        )}
-        
-        {onDelete && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={loading || disabled}
-            className={cn("text-red-500 hover:text-red-700 hover:bg-red-50",
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title="Excluir processo"
-          >
-            <Trash className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-          </Button>
-        )}
-        
-        {onToggleDetails && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onToggleDetails(process.id)}
-            className={cn("text-gray-700",
-              isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
-            title={showDetails ? "Ocultar detalhes" : "Mostrar detalhes"}
-          >
-            {showDetails ? (
-              <ChevronUp className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-            ) : (
-              <ChevronDown className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
-            )}
-          </Button>
-        )}
-      </>
-    );
-  }
 }
