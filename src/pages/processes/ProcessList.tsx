@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock, Archive, ArchiveX } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock, Archive, ArchiveX, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +34,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { FilingDateFilter } from "@/components/process/FilingDateFilter";
 import { ArchiveDialog } from "@/components/process/ArchiveDialog";
 import { UnarchiveDialog } from "@/components/process/UnarchiveDialog";
+
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
+
 export function ProcessList({
   processes,
   isLoading,
@@ -221,6 +223,18 @@ export function ProcessList({
   // Ajustar a paginação para trabalhar com o array ordenado
   const paginatedGroups = groupedProcesses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(groupedProcesses.length / itemsPerPage);
+  
+  // Define the getStatusBadgeVariant function only once
+  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
+    if (status === "Baixado") {
+      return "destructive";
+    }
+    if (status === "Arquivado") {
+      return "outline";
+    }
+    return "secondary";
+  };
+
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -238,6 +252,7 @@ export function ProcessList({
       }
     }
   };
+
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
@@ -258,6 +273,7 @@ export function ProcessList({
       setBulkAlertOpen(false);
     }
   };
+
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -272,14 +288,17 @@ export function ProcessList({
       }
     }
   };
+
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
+  
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
+  
   const handleShare = async (process: Process) => {
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     try {
@@ -297,6 +316,7 @@ export function ProcessList({
       toast.error("Não foi possível compartilhar o processo");
     }
   };
+  
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -309,9 +329,11 @@ export function ProcessList({
       return "Data inválida";
     }
   };
+  
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
+  
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
@@ -320,12 +342,14 @@ export function ProcessList({
       setSelectedProcesses(allParentIds);
     }
   };
+
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({
       ...prev,
       [processId]: value
     }));
   };
+  
   const handlePreviousMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -342,6 +366,7 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
+  
   const handleNextMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -358,12 +383,14 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
+  
   const handleHitSelect = (processId: string, hitIndex: number) => {
     setSelectedHitIndex(prev => ({
       ...prev,
       [processId]: hitIndex
     }));
   };
+  
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
@@ -387,6 +414,7 @@ export function ProcessList({
       return false;
     }
   };
+  
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
     if (isPasswordValid) {
@@ -396,6 +424,7 @@ export function ProcessList({
       setPasswordConfirmOpen(false);
     }
   };
+
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
       const supabase = getSupabaseClient();
@@ -429,20 +458,24 @@ export function ProcessList({
       console.error('Erro ao carregar status dos processos:', error);
     }
   };
+  
   const availableCourts = useMemo(() => {
     const courts = processes.map(process => process.court).filter((court): court is string => !!court);
     return Array.from(new Set(courts));
   }, [processes]);
+  
   const availableStatuses = useMemo(() => {
     const statuses = processes.map(process => process.status).filter((status): status is string => !!status);
     return Array.from(new Set(statuses));
   }, [processes]);
+  
   const resetFilters = () => {
     setStatusFilter("all");
     setCourtFilter("all");
     setDateFilter("all");
     setFilteredProcesses(processes);
   };
+  
   const getProcessStatus = (process: Process): string => {
     if (!process.hits || process.hits.length === 0) {
       return "Em andamento";
@@ -456,15 +489,7 @@ export function ProcessList({
     }) => movimento.codigo === 22 || movimento.codigo === 848) || false;
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
-  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
-    if (status === "Baixado") {
-      return "destructive";
-    }
-    if (status === "Arquivado") {
-      return "outline";
-    }
-    return "secondary";
-  };
+
   const handleScheduleUpdate = (updatedProcess: Process) => {
     // Atualiza o processo na lista
     setFilteredProcesses((prevProcesses: Process[]) => prevProcesses.map((p: Process) => p.id === updatedProcess.id ? updatedProcess : p));
@@ -538,6 +563,7 @@ export function ProcessList({
       fetchProcessHits(processIds);
     }
   }, [processes]);
+
   const renderFilterPopover = () => (
     <Popover>
       <PopoverTrigger asChild>
@@ -620,16 +646,6 @@ export function ProcessList({
         Arquivar {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
       </Button>
     );
-  };
-  
-  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
-    if (status === "Baixado") {
-      return "destructive";
-    }
-    if (status === "Arquivado") {
-      return "outline";
-    }
-    return "secondary";
   };
   
   // Modificar os botões de ação de cada processo para incluir arquivar/desarquivar
@@ -723,4 +739,8 @@ export function ProcessList({
             onClick={() => setSortByFilingDate("recent")} 
             className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
           >
-            Ajuizamento - Mais
+            Ajuizamento - Mais recente primeiro
+          </button>
+          <button 
+            onClick={() => setSortByFilingDate("oldest")} 
+            className={`flex items-center px-
