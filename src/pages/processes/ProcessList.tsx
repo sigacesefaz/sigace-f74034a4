@@ -31,14 +31,12 @@ import { ProcessSubjects } from "@/components/process/ProcessSubjects";
 import { cn } from "@/lib/utils";
 import { ProcessScheduleConfig } from '@/components/ProcessScheduleConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
-
 export function ProcessList({
   processes,
   isLoading,
@@ -74,8 +72,12 @@ export function ProcessList({
   const [processStatuses, setProcessStatuses] = useState<Record<string, string>>({});
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [scheduleConfigOpen, setScheduleConfigOpen] = useState(false);
-  const [processDetails, setProcessDetails] = useState<Record<string, { data_ajuizamento?: string }>>({});
-  const [processHits, setProcessHits] = useState<Record<string, { data_hora_ultima_atualizacao?: string }>>({});
+  const [processDetails, setProcessDetails] = useState<Record<string, {
+    data_ajuizamento?: string;
+  }>>({});
+  const [processHits, setProcessHits] = useState<Record<string, {
+    data_hora_ultima_atualizacao?: string;
+  }>>({});
   const itemsPerPage = 5;
 
   // Função de ordenação centralizada
@@ -96,7 +98,6 @@ export function ProcessList({
       loadProcessStatuses(processes);
     }
   }, [processes]);
-
   const handleSortOrderChange = () => {
     const newSortOrder = sortOrder === "recent" ? "oldest" : "recent";
     setSortOrder(newSortOrder);
@@ -112,28 +113,26 @@ export function ProcessList({
       const dateB = new Date(b.created_at).getTime();
       return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
     });
-    
+
     // Criar um array ordenado de grupos para preservar a ordem
-    const orderedGroups: [string, { parent: Process | null; children: Process[] }][] = [];
-    
+    const orderedGroups: [string, {
+      parent: Process | null;
+      children: Process[];
+    }][] = [];
+
     // Agora vamos criar os grupos mantendo a ordem dos pais
     sortedParents.forEach(process => {
       const children = filteredProcesses.filter(p => p.parent_id === process.id);
-      orderedGroups.push([
-        process.id,
-        {
-          parent: process,
-          children: children
-        }
-      ]);
+      orderedGroups.push([process.id, {
+        parent: process,
+        children: children
+      }]);
     });
-    
     return orderedGroups;
   }, [filteredProcesses, sortOrder]);
-
   const applyFilters = useCallback(() => {
     let processesToFilter = [...processes];
-    
+
     // Primeiro aplicar o filtro de status
     if (statusFilter !== "all") {
       processesToFilter = processesToFilter.filter(process => {
@@ -150,7 +149,6 @@ export function ProcessList({
       const dateB = new Date(b.created_at).getTime();
       return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
     });
-
     setFilteredProcesses(processesToFilter);
   }, [processes, sortOrder, statusFilter]);
 
@@ -160,13 +158,8 @@ export function ProcessList({
   }, [applyFilters]);
 
   // Ajustar a paginação para trabalhar com o array ordenado
-  const paginatedGroups = groupedProcesses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
+  const paginatedGroups = groupedProcesses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(groupedProcesses.length / itemsPerPage);
-
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -184,7 +177,6 @@ export function ProcessList({
       }
     }
   };
-
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
@@ -205,7 +197,6 @@ export function ProcessList({
       setBulkAlertOpen(false);
     }
   };
-
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -220,17 +211,14 @@ export function ProcessList({
       }
     }
   };
-
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-
   const handleShare = async (process: Process) => {
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     try {
@@ -248,7 +236,6 @@ export function ProcessList({
       toast.error("Não foi possível compartilhar o processo");
     }
   };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -261,11 +248,9 @@ export function ProcessList({
       return "Data inválida";
     }
   };
-
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
-
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
@@ -274,14 +259,12 @@ export function ProcessList({
       setSelectedProcesses(allParentIds);
     }
   };
-
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({
       ...prev,
       [processId]: value
     }));
   };
-
   const handlePreviousMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -298,7 +281,6 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   const handleNextMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -315,29 +297,28 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-
   const handleHitSelect = (processId: string, hitIndex: number) => {
     setSelectedHitIndex(prev => ({
       ...prev,
       [processId]: hitIndex
     }));
   };
-
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Usuário não autenticado");
         return false;
       }
-      
       if (!password.trim()) {
         setPasswordError("A senha não pode estar vazia");
         return false;
       }
-      
       return true;
     } catch (error) {
       console.error("Erro ao verificar senha:", error);
@@ -345,10 +326,8 @@ export function ProcessList({
       return false;
     }
   };
-
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
-    
     if (isPasswordValid) {
       await handleBulkDelete();
       setPassword("");
@@ -356,27 +335,22 @@ export function ProcessList({
       setPasswordConfirmOpen(false);
     }
   };
-
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
       const supabase = getSupabaseClient();
-      
-      // Filtra processos válidos
-      const validProcesses = processes.filter(process => 
-        process?.id && typeof process.id === 'string' && process.id.trim() !== ''
-      );
 
+      // Filtra processos válidos
+      const validProcesses = processes.filter(process => process?.id && typeof process.id === 'string' && process.id.trim() !== '');
       interface ProcessStatusData {
         id: string;
         status: string;
       }
 
       // Busca o status diretamente da tabela processes
-      const { data: processesData, error: processesError } = await supabase
-        .from('processes')
-        .select('id, status')
-        .in('id', validProcesses.map(p => p.id));
-
+      const {
+        data: processesData,
+        error: processesError
+      } = await supabase.from('processes').select('id, status').in('id', validProcesses.map(p => p.id));
       if (processesError) {
         console.error('Erro ao buscar status dos processos:', processesError);
         return;
@@ -384,94 +358,70 @@ export function ProcessList({
 
       // Cria um mapa de status
       const statusMap: Record<string, string> = {};
-      
       if (processesData) {
         (processesData as ProcessStatusData[]).forEach(process => {
           statusMap[process.id] = process.status;
         });
       }
-
       setProcessStatuses(statusMap);
-      
     } catch (error) {
       console.error('Erro ao carregar status dos processos:', error);
     }
   };
-
   const availableCourts = useMemo(() => {
-    const courts = processes
-      .map(process => process.court)
-      .filter((court): court is string => !!court);
+    const courts = processes.map(process => process.court).filter((court): court is string => !!court);
     return Array.from(new Set(courts));
   }, [processes]);
-
   const availableStatuses = useMemo(() => {
-    const statuses = processes
-      .map(process => process.status)
-      .filter((status): status is string => !!status);
+    const statuses = processes.map(process => process.status).filter((status): status is string => !!status);
     return Array.from(new Set(statuses));
   }, [processes]);
-
   const resetFilters = () => {
     setStatusFilter("all");
     setCourtFilter("all");
     setDateFilter("all");
     setFilteredProcesses(processes);
   };
-
   const getProcessStatus = (process: Process): string => {
     if (!process.hits || process.hits.length === 0) {
       return "Em andamento";
     }
-
     const latestHit = process.hits[process.hits.length - 1];
-    
     if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
       return "Em andamento";
     }
-
-    const hasBaixaMovement = latestHit.movimentos?.some(
-      (movimento: { codigo: number }) => movimento.codigo === 22 || movimento.codigo === 848
-    ) || false;
-
+    const hasBaixaMovement = latestHit.movimentos?.some((movimento: {
+      codigo: number;
+    }) => movimento.codigo === 22 || movimento.codigo === 848) || false;
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
-
   const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
     if (status === "Baixado") {
       return "destructive";
-    } 
+    }
     return "secondary";
   };
-
   const handleScheduleUpdate = (updatedProcess: Process) => {
     // Atualiza o processo na lista
-    setFilteredProcesses((prevProcesses: Process[]) =>
-      prevProcesses.map((p: Process) =>
-        p.id === updatedProcess.id ? updatedProcess : p
-      )
-    );
+    setFilteredProcesses((prevProcesses: Process[]) => prevProcesses.map((p: Process) => p.id === updatedProcess.id ? updatedProcess : p));
   };
 
   // Função para buscar detalhes dos processos
   const fetchProcessDetails = async (processIds: string[]) => {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('process_details')
-        .select('process_id, data_ajuizamento')
-        .in('process_id', processIds);
-
+      const {
+        data,
+        error
+      } = await supabase.from('process_details').select('process_id, data_ajuizamento').in('process_id', processIds);
       if (error) {
         console.error('Erro ao buscar detalhes dos processos:', error);
         return;
       }
-
       const detailsMap = (data || []).reduce((acc, detail) => ({
         ...acc,
         [detail.process_id]: detail
       }), {});
-
       setProcessDetails(detailsMap);
     } catch (error) {
       console.error('Erro ao buscar detalhes dos processos:', error);
@@ -482,17 +432,16 @@ export function ProcessList({
   const fetchProcessHits = async (processIds: string[]) => {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('process_hits')
-        .select('process_id, data_hora_ultima_atualizacao')
-        .in('process_id', processIds)
-        .order('data_hora_ultima_atualizacao', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('process_hits').select('process_id, data_hora_ultima_atualizacao').in('process_id', processIds).order('data_hora_ultima_atualizacao', {
+        ascending: false
+      });
       if (error) {
         console.error('Erro ao buscar hits dos processos:', error);
         return;
       }
-
       interface ProcessHit {
         process_id: string;
         data_hora_ultima_atualizacao?: string;
@@ -501,11 +450,9 @@ export function ProcessList({
       // Agrupa por process_id pegando apenas o hit mais recente
       const hitsMap = (data || []).reduce((acc: Record<string, ProcessHit>, hit: ProcessHit) => {
         if (!hit.process_id) return acc;
-        
         const hitDate = hit.data_hora_ultima_atualizacao ? new Date(hit.data_hora_ultima_atualizacao) : null;
         const accDate = acc[hit.process_id]?.data_hora_ultima_atualizacao ? new Date(acc[hit.process_id].data_hora_ultima_atualizacao || '') : null;
-        
-        if (!acc[hit.process_id] || (hitDate && accDate && hitDate > accDate)) {
+        if (!acc[hit.process_id] || hitDate && accDate && hitDate > accDate) {
           acc[hit.process_id] = {
             process_id: hit.process_id,
             data_hora_ultima_atualizacao: hit.data_hora_ultima_atualizacao
@@ -513,7 +460,6 @@ export function ProcessList({
         }
         return acc;
       }, {} as Record<string, ProcessHit>);
-
       setProcessHits(hitsMap);
     } catch (error) {
       console.error('Erro ao buscar hits dos processos:', error);
@@ -528,7 +474,6 @@ export function ProcessList({
       fetchProcessHits(processIds);
     }
   }, [processes]);
-
   if (isLoading) {
     return <div className="space-y-2">
         {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
@@ -539,7 +484,6 @@ export function ProcessList({
           </Card>)}
       </div>;
   }
-
   if (processes.length === 0) {
     return <Card className="text-center py-6">
         <CardContent>
@@ -550,16 +494,11 @@ export function ProcessList({
         </CardContent>
       </Card>;
   }
-
   return <div className="space-y-4 min-h-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <Checkbox 
-              id="select-all" 
-              checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
-              onCheckedChange={toggleAllProcesses}
-            />
+            <Checkbox id="select-all" checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length} onCheckedChange={toggleAllProcesses} />
             <label htmlFor="select-all" className="text-sm font-medium">
               Selecionar todos
             </label>
@@ -569,91 +508,51 @@ export function ProcessList({
             Total: {Object.keys(groupedProcesses).length} processos
           </Badge>
 
-          <button 
-            onClick={handleSortOrderChange}
-            className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
-          >
-            <ChevronDown 
-              className={`h-4 w-4 transition-transform ${sortOrder === "recent" ? "" : "rotate-180"}`}
-            />
+          <button onClick={handleSortOrderChange} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+            <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === "recent" ? "" : "rotate-180"}`} />
             {sortOrder === "recent" ? "Recentes Primeiro" : "Antigos Primeiro"}
           </button>
 
           <Popover>
             <PopoverTrigger asChild>
-              <button 
-                className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
-              >
-                <ChevronDown 
-                  className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`}
-                />
+              <button className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
                 Status: {statusFilter === "all" ? "Todos" : statusFilter === "active" ? "Em andamento" : "Baixados"}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-1">
               <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => setStatusFilter("all")}
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
-                    statusFilter === "all"
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
+                <button onClick={() => setStatusFilter("all")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
                   Todos
                 </button>
-                <button
-                  onClick={() => setStatusFilter("active")}
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
-                    statusFilter === "active"
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
+                <button onClick={() => setStatusFilter("active")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
                   Em andamento
                 </button>
-                <button
-                  onClick={() => setStatusFilter("archived")}
-                  className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${
-                    statusFilter === "archived"
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
+                <button onClick={() => setStatusFilter("archived")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
                   Baixados
                 </button>
               </div>
             </PopoverContent>
           </Popover>
           
-          {selectedProcesses.length > 0 && (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={() => setBulkAlertOpen(true)}
-              className="ml-0 sm:ml-4"
-            >
+          {selectedProcesses.length > 0 && <Button variant="destructive" size="sm" onClick={() => setBulkAlertOpen(true)} className="ml-0 sm:ml-4">
               <Trash className="h-4 w-4 mr-2" />
               Excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
-            </Button>
-          )}
+            </Button>}
         </div>
         <div className="flex items-center gap-2">
           {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
         </div>
       </div>
 
-      {paginatedGroups.length === 0 ? (
-        <Card className="p-6">
+      {paginatedGroups.length === 0 ? <Card className="p-6">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Nenhum processo encontrado com os filtros selecionados.</p>
           </CardContent>
-        </Card>
-      ) : (
-        paginatedGroups.map(([groupId, group]) => {
-          const parentProcess = group.parent;
-          if (!parentProcess) return null;
-          return <div key={groupId} className="space-y-1">
+        </Card> : paginatedGroups.map(([groupId, group]) => {
+      const parentProcess = group.parent;
+      if (!parentProcess) return null;
+      return <div key={groupId} className="space-y-1">
                 <Card className="overflow-hidden border-gray-200 shadow-sm h-auto">
                   <CardHeader className="bg-gray-50 p-2 h-auto">
                     <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 justify-between w-full">
@@ -666,98 +565,53 @@ export function ProcessList({
                             </span>
                           </CardTitle>
                           <div className="flex flex-wrap items-center gap-1 mb-1">
-                            {parentProcess.hits && parentProcess.hits.length > 0 && (
-                              <>
-                                <Badge 
-                                  variant="secondary" 
-                                  className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90"
-                                >
+                            {parentProcess.hits && parentProcess.hits.length > 0 && <>
+                                <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
                                   Movimentação Atual
                                 </Badge>
-                                <Badge 
-                                  variant="default"
-                                  className="h-6 px-2 bg-green-600 text-white hover:bg-green-700"
-                                >
+                                <Badge variant="default" className="h-6 px-2 bg-green-600 text-white hover:bg-green-700">
                                   {parentProcess.hits[0].classe?.nome || "Classe não informada"}
                                 </Badge>
-                              </>
-                            )}
-                            <Badge 
-                              variant={getStatusBadgeVariant(parentProcess.status)}
-                              className={cn(
-                                "h-6 px-2",
-                                parentProcess.status === "Baixado" 
-                                  ? "bg-red-600 text-white hover:bg-red-700" 
-                                  : "bg-[#fec30b] text-black hover:bg-[#fec30b]/90"
-                              )}
-                            >
+                              </>}
+                            <Badge variant={getStatusBadgeVariant(parentProcess.status)} className={cn("h-6 px-2", parentProcess.status === "Baixado" ? "bg-red-600 text-white hover:bg-red-700" : "bg-[#fec30b] text-black hover:bg-[#fec30b]/90")}>
                               {parentProcess.status || "Em andamento"}
                             </Badge>
                           </div>
                           <div className="flex flex-col space-y-1">
                             <div className="flex flex-wrap items-center gap-1 mb-1">
                               {/* Badge de eventos */}
-                              {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 && (
-                                <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
+                              {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 && <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
                                   {parentProcess.movimentacoes.length} {parentProcess.movimentacoes.length === 1 ? 'evento' : 'eventos'}
-                                </Badge>
-                              )}
+                                </Badge>}
                               {/* Badge de movimentações processuais */}
-                              {parentProcess.hits && parentProcess.hits.length > 0 && (
-                                <Badge variant="secondary" className="h-6 px-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                              {parentProcess.hits && parentProcess.hits.length > 0 && <Badge variant="secondary" className="h-6 px-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
                                   {parentProcess.hits.length} {parentProcess.hits.length === 1 ? 'movimentação processual' : 'movimentações processuais'}
-                                </Badge>
-                              )}
+                                </Badge>}
                               {/* Badges das classes de movimentação */}
                               {parentProcess.hits && parentProcess.hits.length > 0 && parentProcess.hits.map((hit, index) => {
-                                const isCurrentHit = index === 0;
-                                return (
-                                  <Badge 
-                                    key={index}
-                                    variant={isCurrentHit ? "default" : "outline"}
-                                    className={cn(
-                                      "h-6 px-2",
-                                      isCurrentHit 
-                                        ? "bg-green-600 text-white hover:bg-green-700" 
-                                        : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
-                                    )}
-                                  >
+                        const isCurrentHit = index === 0;
+                        return <Badge key={index} variant={isCurrentHit ? "default" : "outline"} className={cn("h-6 px-2", isCurrentHit ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300")}>
                                     {hit.classe?.nome || "Classe não informada"}
-                                  </Badge>
-                                );
-                              })}
+                                  </Badge>;
+                      })}
                             </div>
                             <div className="flex flex-wrap items-baseline gap-1 mb-1">
                               {/* Badge de assuntos */}
-                              {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? (
-                                <>
+                              {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? <>
                                   <Badge variant="outline" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90">
                                     {parentProcess.metadata.assuntos.length} {parentProcess.metadata.assuntos.length === 1 ? 'assunto' : 'assuntos'}
                                   </Badge>
                                   {parentProcess.metadata.assuntos.map((assunto, index) => {
-                                    const isPrincipal = assunto.principal;
-                                    return (
-                                      <Badge 
-                                        key={index}
-                                        variant="default" 
-                                        className={cn(
-                                          "h-6 px-2 whitespace-normal text-xs",
-                                          "bg-[#2e3092] text-white hover:bg-[#2e3092]/90"
-                                        )}
-                                        title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}${isPrincipal ? ' - Principal' : ''}` : "Assunto não informado"}
-                                      >
+                          const isPrincipal = assunto.principal;
+                          return <Badge key={index} variant="default" className={cn("h-6 px-2 whitespace-normal text-xs", "bg-[#2e3092] text-white hover:bg-[#2e3092]/90")} title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}${isPrincipal ? ' - Principal' : ''}` : "Assunto não informado"}>
                                         {isPrincipal && <Check className="h-3 w-3 mr-1 inline-block" />}
                                         {assunto.nome}
                                         {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
-                                      </Badge>
-                                    );
-                                  })}
-                                </>
-                              ) : (
-                                <Badge variant="default" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90 whitespace-normal text-xs">
+                                      </Badge>;
+                        })}
+                                </> : <Badge variant="default" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90 whitespace-normal text-xs">
                                   Assunto não informado
-                                </Badge>
-                              )}
+                                </Badge>}
                             </div>
                             <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
                               <div className="flex flex-wrap items-center gap-1">
@@ -801,9 +655,9 @@ export function ProcessList({
                           <Share2 className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => {
-                          setProcessToDelete(parentProcess.id);
-                          setAlertOpen(true);
-                        }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
+                  setProcessToDelete(parentProcess.id);
+                  setAlertOpen(true);
+                }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
                           <Trash className="h-4 w-4" />
                         </Button>
                         <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
@@ -812,7 +666,7 @@ export function ProcessList({
                   </CardHeader>
                   
                   <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
-                    <div className="text-sm text-gray-700 pt-1 overflow-visible">
+                    <div className="text-sm text-gray-700 pt-1 overflow-visible py-0">
                       <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
                         <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
                         Detalhes do Processo
@@ -821,12 +675,7 @@ export function ProcessList({
                         <div className="space-y-2 overflow-visible">
                           <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
                             <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                            <ProcessHitsNavigation 
-                              processId={parentProcess.id} 
-                              hits={parentProcess.hits || []} 
-                              currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
-                              onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
-                            />
+                            <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
                           </div>
                         </div>
                       </div>
@@ -834,8 +683,7 @@ export function ProcessList({
                   </CardContent>
                 </Card>
               </div>;
-        })
-      )}
+    })}
 
       
 
@@ -886,24 +734,16 @@ export function ProcessList({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                className={passwordError ? "border-red-500" : ""}
-              />
-              {passwordError && (
-                <p className="text-sm text-red-500">{passwordError}</p>
-              )}
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className={passwordError ? "border-red-500" : ""} />
+              {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setPasswordConfirmOpen(false);
-              setPassword("");
-              setPasswordError("");
-            }}>
+            setPasswordConfirmOpen(false);
+            setPassword("");
+            setPasswordError("");
+          }}>
               Cancelar
             </Button>
             <Button onClick={confirmBulkDeleteWithPassword}>
