@@ -485,9 +485,12 @@ export function ProcessList({
       </div>;
   }
   if (processes.length === 0) {
-    return <Card className="p-6">
-        <CardContent className="pt-6 text-center px-4">
-          <p className="text-muted-foreground">Nenhum processo encontrado com os filtros selecionados.</p>
+    return <Card className="text-center py-6">
+        <CardContent>
+          <p className="text-gray-500">Nenhum processo encontrado</p>
+          <Link to="/processes/new">
+            <Button className="mt-2">Cadastrar Novo Processo</Button>
+          </Link>
         </CardContent>
       </Card>;
   }
@@ -543,7 +546,7 @@ export function ProcessList({
       </div>
 
       {paginatedGroups.length === 0 ? <Card className="p-6">
-          <CardContent className="pt-6 text-center px-4">
+          <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Nenhum processo encontrado com os filtros selecionados.</p>
           </CardContent>
         </Card> : paginatedGroups.map(([groupId, group]) => {
@@ -639,4 +642,117 @@ export function ProcessList({
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-1 mt-2 sm:mt-0 self-end sm:self-auto w-full sm:w-auto justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue
+                        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                  setProcessToDelete(parentProcess.id);
+                  setAlertOpen(true);
+                }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                        <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
+                    <div className="text-sm text-gray-700 pt-1 overflow-visible py-0">
+                      <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                        <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
+                        Detalhes do Processo
+                      </button>
+                      <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 h-auto mt-1" : "opacity-0 h-0 overflow-hidden"}`}>
+                        <div className="space-y-2 overflow-visible">
+                          <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
+                            <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
+                            <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>;
+    })}
+
+      
+
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Processo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita
+              e todos os dados relacionados serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProcessToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => processToDelete && handleDelete(processToDelete)} className="bg-red-500 hover:bg-red-600">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}. 
+              Esta ação não pode ser desfeita. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
+              Confirmar Exclusão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirme sua senha</DialogTitle>
+            <DialogDescription>
+              Por motivos de segurança, digite sua senha para confirmar a exclusão em massa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className={passwordError ? "border-red-500" : ""} />
+              {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+            setPasswordConfirmOpen(false);
+            setPassword("");
+            setPasswordError("");
+          }}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmBulkDeleteWithPassword}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
+    </div>;
+}
