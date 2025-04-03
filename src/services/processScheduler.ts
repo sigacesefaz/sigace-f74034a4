@@ -1,4 +1,5 @@
 
+
 import { getSupabaseClient } from '@/lib/supabase';
 import { checkProcessStatus } from '@/lib/tjto';
 import { addMinutes, isAfter, parseISO } from 'date-fns';
@@ -199,3 +200,4 @@ export async function updateProcessInformationManual(process: Process): Promise<
     }]);
   }
 }
+

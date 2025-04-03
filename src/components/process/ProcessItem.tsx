@@ -61,12 +61,24 @@ export function ProcessItem({
     return { variant: "secondary" as const };
   };
 
+  // Verificar se o processo foi atualizado recentemente (nas últimas 24 horas)
+  const hasRecentUpdate = process.updated_at && 
+    (new Date().getTime() - new Date(process.updated_at).getTime() < 24 * 60 * 60 * 1000);
+
   return (
     <Card className="mb-4">
       <CardContent className="p-4">
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-lg font-semibold">{process.title}</div>
+            <div className="text-lg font-semibold flex items-center">
+              {process.title}
+              {hasRecentUpdate && (
+                <span 
+                  className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-2" 
+                  title="Atualizado recentemente"
+                />
+              )}
+            </div>
             <div className="text-sm text-gray-500">{process.number}</div>
             <div className="text-sm text-gray-500">
               {process.description}
@@ -158,11 +170,21 @@ export function ProcessItem({
                   <TableRow>
                     <TableCell className="font-medium">Movimentos</TableCell>
                     <TableCell>
-                      {process.metadata?.movimentos?.map((movimento: any) => (
-                        <div key={movimento.codigo}>
-                          {movimento.nome} - {movimento.dataHora}
-                        </div>
-                      ))}
+                      {process.metadata?.movimentos?.map((movimento: any) => {
+                        // Verificar se é um movimento novo (adicionado nas últimas 24 horas)
+                        const isNewMovement = movimento.data_hora && 
+                          (new Date().getTime() - new Date(movimento.data_hora).getTime() < 24 * 60 * 60 * 1000);
+                          
+                        return (
+                          <div 
+                            key={movimento.codigo}
+                            className={isNewMovement ? "font-semibold text-blue-700" : ""}
+                          >
+                            {movimento.nome} - {movimento.dataHora}
+                            {isNewMovement && <span className="text-xs ml-2 text-white bg-blue-500 px-1 rounded">novo</span>}
+                          </div>
+                        );
+                      })}
                     </TableCell>
                   </TableRow>
                 </TableBody>
