@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useBreakpoint, useIsMobile, useIsMobileOrTablet, useIsXSmall } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 import { ProcessBadge, EventBadge, MovementBadge, SubjectBadge, StatusBadge, DateInfoBadge } from "@/components/process/ProcessBadge";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -120,6 +121,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                 )} onClick={() => toggleDetails(process.id)}>
                   <div className="flex flex-col sm:flex-row justify-between gap-2">
                     <div className="flex-1 min-w-0">
+                      {/* Número do processo sozinho na primeira linha */}
                       <span className={cn(
                         "font-medium text-gray-700 break-all block mb-1", 
                         isXSmall ? "text-xs" : isSmallScreen ? "text-sm" : "text-base"
@@ -127,6 +129,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                         {process.number}
                       </span>
                       
+                      {/* Badges movidos para uma linha abaixo */}
                       <div className="flex flex-wrap mt-2 gap-1">
                         {process.metadata?.eventos && process.metadata.eventos.length > 0 && (
                           <EventBadge 
@@ -203,7 +206,7 @@ export function ProcessList({ processes }: ProcessListProps) {
                 {showDetails[process.id] && (
                   <CardContent className={cn(
                     isXSmall ? "p-2" : isSmallScreen ? "p-2.5" : "p-3",
-                    "px-4"
+                    "px-4"  // Adicionado espaçamento horizontal mínimo
                   )}>
                     <div className={cn(
                       "mt-2 border-t pt-3",
