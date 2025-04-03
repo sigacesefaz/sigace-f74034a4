@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   ChevronLeft, 
@@ -357,6 +358,33 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
           </div>
         )}
       </div>
+      
+      {/* Adicionar a paginação também no canto inferior direito */}
+      {totalHits > 0 && (
+        <div className="flex justify-end mt-4 px-2 md:px-0">
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handlePreviousHit}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm mx-2">
+              {internalHitIndex + 1} / {totalHits}
+            </span>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleNextHit}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
