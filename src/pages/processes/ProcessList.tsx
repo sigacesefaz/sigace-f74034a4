@@ -720,31 +720,39 @@ export function ProcessList({
       </div>
     );
   }
+
+  // Create function to handle archiving
+  const handleArchiveSuccess = useCallback(() => {
+    toast.success("Processos arquivados com sucesso!");
+    applyFilters(); // Re-apply filters to update the UI
+  }, [applyFilters]);
   
-  // CORREÇÃO: Reformulação do componente de ordenação por data de ajuizamento
-  function renderFilingDateSortButton() {
-    return (
-      <div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8">
-              <Calendar className="h-4 w-4 mr-2" />
-              {sortByFilingDate === "none" 
-                ? "Ordernar por ajuizamento" 
-                : sortByFilingDate === "recent" 
-                  ? "Mais recente primeiro" 
-                  : "Mais antigo primeiro"
-              }
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 p-1">
-            <div className="flex flex-col gap-1">
-              <button 
-                onClick={() => setSortByFilingDate("none")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "none" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Ordenação padrão
-              </button>
-              <button 
-                onClick={() => setSortByFilingDate("recent")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:
+  // Create function to handle unarchiving
+  const handleUnarchiveSuccess = useCallback(() => {
+    toast.success("Processos desarquivados com sucesso!");
+    applyFilters(); // Re-apply filters to update the UI
+  }, [applyFilters]);
+
+  // Return the component's JSX
+  return (
+    <>
+      <div className="mb-4 flex flex-col sm:flex-row justify-between gap-2 items-start">
+        <div className="flex items-center gap-2 mb-2 sm:mb-0">
+          <Checkbox
+            checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
+            onCheckedChange={toggleAllProcesses}
+            aria-label="Selecionar todos os processos"
+          />
+          <span className="text-sm text-muted-foreground">
+            {selectedProcesses.length} selecionado{selectedProcesses.length !== 1 ? 's' : ''}
+          </span>
+          
+          {selectedProcesses.length > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => setBulkAlertOpen(true)}
+              className="ml-0 sm:ml-4"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir {selectedProcesses.length}
