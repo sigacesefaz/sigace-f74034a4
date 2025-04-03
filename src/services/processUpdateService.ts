@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ProcessUpdateHistory } from "@/types/process";
+import { formatProcessNumber } from "@/utils/format";
 
 export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
@@ -20,10 +21,20 @@ export async function updateProcess(processId: string | number, courtEndpoint?: 
     
     toast.dismiss();
     
+    // Busca o número do processo para exibir na mensagem de sucesso
+    const { data: processData, error: processError } = await supabase
+      .from("processes")
+      .select("number")
+      .eq("id", processId)
+      .single();
+      
+    const processNumber = processData?.number ? formatProcessNumber(processData.number) : "";
+    const processInfo = processNumber ? ` (${processNumber})` : "";
+    
     if (data.newHits > 0) {
-      toast.success(`Processo atualizado com sucesso! ${data.newHits} nova(s) movimentação(ões) encontrada(s).`);
+      toast.success(`Processo${processInfo} atualizado com sucesso! ${data.newHits} nova(s) movimentação(ões) encontrada(s).`);
     } else {
-      toast.success("Processo atualizado, mas nenhuma nova movimentação encontrada.");
+      toast.success(`Processo${processInfo} atualizado, mas nenhuma nova movimentação encontrada.`);
     }
     
     return true;

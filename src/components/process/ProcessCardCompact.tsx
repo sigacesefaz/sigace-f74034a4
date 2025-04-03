@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Process } from "@/types/process";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,9 +64,11 @@ export function ProcessCardCompact({
     if (disabled) return;
     
     try {
+      const formattedNumber = formatProcessNumber(process.number);
+      
       const confirmed = await confirm({
         title: "Atualizar processo",
-        description: `Deseja verificar agora se há atualizações para o processo ${formatProcessNumber(process.number)}?`,
+        description: `Deseja verificar agora se há atualizações para o processo ${formattedNumber}?`,
         confirmText: "Atualizar",
         cancelText: "Cancelar"
       });

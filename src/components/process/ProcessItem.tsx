@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { updateProcess } from "@/services/processUpdateService";
 import { toast } from "sonner";
+import { formatProcessNumber } from "@/utils/format";
 
 interface ProcessItemProps {
   process: any;
@@ -73,9 +75,11 @@ export function ProcessItem({
     e.stopPropagation();
     
     try {
+      const formattedNumber = formatProcessNumber(process.number);
+      
       const confirmed = await confirm({
         title: "Atualizar processo",
-        description: `Deseja verificar agora se há atualizações para o processo ${process.number}?`,
+        description: `Deseja verificar agora se há atualizações para o processo ${formattedNumber}?`,
         confirmText: "Atualizar",
         cancelText: "Cancelar"
       });
