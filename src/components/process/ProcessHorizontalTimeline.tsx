@@ -3,7 +3,16 @@ import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Filter } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  ZoomIn, 
+  ZoomOut, 
+  Filter, 
+  LayoutGrid,
+  Clock,
+  List 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,6 +39,9 @@ interface ProcessHorizontalTimelineProps {
   className?: string;
 }
 
+type ViewMode = "linear" | "cards";
+type Density = "compact" | "normal" | "expanded";
+
 export function ProcessHorizontalTimeline({
   events,
   title = "Linha do Tempo",
@@ -37,10 +49,14 @@ export function ProcessHorizontalTimeline({
   className
 }: ProcessHorizontalTimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [scale, setScale] = useState(1);
   const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("linear");
+  const [density, setDensity] = useState<Density>("normal");
+  const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   
   const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
@@ -63,6 +79,32 @@ export function ProcessHorizontalTimeline({
       
       container.scrollTo({ left: newPosition, behavior: 'smooth' });
       setScrollPosition(newPosition);
+    }
+  };
+
+  // Mover para um evento específico
+  const jumpToEvent = (index: number) => {
+    if (index >= 0 && index < filteredEvents.length) {
+      setSelectedEventIndex(index);
+      
+      const container = containerRef.current;
+      const timeline = timelineRef.current;
+      
+      if (container && timeline) {
+        const eventElements = timeline.querySelectorAll("[data-event-index]");
+        if (eventElements[index]) {
+          const eventElement = eventElements[index] as HTMLElement;
+          const eventLeft = eventElement.offsetLeft;
+          const centerPosition = eventLeft - (container.clientWidth / 2) + (eventElement.offsetWidth / 2);
+          
+          container.scrollTo({ 
+            left: centerPosition, 
+            behavior: 'smooth' 
+          });
+          
+          setScrollPosition(centerPosition);
+        }
+      }
     }
   };
   
@@ -170,12 +212,72 @@ export function ProcessHorizontalTimeline({
     }
   };
 
+  // Função para obter cor do ponto na linha do tempo
+  const getPointColor = (type: string): string => {
+    switch (type) {
+      case 'document': return 'bg-blue-500';
+      case 'hearing': return 'bg-green-500';
+      case 'decision': return 'bg-purple-500';
+      case 'movement': return 'bg-yellow-500';
+      case 'deadline': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getDensityClass = () => {
+    switch (density) {
+      case 'compact': return 'gap-6';
+      case 'expanded': return 'gap-16';
+      default: return 'gap-10';
+    }
+  };
+
   return (
     <Card className={cn("relative overflow-hidden", className)}>
       <div className="p-4 border-b flex justify-between items-center">
         <h3 className="text-lg font-medium">{title}</h3>
         
         <div className="flex space-x-2">
+          {/* Layout Selector */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setViewMode(viewMode === 'linear' ? 'cards' : 'linear')}
+                  className="h-8 w-8"
+                >
+                  {viewMode === 'linear' ? <LayoutGrid className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Alternar visualização</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* Density Selector */}
+          {viewMode === 'linear' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setDensity(density === 'normal' ? 'compact' : density === 'compact' ? 'expanded' : 'normal')}
+                    className="h-8 w-8"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Alterar densidade: {density}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
           {/* Controles de Zoom */}
           <TooltipProvider>
             <Tooltip>
@@ -245,6 +347,32 @@ export function ProcessHorizontalTimeline({
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* Jump to Event */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <span>Ir para</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-2 max-h-[200px] overflow-auto">
+                <h4 className="font-medium mb-2">Selecionar evento</h4>
+                {filteredEvents.map((event, index) => (
+                  <Button 
+                    key={event.id} 
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-left text-xs"
+                    onClick={() => jumpToEvent(index)}
+                  >
+                    <div className={cn("w-2 h-2 rounded-full mr-2", getPointColor(event.type))}></div>
+                    <span className="truncate">{formatEventDate(event.date)} - {event.title}</span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       
@@ -261,71 +389,180 @@ export function ProcessHorizontalTimeline({
               aria-label="Timeline de eventos do processo"
               role="region"
             >
-              <AnimatePresence>
-                {filteredEvents.map((event, index) => (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ 
-                      duration: 0.3, 
-                      delay: index * 0.05 
-                    }}
-                    className={cn(
-                      "flex-shrink-0 rounded-md border mr-4 last:mr-0 shadow-sm hover:shadow-md transition-all",
-                      getEventColor(event.type)
-                    )}
-                    style={{ 
-                      width: `${48 * scale}px`, 
-                      padding: `${12 * scale}px` 
-                    }}
-                    tabIndex={0}
-                    role="article"
-                    aria-label={`Evento: ${event.title}`}
-                  >
-                    {event.status && (
-                      <Badge 
-                        variant="secondary" 
+              {viewMode === 'linear' ? (
+                <div 
+                  ref={timelineRef}
+                  className="relative min-w-full py-6"
+                >
+                  {/* Linha do tempo */}
+                  <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 transform -translate-y-1/2"></div>
+                  
+                  {/* Eventos na linha do tempo */}
+                  <div className={cn("relative flex items-center min-w-full", getDensityClass())}>
+                    {filteredEvents.map((event, index) => (
+                      <motion.div
+                        key={event.id}
+                        data-event-index={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
                         className={cn(
-                          "mb-2", 
-                          getStatusBadgeColor(event.status)
+                          "flex flex-col items-center relative",
+                          index === selectedEventIndex ? "z-10" : "z-0"
                         )}
+                        style={{ flex: '0 0 auto' }}
+                        onClick={() => setSelectedEventIndex(index)}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Evento: ${event.title}`}
                       >
-                        {event.status === 'completed' ? 'Concluído' :
-                         event.status === 'pending' ? 'Pendente' :
-                         event.status === 'canceled' ? 'Cancelado' : event.status}
-                      </Badge>
-                    )}
-                    <div 
-                      className="text-sm font-medium mb-1"
-                      style={{ fontSize: `${14 * scale}px` }}
+                        {/* Ponto na linha */}
+                        <div 
+                          className={cn(
+                            "w-4 h-4 rounded-full z-10 border-2 border-white shadow-sm cursor-pointer",
+                            getPointColor(event.type),
+                            index === selectedEventIndex ? "w-6 h-6" : ""
+                          )}
+                        ></div>
+                        
+                        {/* Conteúdo do evento */}
+                        <AnimatePresence>
+                          {(index === selectedEventIndex || density !== 'compact') && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              className={cn(
+                                "absolute top-6 pt-2 flex flex-col items-center",
+                                index % 2 === 0 ? "-translate-y-full -top-6 pb-2" : "translate-y-0 top-6 pt-2"
+                              )}
+                              style={{ 
+                                width: `${Math.max(100, 150 * scale)}px`,
+                                maxWidth: `${Math.max(100, 200 * scale)}px`
+                              }}
+                            >
+                              <div 
+                                className={cn(
+                                  "rounded-md border p-2 shadow-sm w-full",
+                                  getEventColor(event.type),
+                                  index === selectedEventIndex ? "ring-2 ring-primary ring-opacity-50" : ""
+                                )}
+                              >
+                                {event.status && (
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={cn(
+                                      "mb-1 text-xs", 
+                                      getStatusBadgeColor(event.status)
+                                    )}
+                                  >
+                                    {event.status === 'completed' ? 'Concluído' :
+                                     event.status === 'pending' ? 'Pendente' :
+                                     event.status === 'canceled' ? 'Cancelado' : event.status}
+                                  </Badge>
+                                )}
+                                <div 
+                                  className="text-sm font-medium mb-1 truncate"
+                                  style={{ fontSize: `${14 * scale}px` }}
+                                >
+                                  {event.title}
+                                </div>
+                                <div 
+                                  className="text-xs text-gray-500"
+                                  style={{ fontSize: `${12 * scale}px` }}
+                                >
+                                  {formatEventDate(event.date)}
+                                </div>
+                                <div 
+                                  className="text-xs text-gray-500"
+                                  style={{ fontSize: `${12 * scale}px` }}
+                                >
+                                  {getTimeAgo(event.date)}
+                                </div>
+                                {event.description && index === selectedEventIndex && (
+                                  <div 
+                                    className="text-xs text-gray-600 mt-1 line-clamp-2"
+                                    style={{ fontSize: `${12 * scale}px` }}
+                                  >
+                                    {event.description}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {filteredEvents.map((event, index) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ 
+                        duration: 0.3, 
+                        delay: index * 0.05 
+                      }}
+                      className={cn(
+                        "flex-shrink-0 rounded-md border mr-4 last:mr-0 shadow-sm hover:shadow-md transition-all",
+                        getEventColor(event.type)
+                      )}
+                      style={{ 
+                        width: `${48 * scale}px`, 
+                        padding: `${12 * scale}px` 
+                      }}
+                      tabIndex={0}
+                      role="article"
+                      aria-label={`Evento: ${event.title}`}
                     >
-                      {event.title}
-                    </div>
-                    <div 
-                      className="text-xs text-gray-500"
-                      style={{ fontSize: `${12 * scale}px` }}
-                    >
-                      {formatEventDate(event.date)}
-                    </div>
-                    <div 
-                      className="text-xs text-gray-500"
-                      style={{ fontSize: `${12 * scale}px` }}
-                    >
-                      {getTimeAgo(event.date)}
-                    </div>
-                    {event.description && (
+                      {event.status && (
+                        <Badge 
+                          variant="secondary" 
+                          className={cn(
+                            "mb-2", 
+                            getStatusBadgeColor(event.status)
+                          )}
+                        >
+                          {event.status === 'completed' ? 'Concluído' :
+                           event.status === 'pending' ? 'Pendente' :
+                           event.status === 'canceled' ? 'Cancelado' : event.status}
+                        </Badge>
+                      )}
                       <div 
-                        className="text-xs text-gray-600 mt-2 line-clamp-3"
+                        className="text-sm font-medium mb-1"
+                        style={{ fontSize: `${14 * scale}px` }}
+                      >
+                        {event.title}
+                      </div>
+                      <div 
+                        className="text-xs text-gray-500"
                         style={{ fontSize: `${12 * scale}px` }}
                       >
-                        {event.description}
+                        {formatEventDate(event.date)}
                       </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                      <div 
+                        className="text-xs text-gray-500"
+                        style={{ fontSize: `${12 * scale}px` }}
+                      >
+                        {getTimeAgo(event.date)}
+                      </div>
+                      {event.description && (
+                        <div 
+                          className="text-xs text-gray-600 mt-2 line-clamp-3"
+                          style={{ fontSize: `${12 * scale}px` }}
+                        >
+                          {event.description}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </div>
             
             <Button
