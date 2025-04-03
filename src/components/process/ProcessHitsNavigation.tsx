@@ -359,7 +359,7 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
         )}
       </div>
       
-      {/* Adicionar a paginação no canto inferior direito */}
+      {/* Adicionar a paginação também no canto inferior direito */}
       {totalHits > 0 && (
         <div className="flex justify-end mt-4 px-2 md:px-0">
           <div className="flex items-center gap-1">
