@@ -5,32 +5,32 @@ import { ProcessUpdateHistory } from "@/types/process";
 
 export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
-    toast.loading("Updating process...");
+    toast.loading("Atualizando processo...");
     
     const { data, error } = await supabase.functions.invoke("update-process", {
       body: { processId, courtEndpoint }
     });
     
     if (error) {
-      console.error("Error updating process:", error);
+      console.error("Erro ao atualizar processo:", error);
       toast.dismiss();
-      toast.error(`Error updating process: ${error.message}`);
+      toast.error(`Erro ao atualizar processo: ${error.message}`);
       return false;
     }
     
     toast.dismiss();
     
     if (data.newHits > 0) {
-      toast.success(`Process updated successfully! ${data.newHits} new movement(s) found.`);
+      toast.success(`Processo atualizado com sucesso! ${data.newHits} nova(s) movimentação(ões) encontrada(s).`);
     } else {
-      toast.success("Process updated, but no new movements found.");
+      toast.success("Processo atualizado, mas nenhuma nova movimentação encontrada.");
     }
     
     return true;
   } catch (error) {
-    console.error("Error in updateProcess:", error);
+    console.error("Erro em updateProcess:", error);
     toast.dismiss();
-    toast.error("Error updating process");
+    toast.error("Erro ao atualizar processo");
     return false;
   }
 }

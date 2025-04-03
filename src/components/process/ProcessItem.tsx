@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, ChevronsUpDown } from "lucide-react";
+import { Edit, Eye, ChevronsUpDown, RefreshCw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,7 +14,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { updateProcess } from "@/services/processUpdateService";
+import { toast } from "sonner";
 
 interface ProcessItemProps {
   process: any;
@@ -23,6 +25,7 @@ interface ProcessItemProps {
   expandedProcess: string | null;
   expandedDetails: any;
   isLoadingDetails: boolean;
+  onRefresh?: (processId: string) => void;
 }
 
 export function ProcessItem({
@@ -30,9 +33,12 @@ export function ProcessItem({
   loadProcessDetails,
   expandedProcess,
   expandedDetails,
-  isLoadingDetails
+  isLoadingDetails,
+  onRefresh
 }: ProcessItemProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { confirm } = useConfirmDialog();
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -48,7 +54,6 @@ export function ProcessItem({
 
   const isExpanded = expandedProcess === process.id;
   
-  // Helper function to determine badge styling based on status
   const getStatusBadgeProps = (status?: string) => {
     if (!status) return { variant: "secondary" as const };
     
@@ -61,9 +66,36 @@ export function ProcessItem({
     return { variant: "secondary" as const };
   };
 
-  // Verificar se o processo foi atualizado recentemente (nas últimas 24 horas)
   const hasRecentUpdate = process.updated_at && 
     (new Date().getTime() - new Date(process.updated_at).getTime() < 24 * 60 * 60 * 1000);
+
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const confirmed = await confirm({
+        title: "Atualizar processo",
+        description: `Deseja verificar agora se há atualizações para o processo ${process.number}?`,
+        confirmText: "Atualizar",
+        cancelText: "Cancelar"
+      });
+      
+      if (!confirmed) return;
+      
+      setRefreshing(true);
+      
+      const success = await updateProcess(process.id);
+      
+      if (success && onRefresh) {
+        onRefresh(process.id);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar processo:", error);
+      toast.error("Ocorreu um erro ao atualizar o processo");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <Card className="mb-4">
@@ -100,6 +132,16 @@ export function ProcessItem({
               <Button variant="outline" size="icon" onClick={handleEditClick}>
                 <Edit className="h-4 w-4" />
               </Button>
+              {onRefresh && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              )}
             </div>
             <Button
               variant="ghost"
@@ -171,7 +213,6 @@ export function ProcessItem({
                     <TableCell className="font-medium">Movimentos</TableCell>
                     <TableCell>
                       {process.metadata?.movimentos?.map((movimento: any) => {
-                        // Verificar se é um movimento novo (adicionado nas últimas 24 horas)
                         const isNewMovement = movimento.data_hora && 
                           (new Date().getTime() - new Date(movimento.data_hora).getTime() < 24 * 60 * 60 * 1000);
                           

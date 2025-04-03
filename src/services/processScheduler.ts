@@ -1,10 +1,9 @@
-
-
 import { getSupabaseClient } from '@/lib/supabase';
 import { checkProcessStatus } from '@/lib/tjto';
 import { addMinutes, isAfter, parseISO } from 'date-fns';
 import { Process, ProcessHit, ScheduleConfig } from '@/types/process';
 import { generateUpdateReport } from './reportService';
+import { notifyProcessUpdates } from './notificationService';
 
 interface SystemUpdateConfig {
   enabled: boolean;
@@ -190,14 +189,48 @@ export async function checkScheduledUpdates(): Promise<void> {
 }
 
 // Função para atualização manual de um processo específico
-export async function updateProcessInformationManual(process: Process): Promise<void> {
-  const result = await updateProcessInformation(process);
-  if (result.hit) {
-    await generateUpdateReport([process], [{
-      process,
-      hit: result.hit,
-      oldStatus: result.oldStatus
-    }]);
+export async function updateProcessInformationManual(process: Process): Promise<{ success: boolean; message: string }> {
+  try {
+    const result = await updateProcessInformation(process);
+    
+    if (!result.hit) {
+      return { 
+        success: false, 
+        message: `Não foi possível obter informações do processo ${process.number}` 
+      };
+    }
+    
+    // Verifica se há mudança de status ou novos movimentos para notificar
+    const statusChanged = result.oldStatus !== result.hit.situacao.nome;
+    const hasNewMovements = result.hit.movimentos && result.hit.movimentos.length > 0;
+    
+    // Notifica o usuário sobre mudanças
+    if (statusChanged || hasNewMovements) {
+      await notifyProcessUpdates(process, result.hit, result.oldStatus);
+      
+      // Registre no relatório de atualização também
+      await generateUpdateReport([process], [{
+        process,
+        hit: result.hit,
+        oldStatus: result.oldStatus
+      }]);
+      
+      const message = statusChanged 
+        ? `Status alterado: ${result.oldStatus} → ${result.hit.situacao.nome}` 
+        : `${result.hit.movimentos?.length || 0} nova(s) movimentação(ões) encontrada(s)`;
+        
+      return { success: true, message };
+    }
+    
+    return { 
+      success: true, 
+      message: "Processo verificado, mas nenhuma alteração encontrada." 
+    };
+  } catch (error) {
+    console.error(`Erro ao atualizar processo manualmente:`, error);
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : "Erro desconhecido ao atualizar processo" 
+    };
   }
 }
-
