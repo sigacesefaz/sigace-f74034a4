@@ -666,7 +666,7 @@ export function ProcessList({
                   </CardHeader>
                   
                   <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
-                    <div className="text-sm text-gray-700 pt-1 overflow-visible py-0">
+                    <div className="text-sm text-gray-700 pt-1 overflow-visible py-0 px-[25px]">
                       <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
                         <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
                         Detalhes do Processo
