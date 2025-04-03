@@ -12,8 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Pagination } from "@/components/shared/Pagination";
 
+// Utility for safe string conversion
 export const safeStringValue = (value: any, defaultValue: string = ""): string => {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'string') return value;
@@ -24,6 +24,7 @@ export const safeStringValue = (value: any, defaultValue: string = ""): string =
     if (value.name) {
       return typeof value.name === 'string' ? value.name : String(value.name);
     }
+    // To avoid [object Object] in JSON.stringify loops
     try {
       return JSON.stringify(value);
     } catch (e) {
@@ -38,8 +39,6 @@ export default function ProcessListPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const navigate = useNavigate();
 
   const {
@@ -50,6 +49,7 @@ export default function ProcessListPage() {
     queryKey: ['processes'],
     queryFn: async () => {
       try {
+        // Fetch processes
         const {
           data: processesData,
           error: processesError
@@ -62,8 +62,10 @@ export default function ProcessListPage() {
         }
         console.log("Processes loaded:", processesData);
 
+        // Add metadata for each process to maintain compatibility
         const processesWithMetadata = await Promise.all(processesData.map(async process => {
           try {
+            // Fetch process details - direct attempt using simpler SQL
             const { data: details, error: detailsError } = await supabase
               .from('process_details')
               .select('*')
@@ -75,6 +77,7 @@ export default function ProcessListPage() {
               console.warn(`Error fetching details for process ${process.id}:`, detailsError);
             }
 
+            // Fetch process movements
             const { data: movements, error: movementsError } = await supabase
               .from('process_movements')
               .select('*')
@@ -85,6 +88,7 @@ export default function ProcessListPage() {
               console.warn(`Error fetching movements for process ${process.id}:`, movementsError);
             }
 
+            // Fetch process hits
             const { data: hits, error: hitsError } = await supabase
               .from('process_hits')
               .select('*')
@@ -95,6 +99,7 @@ export default function ProcessListPage() {
               console.warn(`Error fetching hits for process ${process.id}:`, hitsError);
             }
 
+            // Create full metadata for display
             const processDetails = Array.isArray(details) && details.length > 0 ? details[0] : null;
             const metadata = {
               numeroProcesso: process.number,
@@ -128,6 +133,7 @@ export default function ProcessListPage() {
             };
           } catch (error) {
             console.error(`Error loading complete data for process ${process.id}:`, error);
+            // Return the process with minimal metadata on error
             return {
               ...process,
               metadata: {
@@ -162,20 +168,24 @@ export default function ProcessListPage() {
     navigate('/processes/new');
   };
 
+  // Function to delete a process
   const handleDeleteProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Deleting process with ID: ${processId}`);
       
+      // First delete related data
       await supabase.from('process_movements').delete().eq('process_id', processId);
       await supabase.from('process_subjects').delete().eq('process_id', processId);
       await supabase.from('process_details').delete().eq('process_id', processId);
       
+      // Then delete the process itself
       const { error } = await supabase.from('processes').delete().eq('id', processId);
       
       if (error) {
         throw error;
       }
       
+      // Refetch the data to update the UI
       refetch();
       
       toast.success("Process deleted successfully!");
@@ -185,6 +195,7 @@ export default function ProcessListPage() {
     }
   };
 
+  // Function to refresh a process
   const handleRefreshProcess = async (processId: string): Promise<void> => {
     try {
       console.log(`Refreshing process with ID: ${processId}`);
@@ -192,6 +203,7 @@ export default function ProcessListPage() {
       const success = await updateProcess(processId);
       
       if (success) {
+        // Refetch the data to update the UI
         refetch();
       }
     } catch (error) {
@@ -200,10 +212,12 @@ export default function ProcessListPage() {
     }
   };
 
+  // Filter processes based on the search term
   const filteredProcesses = processesData ? processesData.filter(process => {
     const searchLower = searchTerm.toLowerCase();
     const number = process.number ? process.number.toLowerCase() : '';
 
+    // Safely extract the class name
     let classeNome = '';
     if (process.metadata?.classe) {
       if (typeof process.metadata.classe === 'object' && process.metadata.classe !== null) {
@@ -215,12 +229,7 @@ export default function ProcessListPage() {
     return number.includes(searchLower) || classeNome.toLowerCase().includes(searchLower);
   }) : [];
 
-  const totalPages = Math.ceil(filteredProcesses.length / itemsPerPage);
-  const paginatedProcesses = filteredProcesses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  // Resetar filtros
   const resetFilters = () => {
     setStatusFilter("all");
     setDateFilter("all");
@@ -246,7 +255,8 @@ export default function ProcessListPage() {
       </div>;
   }
 
-  const safeProcesses = Array.isArray(paginatedProcesses) ? paginatedProcesses : [];
+  // Ensure we always pass an array to ProcessList, even if the data is undefined
+  const safeProcesses = Array.isArray(filteredProcesses) ? filteredProcesses : [];
 
   return <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -333,14 +343,6 @@ export default function ProcessListPage() {
           isLoading={processesLoading}
           onDelete={handleDeleteProcess}
           onRefresh={handleRefreshProcess} 
-        />
-      </div>
-
-      <div className="flex justify-end mt-4">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
         />
       </div>
     </div>;
