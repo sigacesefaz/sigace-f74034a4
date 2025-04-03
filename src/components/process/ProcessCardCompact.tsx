@@ -12,9 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { ProcessBadge, EventBadge, MovementBadge, SubjectBadge, StatusBadge, DateInfoBadge } from "@/components/process/ProcessBadge";
-import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { updateProcess } from "@/services/processUpdateService";
-import { toast } from "sonner";
 
 interface ProcessCardCompactProps {
   process: Process;
@@ -47,7 +44,6 @@ export function ProcessCardCompact({
   const breakpoint = useBreakpoint();
   const isSmallScreen = breakpoint === 'xsmall' || breakpoint === 'mobile';
   const isXSmall = breakpoint === 'xsmall';
-  const { confirm } = useConfirmDialog();
 
   const handleDelete = async () => {
     if (disabled || !onDelete) return;
@@ -55,36 +51,6 @@ export function ProcessCardCompact({
     setLoading(true);
     try {
       await onDelete(process.id);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    if (disabled) return;
-    
-    try {
-      const formattedNumber = formatProcessNumber(process.number);
-      
-      const confirmed = await confirm({
-        title: "Atualizar processo",
-        description: `Deseja verificar agora se há atualizações para o processo ${formattedNumber}?`,
-        confirmText: "Atualizar",
-        cancelText: "Cancelar"
-      });
-      
-      if (!confirmed) return;
-      
-      setLoading(true);
-      
-      const success = await updateProcess(process.id);
-      
-      if (success && onRefresh) {
-        onRefresh(process.id);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar processo:", error);
-      toast.error("Ocorreu um erro ao atualizar o processo");
     } finally {
       setLoading(false);
     }
@@ -129,7 +95,7 @@ export function ProcessCardCompact({
                 className="mt-1"
               />
             )}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0"> {/* min-w-0 é crucial para permitir que os filhos com texto façam wrap */}
               <div className="flex items-center flex-wrap gap-1">
                 <span className={cn(
                   "font-medium text-gray-700 break-all", 
@@ -308,13 +274,13 @@ export function ProcessCardCompact({
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleRefresh}
+            onClick={() => onRefresh(process.id)}
             disabled={loading || disabled}
             className={cn("text-blue-500 hover:text-blue-700 hover:bg-blue-50", 
               isXSmall ? "h-6 w-6 p-0" : isSmallScreen ? "h-7 w-7 p-0" : "h-7 px-2")}
             title="Atualizar processo"
           >
-            <RefreshCw className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4", loading && "animate-spin")} />
+            <RefreshCw className={cn(isXSmall ? "h-3 w-3" : "h-4 w-4")} />
           </Button>
         )}
         

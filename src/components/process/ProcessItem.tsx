@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, ChevronsUpDown, RefreshCw } from "lucide-react";
+import { Edit, Eye, ChevronsUpDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,11 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { updateProcess } from "@/services/processUpdateService";
-import { toast } from "sonner";
-import { formatProcessNumber } from "@/utils/format";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 interface ProcessItemProps {
   process: any;
@@ -27,7 +23,6 @@ interface ProcessItemProps {
   expandedProcess: string | null;
   expandedDetails: any;
   isLoadingDetails: boolean;
-  onRefresh?: (processId: string) => void;
 }
 
 export function ProcessItem({
@@ -35,12 +30,9 @@ export function ProcessItem({
   loadProcessDetails,
   expandedProcess,
   expandedDetails,
-  isLoadingDetails,
-  onRefresh
+  isLoadingDetails
 }: ProcessItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const { confirm } = useConfirmDialog();
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -56,6 +48,7 @@ export function ProcessItem({
 
   const isExpanded = expandedProcess === process.id;
   
+  // Helper function to determine badge styling based on status
   const getStatusBadgeProps = (status?: string) => {
     if (!status) return { variant: "secondary" as const };
     
@@ -68,53 +61,12 @@ export function ProcessItem({
     return { variant: "secondary" as const };
   };
 
-  const hasRecentUpdate = process.updated_at && 
-    (new Date().getTime() - new Date(process.updated_at).getTime() < 24 * 60 * 60 * 1000);
-
-  const handleRefresh = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    try {
-      const formattedNumber = formatProcessNumber(process.number);
-      
-      const confirmed = await confirm({
-        title: "Atualizar processo",
-        description: `Deseja verificar agora se há atualizações para o processo ${formattedNumber}?`,
-        confirmText: "Atualizar",
-        cancelText: "Cancelar"
-      });
-      
-      if (!confirmed) return;
-      
-      setRefreshing(true);
-      
-      const success = await updateProcess(process.id);
-      
-      if (success && onRefresh) {
-        onRefresh(process.id);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar processo:", error);
-      toast.error("Ocorreu um erro ao atualizar o processo");
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   return (
     <Card className="mb-4">
       <CardContent className="p-4">
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-lg font-semibold flex items-center">
-              {process.title}
-              {hasRecentUpdate && (
-                <span 
-                  className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-2" 
-                  title="Atualizado recentemente"
-                />
-              )}
-            </div>
+            <div className="text-lg font-semibold">{process.title}</div>
             <div className="text-sm text-gray-500">{process.number}</div>
             <div className="text-sm text-gray-500">
               {process.description}
@@ -136,16 +88,6 @@ export function ProcessItem({
               <Button variant="outline" size="icon" onClick={handleEditClick}>
                 <Edit className="h-4 w-4" />
               </Button>
-              {onRefresh && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                </Button>
-              )}
             </div>
             <Button
               variant="ghost"
@@ -216,20 +158,11 @@ export function ProcessItem({
                   <TableRow>
                     <TableCell className="font-medium">Movimentos</TableCell>
                     <TableCell>
-                      {process.metadata?.movimentos?.map((movimento: any) => {
-                        const isNewMovement = movimento.data_hora && 
-                          (new Date().getTime() - new Date(movimento.data_hora).getTime() < 24 * 60 * 60 * 1000);
-                          
-                        return (
-                          <div 
-                            key={movimento.codigo}
-                            className={isNewMovement ? "font-semibold text-blue-700" : ""}
-                          >
-                            {movimento.nome} - {movimento.dataHora}
-                            {isNewMovement && <span className="text-xs ml-2 text-white bg-blue-500 px-1 rounded">novo</span>}
-                          </div>
-                        );
-                      })}
+                      {process.metadata?.movimentos?.map((movimento: any) => (
+                        <div key={movimento.codigo}>
+                          {movimento.nome} - {movimento.dataHora}
+                        </div>
+                      ))}
                     </TableCell>
                   </TableRow>
                 </TableBody>

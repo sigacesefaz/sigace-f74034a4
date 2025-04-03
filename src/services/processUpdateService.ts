@@ -2,46 +2,35 @@
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ProcessUpdateHistory } from "@/types/process";
-import { formatProcessNumber } from "@/utils/format";
 
 export async function updateProcess(processId: string | number, courtEndpoint?: string): Promise<boolean> {
   try {
-    toast.loading("Atualizando processo...");
+    toast.loading("Updating process...");
     
     const { data, error } = await supabase.functions.invoke("update-process", {
       body: { processId, courtEndpoint }
     });
     
     if (error) {
-      console.error("Erro ao atualizar processo:", error);
+      console.error("Error updating process:", error);
       toast.dismiss();
-      toast.error(`Erro ao atualizar processo: ${error.message}`);
+      toast.error(`Error updating process: ${error.message}`);
       return false;
     }
     
     toast.dismiss();
     
-    // Busca o número do processo para exibir na mensagem de sucesso
-    const { data: processData, error: processError } = await supabase
-      .from("processes")
-      .select("number")
-      .eq("id", processId)
-      .single();
-      
-    const processNumber = processData?.number ? formatProcessNumber(processData.number) : "";
-    const processInfo = processNumber ? ` (${processNumber})` : "";
-    
     if (data.newHits > 0) {
-      toast.success(`Processo${processInfo} atualizado com sucesso! ${data.newHits} nova(s) movimentação(ões) encontrada(s).`);
+      toast.success(`Process updated successfully! ${data.newHits} new movement(s) found.`);
     } else {
-      toast.success(`Processo${processInfo} atualizado, mas nenhuma nova movimentação encontrada.`);
+      toast.success("Process updated, but no new movements found.");
     }
     
     return true;
   } catch (error) {
-    console.error("Erro em updateProcess:", error);
+    console.error("Error in updateProcess:", error);
     toast.dismiss();
-    toast.error("Erro ao atualizar processo");
+    toast.error("Error updating process");
     return false;
   }
 }

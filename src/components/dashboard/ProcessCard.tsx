@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Eye, Trash, Printer, Share2, RefreshCw, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
@@ -10,9 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Process } from "@/types/process";
 import { formatProcessNumber } from "@/utils/format";
 import { ProcessHitsNavigation } from "@/components/process/ProcessHitsNavigation";
-import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { updateProcess } from "@/services/processUpdateService";
-import { toast } from "sonner";
 
 interface ProcessCardProps {
   process: Process;
@@ -41,8 +39,6 @@ export function ProcessCard({
 }: ProcessCardProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
-  const [refreshing, setRefreshing] = useState(false);
-  const { confirm } = useConfirmDialog();
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
@@ -55,6 +51,7 @@ export function ProcessCard({
     }
   };
 
+  // Extract key information from process
   const processNumber = formatProcessNumber(process.number);
   const title = process.title || `Processo ${processNumber}`;
   const status = process.status || "Em andamento";
@@ -62,40 +59,14 @@ export function ProcessCard({
   const createdAt = formatDate(process.created_at);
   const updatedAt = formatDate(process.updated_at);
 
+  // Extract subject information if available
   const mainSubject = process.metadata?.assuntos?.[0];
   const subjectName = mainSubject?.nome || "Assunto não informado";
   const subjectCode = mainSubject?.codigo;
 
+  // Extract class information if available
   const processClass = process.metadata?.classe?.nome || "Não informado";
   const processClassCode = process.metadata?.classe?.codigo;
-
-  const handleRefresh = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    try {
-      const confirmed = await confirm({
-        title: "Atualizar processo",
-        description: `Deseja verificar agora se há atualizações para o processo ${processNumber}?`,
-        confirmText: "Atualizar",
-        cancelText: "Cancelar"
-      });
-      
-      if (!confirmed) return;
-      
-      setRefreshing(true);
-      
-      const success = await updateProcess(process.id);
-      
-      if (success && onRefresh) {
-        onRefresh(process.id);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar processo:", error);
-      toast.error("Ocorreu um erro ao atualizar o processo");
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   return (
     <Card className="overflow-hidden border-gray-200 shadow-sm transition-all hover:shadow-md">
@@ -156,11 +127,14 @@ export function ProcessCard({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={handleRefresh}
-                disabled={isLoading || refreshing}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRefresh(process.id);
+                }}
+                disabled={isLoading}
                 className="h-7 px-2 text-blue-500 hover:bg-blue-50 hover:text-blue-700"
               >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className="h-4 w-4" />
               </Button>
             )}
             
@@ -337,6 +311,7 @@ export function ProcessCard({
             </div>
           )}
 
+          {/* Hits relacionados, se houverem */}
           {relatedHits.length > 0 && (
             <div className="mt-3 border-t pt-2">
               <p className="text-sm font-medium">Processos relacionados ({relatedHits.length})</p>

@@ -1,4 +1,3 @@
-
 import { getSupabaseClient } from '@/lib/supabase';
 import { Process, ProcessHit, ProcessNotification } from '@/types/process';
 import { sendEmail } from '@/lib/email';
@@ -140,4 +139,4 @@ export async function notifyProcessUpdates(
       emailMessage
     );
   }
-}
+} 

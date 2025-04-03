@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -212,7 +211,7 @@ export function NavMenu() {
     </Drawer>
   );
   
-  // Desktop navigation menu - versão atualizada com menu de configurações no centro
+  // Desktop navigation menu - original implementation
   const DesktopMenu = () => (
     <NavigationMenu>
       <NavigationMenuList>
@@ -225,51 +224,27 @@ export function NavMenu() {
             <Home className="h-4 w-4 mr-2" /> Início
           </Button>
         </NavigationMenuItem>
-        {navigationItems.map((category, idx) => {
-          // Configurações precisam de tratamento especial para alinhar o menu
-          if (category.title === "Configurações") {
-            return (
-              <NavigationMenuItem key={idx}>
-                <NavigationMenuTrigger>{category.title}</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="w-[200px] p-4">
-                    {category.items.map((item, itemIdx) => (
-                      <ListItem
-                        key={itemIdx}
-                        title={item.title}
-                        href={item.href}
-                      >
-                        {item.description}
-                      </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            );
-          }
-          
-          return (
-            <NavigationMenuItem key={idx}>
-              <NavigationMenuTrigger>{category.title}</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className={cn(
-                  "grid gap-3 p-4",
-                  category.items.length > 1 ? "md:w-[500px] md:grid-cols-2 lg:w-[600px]" : "w-[400px]"
-                )}>
-                  {category.items.map((item, itemIdx) => (
-                    <ListItem
-                      key={itemIdx}
-                      title={item.title}
-                      href={item.href}
-                    >
-                      {item.description}
-                    </ListItem>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          );
-        })}
+        {navigationItems.map((category, idx) => (
+          <NavigationMenuItem key={idx}>
+            <NavigationMenuTrigger>{category.title}</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className={cn(
+                "grid gap-3 p-4",
+                category.items.length > 1 ? "md:w-[500px] md:grid-cols-2 lg:w-[600px]" : "w-[400px]"
+              )}>
+                {category.items.map((item, itemIdx) => (
+                  <ListItem
+                    key={itemIdx}
+                    title={item.title}
+                    href={item.href}
+                  >
+                    {item.description}
+                  </ListItem>
+                ))}
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        ))}
       </NavigationMenuList>
     </NavigationMenu>
   );
