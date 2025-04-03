@@ -565,47 +565,49 @@ export function ProcessList({
   }, [processes]);
 
   const renderFilterPopover = () => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-          <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
-          Status: {
-            statusFilter === "all" ? "Todos" : 
-            statusFilter === "active" ? "Em andamento" : 
-            statusFilter === "archived" ? "Arquivados" :
-            "Baixados"
-          }
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-48 p-1">
-        <div className="flex flex-col gap-1">
-          <button 
-            onClick={() => setStatusFilter("all")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Todos
+    <div className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="flex items-center gap-1">
+            <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
+            Status: {
+              statusFilter === "all" ? "Todos" : 
+              statusFilter === "active" ? "Em andamento" : 
+              statusFilter === "archived" ? "Arquivados" :
+              "Baixados"
+            }
           </button>
-          <button 
-            onClick={() => setStatusFilter("active")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Em andamento
-          </button>
-          <button 
-            onClick={() => setStatusFilter("archived")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Arquivados
-          </button>
-          <button 
-            onClick={() => setStatusFilter("closed")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "closed" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Baixados
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-1">
+          <div className="flex flex-col gap-1">
+            <button 
+              onClick={() => setStatusFilter("all")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Todos
+            </button>
+            <button 
+              onClick={() => setStatusFilter("active")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Em andamento
+            </button>
+            <button 
+              onClick={() => setStatusFilter("archived")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Arquivados
+            </button>
+            <button 
+              onClick={() => setStatusFilter("closed")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "closed" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Baixados
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
   
   // Botão de arquivamento/desarquivamento em massa
@@ -715,32 +717,32 @@ export function ProcessList({
   
   // Adicionar o botão de filtro de data de ajuizamento na barra de ferramentas
   const renderFilingDateSortButton = () => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8">
-          <Calendar className="h-4 w-4 mr-2" />
-          {sortByFilingDate === "none" 
-            ? "Ordernar por ajuizamento" 
-            : sortByFilingDate === "recent" 
-              ? "Mais recente primeiro" 
-              : "Mais antigo primeiro"
-          }
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-1">
-        <div className="flex flex-col gap-1">
-          <button 
-            onClick={() => setSortByFilingDate("none")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "none" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Ordenação padrão
-          </button>
-          <button 
-            onClick={() => setSortByFilingDate("recent")} 
-            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-          >
-            Ajuizamento - Mais recente primeiro
-          </button>
-          <button 
-            onClick={() => setSortByFilingDate("oldest")} 
-            className={`flex items-center px-
+    <div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8">
+            <Calendar className="h-4 w-4 mr-2" />
+            {sortByFilingDate === "none" 
+              ? "Ordernar por ajuizamento" 
+              : sortByFilingDate === "recent" 
+                ? "Mais recente primeiro" 
+                : "Mais antigo primeiro"
+            }
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-1">
+          <div className="flex flex-col gap-1">
+            <button 
+              onClick={() => setSortByFilingDate("none")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "none" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Ordenação padrão
+            </button>
+            <button 
+              onClick={() => setSortByFilingDate("recent")} 
+              className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Ajuizamento - Mais recente primeiro
+            </button>
+            <button 
+              onClick
