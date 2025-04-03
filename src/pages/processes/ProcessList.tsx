@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock, Archive, ArchiveX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,9 @@ import { ProcessSubjects } from "@/components/process/ProcessSubjects";
 import { cn } from "@/lib/utils";
 import { ProcessScheduleConfig } from '@/components/ProcessScheduleConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { FilingDateFilter } from "@/components/process/FilingDateFilter";
+import { ArchiveDialog } from "@/components/process/ArchiveDialog";
+import { UnarchiveDialog } from "@/components/process/UnarchiveDialog";
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
@@ -79,6 +82,10 @@ export function ProcessList({
     data_hora_ultima_atualizacao?: string;
   }>>({});
   const itemsPerPage = 5;
+  const [filingDateFilter, setFilingDateFilter] = useState<Date | undefined>(undefined);
+  const [sortByFilingDate, setSortByFilingDate] = useState<"none" | "oldest" | "recent">("none");
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
 
   // Função de ordenação centralizada
   const sortProcessesByDate = (processes: Process[], order: "recent" | "oldest" = "recent") => {
@@ -133,24 +140,78 @@ export function ProcessList({
   const applyFilters = useCallback(() => {
     let processesToFilter = [...processes];
 
-    // Primeiro aplicar o filtro de status
+    // Aplicar o filtro de status
     if (statusFilter !== "all") {
       processesToFilter = processesToFilter.filter(process => {
         const status = process.status || "Em andamento";
         if (statusFilter === "active") return status === "Em andamento";
-        if (statusFilter === "archived") return status === "Baixado";
+        if (statusFilter === "archived") return status === "Arquivado";
+        if (statusFilter === "closed") return status === "Baixado";
         return true;
       });
     }
-
-    // Depois aplicar a ordenação
-    processesToFilter.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
-    });
+    
+    // Aplicar o filtro de data de ajuizamento
+    if (filingDateFilter) {
+      const filingDateStart = new Date(filingDateFilter);
+      filingDateStart.setHours(0, 0, 0, 0);
+      
+      const filingDateEnd = new Date(filingDateFilter);
+      filingDateEnd.setHours(23, 59, 59, 999);
+      
+      processesToFilter = processesToFilter.filter(process => {
+        // Verificar no metadata.dataAjuizamento
+        if (process.metadata?.dataAjuizamento) {
+          const dataAjuizamento = new Date(process.metadata.dataAjuizamento);
+          return dataAjuizamento >= filingDateStart && dataAjuizamento <= filingDateEnd;
+        }
+        
+        // Verificar também em processDetails se necessário
+        if (processDetails[process.id]?.data_ajuizamento) {
+          const dataAjuizamento = new Date(processDetails[process.id].data_ajuizamento);
+          return dataAjuizamento >= filingDateStart && dataAjuizamento <= filingDateEnd;
+        }
+        
+        return false;
+      });
+    }
+    
+    // Aplicar a ordenação (criado ou data de ajuizamento)
+    if (sortByFilingDate !== "none") {
+      processesToFilter.sort((a, b) => {
+        let dateA: number, dateB: number;
+        
+        // Obter data de ajuizamento de A
+        if (a.metadata?.dataAjuizamento) {
+          dateA = new Date(a.metadata.dataAjuizamento).getTime();
+        } else if (processDetails[a.id]?.data_ajuizamento) {
+          dateA = new Date(processDetails[a.id].data_ajuizamento).getTime();
+        } else {
+          dateA = new Date(a.created_at).getTime(); // Fallback para created_at
+        }
+        
+        // Obter data de ajuizamento de B
+        if (b.metadata?.dataAjuizamento) {
+          dateB = new Date(b.metadata.dataAjuizamento).getTime();
+        } else if (processDetails[b.id]?.data_ajuizamento) {
+          dateB = new Date(processDetails[b.id].data_ajuizamento).getTime();
+        } else {
+          dateB = new Date(b.created_at).getTime(); // Fallback para created_at
+        }
+        
+        return sortByFilingDate === "recent" ? dateB - dateA : dateA - dateB;
+      });
+    } else {
+      // Ordenação padrão por data de criação
+      processesToFilter.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
+      });
+    }
+    
     setFilteredProcesses(processesToFilter);
-  }, [processes, sortOrder, statusFilter]);
+  }, [processes, sortOrder, statusFilter, filingDateFilter, sortByFilingDate, processDetails]);
 
   // Effect para reaplicar filtros quando as dependências mudarem
   useEffect(() => {
@@ -399,6 +460,9 @@ export function ProcessList({
     if (status === "Baixado") {
       return "destructive";
     }
+    if (status === "Arquivado") {
+      return "outline";
+    }
     return "secondary";
   };
   const handleScheduleUpdate = (updatedProcess: Process) => {
@@ -474,285 +538,189 @@ export function ProcessList({
       fetchProcessHits(processIds);
     }
   }, [processes]);
-  if (isLoading) {
-    return <div className="space-y-2">
-        {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
-            <CardHeader className="bg-gray-100 h-20"></CardHeader>
-            <CardContent className="py-2">
-              <div className="h-32 bg-gray-100 rounded"></div>
-            </CardContent>
-          </Card>)}
-      </div>;
-  }
-  if (processes.length === 0) {
-    return <Card className="text-center py-6">
-        <CardContent>
-          <p className="text-gray-500">Nenhum processo encontrado</p>
-          <Link to="/processes/new">
-            <Button className="mt-2">Cadastrar Novo Processo</Button>
-          </Link>
-        </CardContent>
-      </Card>;
-  }
-  return <div className="space-y-4 min-h-0">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Checkbox id="select-all" checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length} onCheckedChange={toggleAllProcesses} />
-            <label htmlFor="select-all" className="text-sm font-medium">
-              Selecionar todos
-            </label>
-          </div>
-          
-          <Badge variant="outline" className="px-2 py-1">
-            Total: {Object.keys(groupedProcesses).length} processos
-          </Badge>
-
-          <button onClick={handleSortOrderChange} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-            <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === "recent" ? "" : "rotate-180"}`} />
-            {sortOrder === "recent" ? "Recentes Primeiro" : "Antigos Primeiro"}
+  const renderFilterPopover = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+          <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
+          Status: {
+            statusFilter === "all" ? "Todos" : 
+            statusFilter === "active" ? "Em andamento" : 
+            statusFilter === "archived" ? "Arquivados" :
+            "Baixados"
+          }
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-1">
+        <div className="flex flex-col gap-1">
+          <button 
+            onClick={() => setStatusFilter("all")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Todos
           </button>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-                <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
-                Status: {statusFilter === "all" ? "Todos" : statusFilter === "active" ? "Em andamento" : "Baixados"}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48 p-1">
-              <div className="flex flex-col gap-1">
-                <button onClick={() => setStatusFilter("all")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
-                  Todos
-                </button>
-                <button onClick={() => setStatusFilter("active")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
-                  Em andamento
-                </button>
-                <button onClick={() => setStatusFilter("archived")} className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}>
-                  Baixados
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          {selectedProcesses.length > 0 && <Button variant="destructive" size="sm" onClick={() => setBulkAlertOpen(true)} className="ml-0 sm:ml-4">
-              <Trash className="h-4 w-4 mr-2" />
-              Excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
-            </Button>}
+          <button 
+            onClick={() => setStatusFilter("active")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Em andamento
+          </button>
+          <button 
+            onClick={() => setStatusFilter("archived")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Arquivados
+          </button>
+          <button 
+            onClick={() => setStatusFilter("closed")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "closed" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Baixados
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
-        </div>
+      </PopoverContent>
+    </Popover>
+  );
+  
+  // Botão de arquivamento/desarquivamento em massa
+  const renderArchiveButton = () => {
+    if (selectedProcesses.length === 0) return null;
+    
+    // Verifica se todos os processos selecionados têm o mesmo status
+    const allSelected = selectedProcesses.map(id => 
+      processes.find(p => p.id === id)
+    ).filter(Boolean);
+    
+    // Se todos estiverem arquivados, mostra botão de desarquivar
+    const allArchived = allSelected.every(p => p?.status === "Arquivado");
+    
+    if (allArchived) {
+      return (
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={() => setUnarchiveDialogOpen(true)} 
+          className="ml-0 sm:ml-4"
+        >
+          <ArchiveX className="h-4 w-4 mr-2" />
+          Desarquivar {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
+        </Button>
+      );
+    }
+    
+    // Caso contrário, mostra botão de arquivar
+    return (
+      <Button 
+        variant="secondary" 
+        size="sm" 
+        onClick={() => setArchiveDialogOpen(true)} 
+        className="ml-0 sm:ml-4"
+      >
+        <Archive className="h-4 w-4 mr-2" />
+        Arquivar {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
+      </Button>
+    );
+  };
+  
+  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
+    if (status === "Baixado") {
+      return "destructive";
+    }
+    if (status === "Arquivado") {
+      return "outline";
+    }
+    return "secondary";
+  };
+  
+  // Modificar os botões de ação de cada processo para incluir arquivar/desarquivar
+  const renderProcessActionButtons = (process: Process) => {
+    const isArchived = process.status === "Arquivado";
+    
+    return (
+      <div className="flex flex-wrap items-center gap-1 mt-2 sm:mt-0 self-end sm:self-auto w-full sm:w-auto justify-end">
+        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(process.id)} disabled={loadingProcessId === process.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => handlePrint(process)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
+          <Printer className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => handleView(process)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
+          <Eye className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => handleShare(process)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
+          <Share2 className="h-4 w-4" />
+        </Button>
+        
+        {/* Botão arquivar/desarquivar */}
+        {isArchived ? (
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={() => {
+              setSelectedProcesses([process.id]);
+              setUnarchiveDialogOpen(true);
+            }} 
+            className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+            title="Desarquivar processo"
+          >
+            <ArchiveX className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={() => {
+              setSelectedProcesses([process.id]);
+              setArchiveDialogOpen(true);
+            }} 
+            className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+            title="Arquivar processo"
+          >
+            <Archive className="h-4 w-4" />
+          </Button>
+        )}
+        
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          onClick={() => {
+            setProcessToDelete(process.id);
+            setAlertOpen(true);
+          }} 
+          disabled={loadingProcessId === process.id || !onDelete} 
+          className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+        >
+          <Trash className="h-4 w-4" />
+        </Button>
+        <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
       </div>
-
-      {paginatedGroups.length === 0 ? <Card className="p-6">
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">Nenhum processo encontrado com os filtros selecionados.</p>
-          </CardContent>
-        </Card> : paginatedGroups.map(([groupId, group]) => {
-      const parentProcess = group.parent;
-      if (!parentProcess) return null;
-      return <div key={groupId} className="space-y-1">
-                <Card className="overflow-hidden border-gray-200 shadow-sm h-auto">
-                  <CardHeader className="bg-gray-50 p-2 h-auto">
-                    <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 justify-between w-full">
-                      <div className="flex flex-col sm:flex-row items-start gap-3 w-full sm:w-auto flex-grow">
-                        <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
-                        <div>
-                          <CardTitle className="text-lg font-medium text-gray-900 mb-1">
-                            <span className="font-mono text-base text-gray-600">
-                              {formatProcessNumber(parentProcess.number)}
-                            </span>
-                          </CardTitle>
-                          <div className="flex flex-wrap items-center gap-1 mb-1">
-                            {parentProcess.hits && parentProcess.hits.length > 0 && <>
-                                <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
-                                  Movimentação Atual
-                                </Badge>
-                                <Badge variant="default" className="h-6 px-2 bg-green-600 text-white hover:bg-green-700">
-                                  {parentProcess.hits[0].classe?.nome || "Classe não informada"}
-                                </Badge>
-                              </>}
-                            <Badge variant={getStatusBadgeVariant(parentProcess.status)} className={cn("h-6 px-2", parentProcess.status === "Baixado" ? "bg-red-600 text-white hover:bg-red-700" : "bg-[#fec30b] text-black hover:bg-[#fec30b]/90")}>
-                              {parentProcess.status || "Em andamento"}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex flex-wrap items-center gap-1 mb-1">
-                              {/* Badge de eventos */}
-                              {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 && <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
-                                  {parentProcess.movimentacoes.length} {parentProcess.movimentacoes.length === 1 ? 'evento' : 'eventos'}
-                                </Badge>}
-                              {/* Badge de movimentações processuais */}
-                              {parentProcess.hits && parentProcess.hits.length > 0 && <Badge variant="secondary" className="h-6 px-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
-                                  {parentProcess.hits.length} {parentProcess.hits.length === 1 ? 'movimentação processual' : 'movimentações processuais'}
-                                </Badge>}
-                              {/* Badges das classes de movimentação */}
-                              {parentProcess.hits && parentProcess.hits.length > 0 && parentProcess.hits.map((hit, index) => {
-                        const isCurrentHit = index === 0;
-                        return <Badge key={index} variant={isCurrentHit ? "default" : "outline"} className={cn("h-6 px-2", isCurrentHit ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300")}>
-                                    {hit.classe?.nome || "Classe não informada"}
-                                  </Badge>;
-                      })}
-                            </div>
-                            <div className="flex flex-wrap items-baseline gap-1 mb-1">
-                              {/* Badge de assuntos */}
-                              {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? <>
-                                  <Badge variant="outline" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90">
-                                    {parentProcess.metadata.assuntos.length} {parentProcess.metadata.assuntos.length === 1 ? 'assunto' : 'assuntos'}
-                                  </Badge>
-                                  {parentProcess.metadata.assuntos.map((assunto, index) => {
-                          const isPrincipal = assunto.principal;
-                          return <Badge key={index} variant="default" className={cn("h-6 px-2 whitespace-normal text-xs", "bg-[#2e3092] text-white hover:bg-[#2e3092]/90")} title={assunto.nome ? `${assunto.nome}${assunto.codigo ? ` (${assunto.codigo})` : ''}${isPrincipal ? ' - Principal' : ''}` : "Assunto não informado"}>
-                                        {isPrincipal && <Check className="h-3 w-3 mr-1 inline-block" />}
-                                        {assunto.nome}
-                                        {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
-                                      </Badge>;
-                        })}
-                                </> : <Badge variant="default" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90 whitespace-normal text-xs">
-                                  Assunto não informado
-                                </Badge>}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
-                              <div className="flex flex-wrap items-center gap-1">
-                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
-                                  Data Ajuizamento: {formatDate(processDetails[parentProcess.id]?.data_ajuizamento)}
-                                </Badge>
-                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
-                                  Tribunal: {parentProcess.court || "Não informado"}
-                                </Badge>
-                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
-                                  Grau: {parentProcess.metadata?.grau || "G1"}
-                                </Badge>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-4 mt-1 sm:mt-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">Criado em:</span>
-                                  <span className="font-medium text-gray-700">{formatDate(parentProcess.created_at)}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">Última Atualização:</span>
-                                  <span className="font-medium text-gray-700">
-                                    {formatDate(processHits[parentProcess.id]?.data_hora_ultima_atualizacao || parentProcess.updated_at)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1 mt-2 sm:mt-0 self-end sm:self-auto w-full sm:w-auto justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => {
-                  setProcessToDelete(parentProcess.id);
-                  setAlertOpen(true);
-                }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                        <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
-                    <div className="text-sm text-gray-700 pt-1 overflow-visible py-0 px-[25px]">
-                      <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-                        <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
-                        Detalhes do Processo
-                      </button>
-                      <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 h-auto mt-1" : "opacity-0 h-0 overflow-hidden"}`}>
-                        <div className="space-y-2 overflow-visible">
-                          <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
-                            <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                            <ProcessHitsNavigation processId={parentProcess.id} hits={parentProcess.hits || []} currentHitIndex={selectedHitIndex[parentProcess.id] || 0} onHitSelect={index => handleHitSelect(parentProcess.id, index)} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>;
-    })}
-
-      
-
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processo</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita
-              e todos os dados relacionados serão removidos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProcessToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => processToDelete && handleDelete(processToDelete)} className="bg-red-500 hover:bg-red-600">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a excluir {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}. 
-              Esta ação não pode ser desfeita. Deseja continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
-              Confirmar Exclusão
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirme sua senha</DialogTitle>
-            <DialogDescription>
-              Por motivos de segurança, digite sua senha para confirmar a exclusão em massa.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className={passwordError ? "border-red-500" : ""} />
-              {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-            setPasswordConfirmOpen(false);
-            setPassword("");
-            setPasswordError("");
-          }}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmBulkDeleteWithPassword}>
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
-    </div>;
-}
+    );
+  };
+  
+  // Adicionar o botão de filtro de data de ajuizamento na barra de ferramentas
+  const renderFilingDateSortButton = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8">
+          <Calendar className="h-4 w-4 mr-2" />
+          {sortByFilingDate === "none" 
+            ? "Ordernar por ajuizamento" 
+            : sortByFilingDate === "recent" 
+              ? "Mais recente primeiro" 
+              : "Mais antigo primeiro"
+          }
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-1">
+        <div className="flex flex-col gap-1">
+          <button 
+            onClick={() => setSortByFilingDate("none")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "none" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Ordenação padrão
+          </button>
+          <button 
+            onClick={() => setSortByFilingDate("recent")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Ajuizamento - Mais

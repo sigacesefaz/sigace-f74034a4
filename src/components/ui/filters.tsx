@@ -34,6 +34,7 @@ export function Filters({
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
     if (codeFilter.trim()) filters.code = codeFilter.trim();
+    // Não modificar o texto de pesquisa, preservar pontuações e caracteres especiais
     if (textFilter.trim()) filters.text = textFilter.trim();
     
     onFilter(filters);
@@ -59,6 +60,9 @@ export function Filters({
             placeholder="Buscar por texto..."
             className="w-full"
           />
+          <small className="text-xs text-gray-500 mt-1 block">
+            Use o formato exato para pesquisar (0000000-00.0000.0.00.0000)
+          </small>
         </div>
         
         {showCodeFilter && (
