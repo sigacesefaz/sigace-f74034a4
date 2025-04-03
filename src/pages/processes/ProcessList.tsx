@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -755,4 +756,377 @@ export function ProcessList({
               className="ml-0 sm:ml-4"
             >
               <Trash className="h-4 w-4 mr-2" />
-              Excluir {selectedProcesses.length}
+              Excluir {selectedProcesses.length} {selectedProcesses.length !== 1 ? 'processos' : 'processo'}
+            </Button>
+          )}
+          
+          {/* Botão de arquivamento em massa */}
+          {renderArchiveButton()}
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filtro por status */}
+          {renderFilterPopover()}
+          
+          {/* Filtro por data de ajuizamento */}
+          <FilingDateFilter 
+            date={filingDateFilter}
+            onDateChange={setFilingDateFilter}
+            sortOrder={sortByFilingDate}
+            onSortOrderChange={setSortByFilingDate}
+          />
+          
+          {/* Paginação superior */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            className="ml-auto"
+          />
+        </div>
+      </div>
+      
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="p-4">
+                <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="h-4 bg-gray-200 rounded-md w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded-md w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          {filteredProcesses.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground mb-4">Nenhum processo encontrado</p>
+                <Link to="/processes/new">
+                  <Button>Adicionar Processo</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {paginatedGroups.map(([processId, group]) => {
+                const process = group.parent;
+                if (!process) return null;
+                
+                const isSelected = selectedProcesses.includes(processId);
+                const status = process.status || "Em andamento";
+                const hasHits = process.hits && process.hits.length > 0;
+                
+                return (
+                  <Card key={processId} className="overflow-hidden relative">
+                    <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <Checkbox 
+                            checked={isSelected} 
+                            onCheckedChange={() => toggleProcessSelection(processId)} 
+                            className="mt-1"
+                          />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                              <h3 className="font-medium text-sm sm:text-base break-all">
+                                {formatProcessNumber(process.number)}
+                              </h3>
+                              
+                              <div className="flex flex-wrap gap-1 mt-1 sm:mt-0">
+                                <Badge variant={getStatusBadgeVariant(status)}>
+                                  {status}
+                                </Badge>
+                                
+                                {process.court && (
+                                  <Badge variant="outline">
+                                    {process.court}
+                                  </Badge>
+                                )}
+                                
+                                {process.metadata?.classe?.nome && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {process.metadata.classe.nome}
+                                  </Badge>
+                                )}
+                                
+                                {process.metadata?.dataAjuizamento && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="gap-1 cursor-help">
+                                        <Calendar className="h-3 w-3" />
+                                        {format(new Date(process.metadata.dataAjuizamento), 'dd/MM/yyyy', { locale: ptBR })}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Data de Ajuizamento</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {process.title || "Processo sem título"}
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-xs text-muted-foreground">
+                              <span>Criado em: {formatDate(process.created_at)}</span>
+                              <span>Atualizado em: {formatDate(process.updated_at)}</span>
+                              
+                              {processHits[process.id]?.data_hora_ultima_atualizacao && (
+                                <span>Última consulta: {formatDate(processHits[process.id].data_hora_ultima_atualizacao)}</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {renderProcessActionButtons(process)}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    {showTabsId === processId && (
+                      <CardContent className="border-t p-0">
+                        <Tabs value={processTabStates[processId] || "eventos"} onValueChange={(value) => handleTabChange(processId, value)}>
+                          <TabsList className="w-full rounded-none border-b">
+                            <TabsTrigger value="eventos" className="flex-1">Movimentações</TabsTrigger>
+                            <TabsTrigger value="decisoes" className="flex-1">Decisões</TabsTrigger>
+                            <TabsTrigger value="partes" className="flex-1">Partes</TabsTrigger>
+                            <TabsTrigger value="documentos" className="flex-1">Documentos</TabsTrigger>
+                            <TabsTrigger value="assuntos" className="flex-1">Assuntos</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="eventos" className="p-4">
+                            <ProcessMovements 
+                              process={process} 
+                              currentIndex={currentMovementIndex[processId] || 0}
+                              onPrevious={() => handlePreviousMovement(processId)}
+                              onNext={() => handleNextMovement(processId)}
+                            />
+                          </TabsContent>
+                          
+                          <TabsContent value="decisoes" className="p-4">
+                            <ProcessDecisions processId={processId} />
+                          </TabsContent>
+                          
+                          <TabsContent value="partes" className="p-4">
+                            <ProcessParties processId={processId} />
+                          </TabsContent>
+                          
+                          <TabsContent value="documentos" className="p-4">
+                            <ProcessDocuments processId={processId} />
+                          </TabsContent>
+                          
+                          <TabsContent value="assuntos" className="p-4">
+                            <ProcessSubjects processId={processId} />
+                          </TabsContent>
+                        </Tabs>
+                      </CardContent>
+                    )}
+                    
+                    {showOverviewId === processId && hasHits && (
+                      <CardContent className="border-t p-4">
+                        <div className="mb-2">
+                          <h4 className="font-medium text-sm mb-2">Histórico de Consultas</h4>
+                          <ProcessHitsNavigation 
+                            process={process} 
+                            selectedHitIndex={selectedHitIndex[processId] || 0}
+                            onHitSelect={(index) => handleHitSelect(processId, index)}
+                          />
+                        </div>
+                      </CardContent>
+                    )}
+                    
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 flex justify-center">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          const isExpanded = showTabsId === processId;
+                          setShowTabsId(isExpanded ? null : processId);
+                          if (!isExpanded) {
+                            // Resetar para a primeira aba ao expandir
+                            setProcessTabStates(prev => ({
+                              ...prev,
+                              [processId]: "eventos"
+                            }));
+                          }
+                        }}
+                      >
+                        {showTabsId === processId ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-1" />
+                            Ocultar Detalhes
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-1" />
+                            Ver Detalhes
+                          </>
+                        )}
+                      </Button>
+                      
+                      {hasHits && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setShowOverviewId(showOverviewId === processId ? null : processId)}
+                          className="ml-2"
+                        >
+                          {showOverviewId === processId ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-1" />
+                              Ocultar Consultas
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-4 w-4 mr-1" />
+                              Ver Consultas
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setScheduleConfigOpen(true)}
+                        className="ml-2"
+                      >
+                        <Clock className="h-4 w-4 mr-1" />
+                        Agendar Atualização
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Paginação inferior */}
+          {filteredProcesses.length > 0 && (
+            <div className="mt-4 flex justify-end">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
+      )}
+      
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Processo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (processToDelete) {
+                  handleDelete(processToDelete);
+                }
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Processos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {selectedProcesses.length} processo{selectedProcesses.length !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Por favor, digite sua senha para confirmar a exclusão dos processos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {passwordError && (
+                <p className="text-sm text-red-500">{passwordError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPasswordConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmBulkDeleteWithPassword}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <ProcessReportDialog 
+        open={reportDialogOpen} 
+        onOpenChange={setReportDialogOpen}
+        process={selectedProcess}
+      />
+      
+      <Dialog open={scheduleConfigOpen} onOpenChange={setScheduleConfigOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Agendar Atualização</DialogTitle>
+            <DialogDescription>
+              Configure o agendamento de atualização automática para os processos.
+            </DialogDescription>
+          </DialogHeader>
+          <ProcessScheduleConfig 
+            onUpdate={handleScheduleUpdate}
+            onClose={() => setScheduleConfigOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogos de Arquivamento */}
+      <ArchiveDialog
+        open={archiveDialogOpen}
+        onOpenChange={setArchiveDialogOpen}
+        processIds={selectedProcesses}
+        onSuccess={handleArchiveSuccess}
+      />
+      
+      <UnarchiveDialog
+        open={unarchiveDialogOpen}
+        onOpenChange={setUnarchiveDialogOpen}
+        processIds={selectedProcesses}
+        onSuccess={handleUnarchiveSuccess}
+      />
+    </>
+  );
+}
