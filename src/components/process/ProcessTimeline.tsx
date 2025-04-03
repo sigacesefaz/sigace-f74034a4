@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Chrono } from "react-chrono";
+import { ProcessHorizontalTimeline } from "@/components/process/ProcessHorizontalTimeline";
 
 interface ProcessMovement {
   id: string;
@@ -61,7 +62,6 @@ export function ProcessTimeline({
 }: ProcessTimelineProps) {
   const [movements, setMovements] = useState<ProcessMovement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     fetchMovements();
@@ -89,7 +89,7 @@ export function ProcessTimeline({
         query = query.lte('data_hora', filter.endDate.toISOString());
       }
 
-      const { data, error } = await query.returns<ProcessMovement[]>();
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -113,6 +113,18 @@ export function ProcessTimeline({
     }
   };
 
+  // Converter os movimentos para o formato esperado pelo ProcessHorizontalTimeline
+  const timelineEvents = movements.map(mov => ({
+    id: mov.id,
+    date: mov.data_hora,
+    title: mov.nome,
+    description: mov.complemento || undefined,
+    type: "movement",
+    metadata: {
+      codigo: mov.codigo
+    }
+  }));
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-32">
@@ -121,70 +133,15 @@ export function ProcessTimeline({
     );
   }
 
-  const handlePrev = () => {
-    setActiveIndex(prev => Math.max(0, prev - 1));
-  };
-
-  const handleNext = () => {
-    setActiveIndex(prev => Math.min(movements.length - 1, prev + 1));
-  };
-
   return (
-    <div className="h-[400px] flex flex-col">
+    <div className="h-full">
       {movements.length === 0 ? (
         <p className="text-center text-gray-500">Nenhum movimento encontrado</p>
       ) : (
-        <Chrono
-          items={movements.map(mov => ({
-            title: format(new Date(mov.data_hora), "dd/MM/yyyy"),
-            cardTitle: mov.nome,
-            cardSubtitle: mov.codigo ? `Código: ${mov.codigo}` : undefined,
-            cardDetailedText: mov.complemento,
-          }))}
-          mode="HORIZONTAL"
-          activeItemIndex={activeIndex}
-          onItemSelected={({ index }: { index: number }) => setActiveIndex(index)}
-          theme={{
-            primary: '#3b82f6',
-            secondary: '#f3f4f6',
-            cardBgColor: '#ffffff',
-            titleColor: '#1f2937',
-            titleColorActive: '#3b82f6',
-            cardTitleColor: '#1f2937',
-            cardSubtitleColor: '#6b7280',
-            cardTextColor: '#374151',
-          }}
-          scrollable={{ scrollbar: true }}
-          cardHeight={100}
-          cardWidth={200}
-          cardPositionHorizontal="TOP"
-          cardPositionVertical="ALTERNATE"
-          fontSizes={{
-            title: '14px',
-            cardTitle: '12px',
-            cardSubtitle: '11px',
-            cardText: '11px'
-          }}
-          classNames={{
-            timeline: 'mx-auto',
-            card: 'shadow-sm p-2',
-          }}
-          cardTitle={(item: {cardTitle: string; cardSubtitle?: string}) => (
-            <div className="flex flex-col gap-1">
-              <span>{item.cardTitle}</span>
-              {item.cardSubtitle && (
-                <Badge 
-                  variant="outline" 
-                  className="w-fit"
-                  style={{
-                    backgroundColor: getBadgeColor(item.cardSubtitle.replace('Código: ', ''))
-                  }}
-                >
-                  Código: {item.cardSubtitle.replace('Código: ', '')}
-                </Badge>
-              )}
-            </div>
-          )}
+        <ProcessHorizontalTimeline 
+          events={timelineEvents}
+          title="Linha do Tempo do Processo"
+          emptyMessage="Nenhum movimento encontrado para este processo"
         />
       )}
     </div>
