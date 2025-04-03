@@ -1,117 +1,95 @@
 
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { getSupabaseClient } from "@/lib/supabase";
 
 /**
- * Archives one or more processes with a specified reason
- * 
- * @param processIds Array of process IDs to archive
- * @param reason Reason for archiving
- * @returns Boolean indicating success or failure
+ * Arquiva um processo ou uma lista de processos
+ * @param processIds ID do processo ou array de IDs de processos para arquivar
+ * @param reason Motivo do arquivamento
  */
-export const archiveProcesses = async (processIds: string[], reason: string): Promise<boolean> => {
+export async function archiveProcesses(processIds: string | string[], reason: string): Promise<boolean> {
   try {
-    const supabase = getSupabaseClient();
-    const { data: user } = await supabase.auth.getUser();
+    toast.loading("Arquivando processo(s)...");
+    const ids = Array.isArray(processIds) ? processIds : [processIds];
     
-    if (!user.user) {
-      toast.error("Usuário não autenticado");
-      return false;
-    }
-    
-    // Update process status to "Arquivado"
-    const { error: updateError } = await supabase
-      .from('processes')
+    // Atualiza o status dos processos
+    const { data, error } = await supabase
+      .from("processes")
       .update({ status: "Arquivado" })
-      .in('id', processIds);
+      .in("id", ids)
+      .select();
     
-    if (updateError) {
-      console.error("Erro ao arquivar processos:", updateError);
-      toast.error("Erro ao arquivar processos");
+    if (error) {
+      console.error("Erro ao arquivar processo(s):", error);
+      toast.dismiss();
+      toast.error(`Erro ao arquivar processo(s): ${error.message}`);
       return false;
     }
     
-    // Record archive action in process_update_history
-    const updateHistoryItems = processIds.map(processId => ({
-      process_id: processId,
-      update_type: "archive",
-      previous_status: "Em andamento", // Could be improved with actual previous status
-      new_status: "Arquivado",
-      user_id: user.user?.id,
-      details: { reason }
-    }));
-    
-    const { error: historyError } = await supabase
-      .from('process_update_history')
-      .insert(updateHistoryItems);
-    
-    if (historyError) {
-      console.error("Erro ao registrar histórico de arquivamento:", historyError);
-      // Don't show an error to the user since the primary action succeeded
+    // Registra o histórico de arquivamento para cada processo
+    for (const processId of ids) {
+      await supabase.from("process_update_history").insert({
+        process_id: processId,
+        update_type: "archive",
+        previous_status: "Em andamento",
+        new_status: "Arquivado",
+        details: { reason }
+      });
     }
     
-    toast.success(`${processIds.length > 1 ? `${processIds.length} processos arquivados` : "Processo arquivado"} com sucesso!`);
+    toast.dismiss();
+    toast.success(`${ids.length} processo(s) arquivado(s) com sucesso!`);
     return true;
   } catch (error) {
-    console.error("Erro ao arquivar processos:", error);
-    toast.error("Ocorreu um erro ao arquivar os processos");
+    console.error("Erro ao arquivar processo(s):", error);
+    toast.dismiss();
+    toast.error("Erro ao arquivar processo(s)");
     return false;
   }
-};
+}
 
 /**
- * Unarchives one or more processes with a specified reason
- * 
- * @param processIds Array of process IDs to unarchive
- * @param reason Reason for unarchiving
- * @returns Boolean indicating success or failure
+ * Desarquiva um processo ou uma lista de processos
+ * @param processIds ID do processo ou array de IDs de processos para desarquivar
+ * @param reason Motivo do desarquivamento
  */
-export const unarchiveProcesses = async (processIds: string[], reason: string): Promise<boolean> => {
+export async function unarchiveProcesses(processIds: string | string[], reason: string): Promise<boolean> {
   try {
-    const supabase = getSupabaseClient();
-    const { data: user } = await supabase.auth.getUser();
+    toast.loading("Desarquivando processo(s)...");
+    const ids = Array.isArray(processIds) ? processIds : [processIds];
     
-    if (!user.user) {
-      toast.error("Usuário não autenticado");
-      return false;
-    }
-    
-    // Update process status to "Em andamento"
-    const { error: updateError } = await supabase
-      .from('processes')
+    // Atualiza o status dos processos
+    const { data, error } = await supabase
+      .from("processes")
       .update({ status: "Em andamento" })
-      .in('id', processIds);
+      .in("id", ids)
+      .select();
     
-    if (updateError) {
-      console.error("Erro ao desarquivar processos:", updateError);
-      toast.error("Erro ao desarquivar processos");
+    if (error) {
+      console.error("Erro ao desarquivar processo(s):", error);
+      toast.dismiss();
+      toast.error(`Erro ao desarquivar processo(s): ${error.message}`);
       return false;
     }
     
-    // Record unarchive action in process_update_history
-    const updateHistoryItems = processIds.map(processId => ({
-      process_id: processId,
-      update_type: "unarchive",
-      previous_status: "Arquivado",
-      new_status: "Em andamento",
-      user_id: user.user?.id,
-      details: { reason }
-    }));
-    
-    const { error: historyError } = await supabase
-      .from('process_update_history')
-      .insert(updateHistoryItems);
-    
-    if (historyError) {
-      console.error("Erro ao registrar histórico de desarquivamento:", historyError);
-      // Don't show an error to the user since the primary action succeeded
+    // Registra o histórico de desarquivamento para cada processo
+    for (const processId of ids) {
+      await supabase.from("process_update_history").insert({
+        process_id: processId,
+        update_type: "unarchive",
+        previous_status: "Arquivado",
+        new_status: "Em andamento",
+        details: { reason }
+      });
     }
     
-    toast.success(`${processIds.length > 1 ? `${processIds.length} processos desarquivados` : "Processo desarquivado"} com sucesso!`);
+    toast.dismiss();
+    toast.success(`${ids.length} processo(s) desarquivado(s) com sucesso!`);
     return true;
   } catch (error) {
-    console.error("Erro ao desarquivar processos:", error);
-    toast.error("Ocorreu um erro ao desarquivar os processos");
+    console.error("Erro ao desarquivar processo(s):", error);
+    toast.dismiss();
+    toast.error("Erro ao desarquivar processo(s)");
     return false;
   }
-};
+}

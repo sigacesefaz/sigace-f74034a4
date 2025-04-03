@@ -1,8 +1,7 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock, Archive, ArchiveX, Calendar } from "lucide-react";
+import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Filter, X, Clock, Archive, ArchiveX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,14 +34,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { FilingDateFilter } from "@/components/process/FilingDateFilter";
 import { ArchiveDialog } from "@/components/process/ArchiveDialog";
 import { UnarchiveDialog } from "@/components/process/UnarchiveDialog";
-
 interface ProcessListProps {
   processes: Process[];
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
 }
-
 export function ProcessList({
   processes,
   isLoading,
@@ -85,13 +82,12 @@ export function ProcessList({
     data_hora_ultima_atualizacao?: string;
   }>>({});
   const itemsPerPage = 5;
-  
-  // Adicionando estados para as novas funcionalidades
   const [filingDateFilter, setFilingDateFilter] = useState<Date | undefined>(undefined);
   const [sortByFilingDate, setSortByFilingDate] = useState<"none" | "oldest" | "recent">("none");
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
 
+  // Função de ordenação centralizada
   const sortProcessesByDate = (processes: Process[], order: "recent" | "oldest" = "recent") => {
     return [...processes].sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
@@ -109,7 +105,6 @@ export function ProcessList({
       loadProcessStatuses(processes);
     }
   }, [processes]);
-  
   const handleSortOrderChange = () => {
     const newSortOrder = sortOrder === "recent" ? "oldest" : "recent";
     setSortOrder(newSortOrder);
@@ -142,7 +137,6 @@ export function ProcessList({
     });
     return orderedGroups;
   }, [filteredProcesses, sortOrder]);
-
   const applyFilters = useCallback(() => {
     let processesToFilter = [...processes];
 
@@ -227,18 +221,6 @@ export function ProcessList({
   // Ajustar a paginação para trabalhar com o array ordenado
   const paginatedGroups = groupedProcesses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(groupedProcesses.length / itemsPerPage);
-  
-  // Define the getStatusBadgeVariant function only once
-  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
-    if (status === "Baixado") {
-      return "destructive";
-    }
-    if (status === "Arquivado") {
-      return "outline";
-    }
-    return "secondary";
-  };
-
   const handleDelete = async (id: string) => {
     if (onDelete) {
       setLoadingProcessId(id);
@@ -256,7 +238,6 @@ export function ProcessList({
       }
     }
   };
-
   const handleBulkDelete = async () => {
     if (onDelete && selectedProcesses.length > 0) {
       try {
@@ -277,7 +258,6 @@ export function ProcessList({
       setBulkAlertOpen(false);
     }
   };
-
   const handleRefresh = async (id: string) => {
     if (onRefresh) {
       setLoadingProcessId(id);
@@ -292,17 +272,14 @@ export function ProcessList({
       }
     }
   };
-
   const handlePrint = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-  
   const handleView = (process: Process) => {
     setSelectedProcess(process);
     setReportDialogOpen(true);
   };
-  
   const handleShare = async (process: Process) => {
     const shareText = `Processo ${formatProcessNumber(process.number)} - ${process.title || ""}`;
     try {
@@ -320,7 +297,6 @@ export function ProcessList({
       toast.error("Não foi possível compartilhar o processo");
     }
   };
-  
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Não informada";
     try {
@@ -333,11 +309,9 @@ export function ProcessList({
       return "Data inválida";
     }
   };
-  
   const toggleProcessSelection = (id: string) => {
     setSelectedProcesses(prev => prev.includes(id) ? prev.filter(processId => processId !== id) : [...prev, id]);
   };
-  
   const toggleAllProcesses = () => {
     const allParentIds = Object.keys(groupedProcesses);
     if (selectedProcesses.length === allParentIds.length && allParentIds.length > 0) {
@@ -346,14 +320,12 @@ export function ProcessList({
       setSelectedProcesses(allParentIds);
     }
   };
-
   const handleTabChange = (processId: string, value: string) => {
     setProcessTabStates(prev => ({
       ...prev,
       [processId]: value
     }));
   };
-  
   const handlePreviousMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -370,7 +342,6 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-  
   const handleNextMovement = (processId: string) => {
     setCurrentMovementIndex(prev => {
       const currentIndex = prev[processId] || 0;
@@ -387,14 +358,12 @@ export function ProcessList({
       [processId]: "eventos"
     }));
   };
-  
   const handleHitSelect = (processId: string, hitIndex: number) => {
     setSelectedHitIndex(prev => ({
       ...prev,
       [processId]: hitIndex
     }));
   };
-  
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
@@ -418,7 +387,6 @@ export function ProcessList({
       return false;
     }
   };
-  
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
     if (isPasswordValid) {
@@ -428,7 +396,6 @@ export function ProcessList({
       setPasswordConfirmOpen(false);
     }
   };
-
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
       const supabase = getSupabaseClient();
@@ -462,24 +429,20 @@ export function ProcessList({
       console.error('Erro ao carregar status dos processos:', error);
     }
   };
-  
   const availableCourts = useMemo(() => {
     const courts = processes.map(process => process.court).filter((court): court is string => !!court);
     return Array.from(new Set(courts));
   }, [processes]);
-  
   const availableStatuses = useMemo(() => {
     const statuses = processes.map(process => process.status).filter((status): status is string => !!status);
     return Array.from(new Set(statuses));
   }, [processes]);
-  
   const resetFilters = () => {
     setStatusFilter("all");
     setCourtFilter("all");
     setDateFilter("all");
     setFilteredProcesses(processes);
   };
-  
   const getProcessStatus = (process: Process): string => {
     if (!process.hits || process.hits.length === 0) {
       return "Em andamento";
@@ -493,7 +456,15 @@ export function ProcessList({
     }) => movimento.codigo === 22 || movimento.codigo === 848) || false;
     return hasBaixaMovement ? "Baixado" : "Em andamento";
   };
-
+  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
+    if (status === "Baixado") {
+      return "destructive";
+    }
+    if (status === "Arquivado") {
+      return "outline";
+    }
+    return "secondary";
+  };
   const handleScheduleUpdate = (updatedProcess: Process) => {
     // Atualiza o processo na lista
     setFilteredProcesses((prevProcesses: Process[]) => prevProcesses.map((p: Process) => p.id === updatedProcess.id ? updatedProcess : p));
@@ -567,58 +538,52 @@ export function ProcessList({
       fetchProcessHits(processIds);
     }
   }, [processes]);
-
-  // CORREÇÃO: Reformulando as funções de renderização para fixar os problemas de sintaxe JSX
-  function renderFilterPopover() {
-    return (
-      <div className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="flex items-center gap-1">
-              <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
-              Status: {
-                statusFilter === "all" ? "Todos" : 
-                statusFilter === "active" ? "Em andamento" : 
-                statusFilter === "archived" ? "Arquivados" :
-                "Baixados"
-              }
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48 p-1">
-            <div className="flex flex-col gap-1">
-              <button 
-                onClick={() => setStatusFilter("all")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Todos
-              </button>
-              <button 
-                onClick={() => setStatusFilter("active")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Em andamento
-              </button>
-              <button 
-                onClick={() => setStatusFilter("archived")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Arquivados
-              </button>
-              <button 
-                onClick={() => setStatusFilter("closed")} 
-                className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "closed" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
-              >
-                Baixados
-              </button>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-    );
-  }
+  const renderFilterPopover = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+          <ChevronDown className={`h-4 w-4 transition-transform ${statusFilter !== "all" ? "rotate-180" : ""}`} />
+          Status: {
+            statusFilter === "all" ? "Todos" : 
+            statusFilter === "active" ? "Em andamento" : 
+            statusFilter === "archived" ? "Arquivados" :
+            "Baixados"
+          }
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-1">
+        <div className="flex flex-col gap-1">
+          <button 
+            onClick={() => setStatusFilter("all")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "all" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Todos
+          </button>
+          <button 
+            onClick={() => setStatusFilter("active")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "active" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Em andamento
+          </button>
+          <button 
+            onClick={() => setStatusFilter("archived")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "archived" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Arquivados
+          </button>
+          <button 
+            onClick={() => setStatusFilter("closed")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${statusFilter === "closed" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Baixados
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
   
   // Botão de arquivamento/desarquivamento em massa
-  function renderArchiveButton() {
+  const renderArchiveButton = () => {
     if (selectedProcesses.length === 0) return null;
     
     // Verifica se todos os processos selecionados têm o mesmo status
@@ -655,10 +620,20 @@ export function ProcessList({
         Arquivar {selectedProcesses.length} {selectedProcesses.length === 1 ? 'processo' : 'processos'}
       </Button>
     );
-  }
+  };
+  
+  const getStatusBadgeVariant = (status?: string): "destructive" | "secondary" | "default" | "outline" => {
+    if (status === "Baixado") {
+      return "destructive";
+    }
+    if (status === "Arquivado") {
+      return "outline";
+    }
+    return "secondary";
+  };
   
   // Modificar os botões de ação de cada processo para incluir arquivar/desarquivar
-  function renderProcessActionButtons(process: Process) {
+  const renderProcessActionButtons = (process: Process) => {
     const isArchived = process.status === "Arquivado";
     
     return (
@@ -720,413 +695,32 @@ export function ProcessList({
         <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
       </div>
     );
-  }
-
-  // Create function to handle archiving
-  const handleArchiveSuccess = useCallback(() => {
-    toast.success("Processos arquivados com sucesso!");
-    applyFilters(); // Re-apply filters to update the UI
-  }, [applyFilters]);
+  };
   
-  // Create function to handle unarchiving
-  const handleUnarchiveSuccess = useCallback(() => {
-    toast.success("Processos desarquivados com sucesso!");
-    applyFilters(); // Re-apply filters to update the UI
-  }, [applyFilters]);
-
-  // Return the component's JSX
-  return (
-    <>
-      <div className="mb-4 flex flex-col sm:flex-row justify-between gap-2 items-start">
-        <div className="flex items-center gap-2 mb-2 sm:mb-0">
-          <Checkbox
-            checked={selectedProcesses.length > 0 && selectedProcesses.length === Object.keys(groupedProcesses).length}
-            onCheckedChange={toggleAllProcesses}
-            aria-label="Selecionar todos os processos"
-          />
-          <span className="text-sm text-muted-foreground">
-            {selectedProcesses.length} selecionado{selectedProcesses.length !== 1 ? 's' : ''}
-          </span>
-          
-          {selectedProcesses.length > 0 && (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={() => setBulkAlertOpen(true)}
-              className="ml-0 sm:ml-4"
-            >
-              <Trash className="h-4 w-4 mr-2" />
-              Excluir {selectedProcesses.length} {selectedProcesses.length !== 1 ? 'processos' : 'processo'}
-            </Button>
-          )}
-          
-          {/* Botão de arquivamento em massa */}
-          {renderArchiveButton()}
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Filtro por status */}
-          {renderFilterPopover()}
-          
-          {/* Filtro por data de ajuizamento */}
-          <FilingDateFilter 
-            date={filingDateFilter}
-            onDateChange={setFilingDateFilter}
-            sortOrder={sortByFilingDate}
-            onSortOrderChange={setSortByFilingDate}
-          />
-          
-          {/* Paginação superior */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            className="ml-auto"
-          />
-        </div>
-      </div>
-      
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="p-4">
-                <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="h-4 bg-gray-200 rounded-md w-1/2 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded-md w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <>
-          {filteredProcesses.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground mb-4">Nenhum processo encontrado</p>
-                <Link to="/processes/new">
-                  <Button>Adicionar Processo</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {paginatedGroups.map(([processId, group]) => {
-                const process = group.parent;
-                if (!process) return null;
-                
-                const isSelected = selectedProcesses.includes(processId);
-                const status = process.status || "Em andamento";
-                const hasHits = process.hits && process.hits.length > 0;
-                
-                return (
-                  <Card key={processId} className="overflow-hidden relative">
-                    <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
-                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <Checkbox 
-                            checked={isSelected} 
-                            onCheckedChange={() => toggleProcessSelection(processId)} 
-                            className="mt-1"
-                          />
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <h3 className="font-medium text-sm sm:text-base break-all">
-                                {formatProcessNumber(process.number)}
-                              </h3>
-                              
-                              <div className="flex flex-wrap gap-1 mt-1 sm:mt-0">
-                                <Badge variant={getStatusBadgeVariant(status)}>
-                                  {status}
-                                </Badge>
-                                
-                                {process.court && (
-                                  <Badge variant="outline">
-                                    {process.court}
-                                  </Badge>
-                                )}
-                                
-                                {process.metadata?.classe?.nome && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {process.metadata.classe.nome}
-                                  </Badge>
-                                )}
-                                
-                                {process.metadata?.dataAjuizamento && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge variant="outline" className="gap-1 cursor-help">
-                                        <Calendar className="h-3 w-3" />
-                                        {format(new Date(process.metadata.dataAjuizamento), 'dd/MM/yyyy', { locale: ptBR })}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Data de Ajuizamento</TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {process.title || "Processo sem título"}
-                            </p>
-                            
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>Criado em: {formatDate(process.created_at)}</span>
-                              <span>Atualizado em: {formatDate(process.updated_at)}</span>
-                              
-                              {processHits[process.id]?.data_hora_ultima_atualizacao && (
-                                <span>Última consulta: {formatDate(processHits[process.id].data_hora_ultima_atualizacao)}</span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {renderProcessActionButtons(process)}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    {showTabsId === processId && (
-                      <CardContent className="border-t p-0">
-                        <Tabs value={processTabStates[processId] || "eventos"} onValueChange={(value) => handleTabChange(processId, value)}>
-                          <TabsList className="w-full rounded-none border-b">
-                            <TabsTrigger value="eventos" className="flex-1">Movimentações</TabsTrigger>
-                            <TabsTrigger value="decisoes" className="flex-1">Decisões</TabsTrigger>
-                            <TabsTrigger value="partes" className="flex-1">Partes</TabsTrigger>
-                            <TabsTrigger value="documentos" className="flex-1">Documentos</TabsTrigger>
-                            <TabsTrigger value="assuntos" className="flex-1">Assuntos</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="eventos" className="p-4">
-                            <ProcessMovements 
-                              process={process} 
-                              currentIndex={currentMovementIndex[processId] || 0}
-                              onPrevious={() => handlePreviousMovement(processId)}
-                              onNext={() => handleNextMovement(processId)}
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="decisoes" className="p-4">
-                            <ProcessDecisions processId={processId} />
-                          </TabsContent>
-                          
-                          <TabsContent value="partes" className="p-4">
-                            <ProcessParties processId={processId} />
-                          </TabsContent>
-                          
-                          <TabsContent value="documentos" className="p-4">
-                            <ProcessDocuments processId={processId} />
-                          </TabsContent>
-                          
-                          <TabsContent value="assuntos" className="p-4">
-                            <ProcessSubjects processId={processId} />
-                          </TabsContent>
-                        </Tabs>
-                      </CardContent>
-                    )}
-                    
-                    {showOverviewId === processId && hasHits && (
-                      <CardContent className="border-t p-4">
-                        <div className="mb-2">
-                          <h4 className="font-medium text-sm mb-2">Histórico de Consultas</h4>
-                          <ProcessHitsNavigation 
-                            process={process} 
-                            selectedHitIndex={selectedHitIndex[processId] || 0}
-                            onHitSelect={(index) => handleHitSelect(processId, index)}
-                          />
-                        </div>
-                      </CardContent>
-                    )}
-                    
-                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 flex justify-center">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          const isExpanded = showTabsId === processId;
-                          setShowTabsId(isExpanded ? null : processId);
-                          if (!isExpanded) {
-                            // Resetar para a primeira aba ao expandir
-                            setProcessTabStates(prev => ({
-                              ...prev,
-                              [processId]: "eventos"
-                            }));
-                          }
-                        }}
-                      >
-                        {showTabsId === processId ? (
-                          <>
-                            <ChevronUp className="h-4 w-4 mr-1" />
-                            Ocultar Detalhes
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-4 w-4 mr-1" />
-                            Ver Detalhes
-                          </>
-                        )}
-                      </Button>
-                      
-                      {hasHits && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setShowOverviewId(showOverviewId === processId ? null : processId)}
-                          className="ml-2"
-                        >
-                          {showOverviewId === processId ? (
-                            <>
-                              <ChevronUp className="h-4 w-4 mr-1" />
-                              Ocultar Consultas
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-4 w-4 mr-1" />
-                              Ver Consultas
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setScheduleConfigOpen(true)}
-                        className="ml-2"
-                      >
-                        <Clock className="h-4 w-4 mr-1" />
-                        Agendar Atualização
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Paginação inferior */}
-          {filteredProcesses.length > 0 && (
-            <div className="mt-4 flex justify-end">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
-            </div>
-          )}
-        </>
-      )}
-      
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processo</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este processo? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
-                if (processToDelete) {
-                  handleDelete(processToDelete);
-                }
-              }}
-            >
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <AlertDialog open={bulkAlertOpen} onOpenChange={setBulkAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Processos</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedProcesses.length} processo{selectedProcesses.length !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setPasswordConfirmOpen(true)}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <Dialog open={passwordConfirmOpen} onOpenChange={setPasswordConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
-            <DialogDescription>
-              Por favor, digite sua senha para confirmar a exclusão dos processos.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {passwordError && (
-                <p className="text-sm text-red-500">{passwordError}</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPasswordConfirmOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmBulkDeleteWithPassword}>
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <ProcessReportDialog 
-        open={reportDialogOpen} 
-        onOpenChange={setReportDialogOpen}
-        process={selectedProcess}
-      />
-      
-      <Dialog open={scheduleConfigOpen} onOpenChange={setScheduleConfigOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Agendar Atualização</DialogTitle>
-            <DialogDescription>
-              Configure o agendamento de atualização automática para os processos.
-            </DialogDescription>
-          </DialogHeader>
-          <ProcessScheduleConfig 
-            onUpdate={handleScheduleUpdate}
-            onClose={() => setScheduleConfigOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Diálogos de Arquivamento */}
-      <ArchiveDialog
-        open={archiveDialogOpen}
-        onOpenChange={setArchiveDialogOpen}
-        processIds={selectedProcesses}
-        onSuccess={handleArchiveSuccess}
-      />
-      
-      <UnarchiveDialog
-        open={unarchiveDialogOpen}
-        onOpenChange={setUnarchiveDialogOpen}
-        processIds={selectedProcesses}
-        onSuccess={handleUnarchiveSuccess}
-      />
-    </>
-  );
-}
+  // Adicionar o botão de filtro de data de ajuizamento na barra de ferramentas
+  const renderFilingDateSortButton = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8">
+          <Calendar className="h-4 w-4 mr-2" />
+          {sortByFilingDate === "none" 
+            ? "Ordernar por ajuizamento" 
+            : sortByFilingDate === "recent" 
+              ? "Mais recente primeiro" 
+              : "Mais antigo primeiro"
+          }
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-1">
+        <div className="flex flex-col gap-1">
+          <button 
+            onClick={() => setSortByFilingDate("none")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "none" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Ordenação padrão
+          </button>
+          <button 
+            onClick={() => setSortByFilingDate("recent")} 
+            className={`flex items-center px-2 py-1 text-sm rounded-md transition-colors ${sortByFilingDate === "recent" ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            Ajuizamento - Mais
