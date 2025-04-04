@@ -7,7 +7,7 @@ import { ProcessPartiesList } from "./ProcessPartiesList";
 import { ProcessMovements } from "./ProcessMovements";
 import { ProcessDecisions } from "./ProcessDecisions";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, Save, ChevronDown, ChevronUp, CalendarDays, Bell, FileText, Gavel } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -155,13 +155,31 @@ export function ProcessDetails({
 
           <CollapsibleContent className="mt-2">
             <Tabs defaultValue="eventos" className="w-full">
-              <TabsList className="w-full grid grid-cols-6">
-                <TabsTrigger value="eventos" className="text-xs py-1">Eventos</TabsTrigger>
-                <TabsTrigger value="intimacoes" className="text-xs py-1">Intimações</TabsTrigger>
-                <TabsTrigger value="documentos" className="text-xs py-1">Documentos</TabsTrigger>
-                <TabsTrigger value="decisao" className="text-xs py-1">Decisão</TabsTrigger>
-                <TabsTrigger value="partes" className="text-xs py-1">Partes</TabsTrigger>
-                <TabsTrigger value="inteiro-teor" className="text-xs py-1">Inteiro Teor</TabsTrigger>
+              <TabsList className="mb-1 flex flex-wrap gap-1 min-h-[32px] md:min-h-[40px] px-1 md:px-2 py-1 md:py-1.5 w-full bg-white">
+                <TabsTrigger 
+                  value="eventos" 
+                  className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
+                    bg-[rgb(46_48_146)] hover:bg-[rgb(36_38_136)] text-white border border-[rgb(36_38_136)] hover:border-[rgb(26_28_126)]"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  <span>Eventos</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="intimacoes" 
+                  className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
+                    bg-[rgb(220_38_38)] hover:bg-[rgb(210_28_28)] text-white border border-[rgb(210_28_28)] hover:border-[rgb(200_18_18)]"
+                >
+                  <Bell className="h-4 w-4" />
+                  <span>Intimações</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="documentos" 
+                  className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
+                    bg-[rgb(243_232_255)] hover:bg-[rgb(233_222_245)] text-[rgb(46_48_146)] border border-[rgb(233_222_245)] hover:border-[rgb(223_212_235)]"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Documentos Juntados</span>
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="eventos" className="mt-2 max-h-[60vh] overflow-auto">

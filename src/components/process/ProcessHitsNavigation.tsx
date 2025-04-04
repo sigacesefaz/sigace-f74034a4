@@ -9,16 +9,16 @@ import {
   Users,
   FileSearch
 } from "lucide-react";
-import { ProcessTimeline } from "./ProcessTimeline";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs as MuiTabs, Tab as MuiTab } from '@mui/material';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ProcessHit } from "@/types/process";
+import type { ProcessHit, Process } from "@/types/process";
 import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
@@ -123,14 +123,14 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
             )}
           </div>
           
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 ml-auto">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto">
                   Lista completa
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0 w-auto" align="end" sideOffset={5}>
+              <PopoverContent className="p-0 w-auto max-h-[80vh]" align="end" sideOffset={5}>
                 <ScrollArea className="h-full">
                   <div className="p-4 w-full min-w-[300px]">
                     <h4 className="font-medium mb-2">Todas as Movimentações</h4>
@@ -233,63 +233,132 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
 
         {currentHit && (
           <div className="px-0 md:px-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="w-full pb-1 md:pb-2">
-                <TabsList className="mb-1 flex flex-wrap gap-1 min-h-[32px] md:min-h-[40px] px-1 md:px-2 py-1 md:py-1.5 w-full bg-white">
-                    <TabsTrigger 
-                    value="eventos" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(46_48_146)] hover:bg-[rgb(36_38_136)] text-white border border-[rgb(36_38_136)] hover:border-[rgb(26_28_126)]"
+            <div className="md:overflow-x-auto">
+              <div className="md:hidden space-y-2 mb-4">
+                {[
+                  { 
+                    value: "eventos", 
+                    icon: <CalendarDays className="h-4 w-4" />, 
+                    label: "Eventos", 
+                    bgColor: "bg-[rgb(46,48,146)]",
+                    textColor: "text-white"
+                  },
+                  { 
+                    value: "intimacoes", 
+                    icon: <Bell className="h-4 w-4" />, 
+                    label: "Intimações", 
+                    bgColor: "bg-[rgb(220,38,38)]",
+                    textColor: "text-white"
+                  },
+                  { 
+                    value: "documentos", 
+                    icon: <FileText className="h-4 w-4" />, 
+                    label: "Documentos", 
+                    bgColor: "bg-[rgb(243,232,255)]",
+                    textColor: "text-[rgb(46,48,146)]"
+                  },
+                  { 
+                    value: "decisao", 
+                    icon: <Gavel className="h-4 w-4" />, 
+                    label: "Decisões", 
+                    bgColor: "bg-[rgb(254,195,11)]",
+                    textColor: "text-black"
+                  }
+                ].map((tab) => (
+                  <button
+                    key={tab.value}
+                    className={`w-full flex items-center px-4 py-2 rounded-md ${activeTab === tab.value ? tab.bgColor : 'bg-gray-100'} ${activeTab === tab.value ? tab.textColor : 'text-gray-700'}`}
+                    onClick={() => setActiveTab(tab.value)}
                   >
-                    <CalendarDays className="h-4 w-4" />
-                    <span>Eventos</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="intimacoes" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(220_38_38)] hover:bg-[rgb(210_28_28)] text-white border border-[rgb(210_28_28)] hover:border-[rgb(200_18_18)]"
-                  >
-                    <Bell className="h-4 w-4" />
-                    <span>Intimações</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="documentos" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(243_232_255)] hover:bg-[rgb(233_222_245)] text-[rgb(46_48_146)] border border-[rgb(233_222_245)] hover:border-[rgb(223_212_235)]"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Documentos</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="partes" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(22_163_74)] hover:bg-[rgb(12_153_64)] text-white border border-[rgb(12_153_64)] hover:border-[rgb(2_143_54)]"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Partes</span>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="decisao" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(254_195_11)] hover:bg-[rgb(244_185_1)] text-black border border-[rgb(244_185_1)] hover:border-[rgb(234_175_0)]"
-                  >
-                    <Gavel className="h-4 w-4" />
-                    <span>Decisão</span>
-                  </TabsTrigger>
-                    <TabsTrigger 
-                    value="inteiro-teor" 
-                    className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 flex items-center gap-1 flex-shrink-0 flex-grow
-                      bg-[rgb(59_130_246)] hover:bg-[rgb(49_120_236)] text-white border border-[rgb(49_120_236)] hover:border-[rgb(39_110_226)]"
-                  >
-                    <FileSearch className="h-4 w-4" />
-                    <span>Inteiro Teor</span>
-                  </TabsTrigger>
-                </TabsList>
+                    {tab.icon}
+                    <span className="ml-2">{tab.label}</span>
+                  </button>
+                ))}
               </div>
+              
+              <div className="hidden md:block">
+                <MuiTabs 
+                  value={activeTab}
+                  onChange={(event: React.SyntheticEvent, newValue: string) => setActiveTab(newValue)}
+                  variant="scrollable"
+                  scrollButtons={false}
+                  className="mb-4"
+                  sx={{
+                    '& .MuiTab-root': {
+                      fontSize: '0.75rem',
+                      minHeight: '36px',
+                      padding: '6px 16px',
+                      minWidth: 'unset'
+                    }
+                  }}
+                >
+                <MuiTab 
+                  icon={<CalendarDays className="h-4 w-4" />}
+                  label="Eventos"
+                  value="eventos"
+                  className="min-w-0"
+                  sx={{
+                    'backgroundColor': 'rgb(46 48 146)',
+                    'color': 'white',
+                    '&.Mui-selected': {
+                      'backgroundColor': 'rgb(36 38 136)',
+                      'color': 'white'
+                    },
+                    'borderRadius': '8px 8px 0 0'
+                  }}
+                />
+                <MuiTab
+                  icon={<Bell className="h-4 w-4" />}
+                  label="Intimações"
+                  value="intimacoes"
+                  className="min-w-0"
+                  sx={{
+                    'backgroundColor': 'rgb(220 38 38)',
+                    'color': 'white',
+                    '&.Mui-selected': {
+                      'backgroundColor': 'rgb(210 28 28)',
+                      'color': 'white'
+                    },
+                    'borderRadius': '8px 8px 0 0'
+                  }}
+                />
+                <MuiTab
+                  icon={<FileText className="h-4 w-4" />}
+                  label="Documentos" 
+                  value="documentos"
+                  className="min-w-0"
+                  sx={{
+                    'backgroundColor': 'rgb(243 232 255)',
+                    'color': 'rgb(46 48 146)',
+                    '&.Mui-selected': {
+                      'backgroundColor': 'rgb(233 222 245)',
+                      'color': 'rgb(46 48 146)'
+                    },
+                    'borderRadius': '8px 8px 0 0'
+                  }}
+                />
+                <MuiTab
+                  icon={<Gavel className="h-4 w-4" />}
+                  label="Decisões"
+                  value="decisao"
+                  className="min-w-0"
+                  sx={{
+                    'backgroundColor': 'rgb(254 195 11)',
+                    'color': 'black',
+                    '&.Mui-selected': {
+                      'backgroundColor': 'rgb(244 185 1)',
+                      'color': 'black'
+                    },
+                    'borderRadius': '8px 8px 0 0'
+                  }}
+                />
+                </MuiTabs>
+              </div>
+            </div>
 
               <div className="border rounded-md p-2 md:p-3 mt-1 mb-2 md:mb-4 bg-white min-h-[600px] md:min-h-[800px] flex flex-col md:flex-row md:gap-4 overflow-visible">
                 <div className="overflow-y-auto w-full md:flex-1 px-1">
-                  <TabsContent value="eventos" className="mt-0 pt-0">
+                  {activeTab === "eventos" && (
                     <ProcessMovements 
                       processId={processId} 
                       hitId={currentHit.id} 
@@ -297,22 +366,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         ascending: false
                       }}
                     />
-                    
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold mb-4">Linha do Tempo do Processo</h3>
-                      {hits.length > 0 ? (
-                        <ProcessTimeline 
-                          processId={processId}
-                          hits={hits}
-                          movements={hits.flatMap(hit => hit.movements || [])}
-                        />
-                      ) : (
-                        <p className="text-sm text-gray-500">Nenhuma movimentação para exibir na timeline</p>
-                      )}
-                    </div>
-                  </TabsContent>
+                  )}
 
-                  <TabsContent value="intimacoes" className="mt-0 pt-0">
+                  {activeTab === "intimacoes" && (
                     <ProcessMovements 
                       processId={processId} 
                       hitId={currentHit.id} 
@@ -321,9 +377,9 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         ascending: false
                       }} 
                     />
-                  </TabsContent>
+                  )}
 
-                  <TabsContent value="documentos" className="mt-0 pt-0">
+                  {activeTab === "documentos" && (
                     <ProcessMovements 
                       processId={processId} 
                       hitId={currentHit.id} 
@@ -332,28 +388,27 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                         ascending: false
                       }} 
                     />
-                  </TabsContent>
+                  )}
 
-                  <TabsContent value="decisao" className="mt-0 pt-0">
+                  {activeTab === "decisao" && (
                     <ProcessDecisions 
                       processId={processId} 
                       hitId={currentHit.id} 
                     />
-                  </TabsContent>
+                  )}
 
-                  <TabsContent value="partes" className="mt-0 pt-0">
+                  {activeTab === "partes" && (
                     <ProcessParties processId={processId} />
-                  </TabsContent>
+                  )}
 
-                  <TabsContent value="inteiro-teor" className="mt-0 pt-0">
+                  {activeTab === "inteiro-teor" && (
                     <ProcessDocuments 
                       processId={processId} 
                       hitId={currentHit.id} 
                     />
-                  </TabsContent>
+                  )}
                 </div>
               </div>
-            </Tabs>
           </div>
         )}
       </div>

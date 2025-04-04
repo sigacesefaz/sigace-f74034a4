@@ -1,192 +1,109 @@
-import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Chrono } from "react-chrono";
+import React, { useState } from 'react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProcessMovement {
   id: string;
-  process_id: number;
   nome: string;
   data_hora: string;
-  codigo?: number;
-  tipo?: string;
   complemento?: string;
 }
 
 interface ProcessHit {
   id: string;
   nome: string;
-  data_hora: string;
+  data_ajuizamento: string;
+  numero_processo?: string;
+  movements?: ProcessMovement[];
 }
 
 interface ProcessTimelineProps {
-  processId: string;
-  hitId?: string;
-  hits?: ProcessHit[];
-  filter?: {
-    startDate?: Date;
-    endDate?: Date;
-    ascending?: boolean;
-  };
+  hits: ProcessHit[];
+  processId?: string;
 }
 
-const getBadgeColor = (code: string) => {
-  // Gera uma cor consistente baseada no código
-  const colors = [
-    '#FFD700', // Amarelo
-    '#87CEEB', // Azul claro
-    '#98FB98', // Verde claro
-    '#FFA07A', // Salmão
-    '#9370DB', // Roxo
-    '#FF6347', // Tomate
-    '#40E0D0', // Turquesa
-    '#FF69B4', // Rosa
-  ];
-  
-  // Gera um índice estável baseado no código
-  const hash = code.split('').reduce((acc, char) => {
-    return acc + char.charCodeAt(0);
-  }, 0);
-  
-  return colors[hash % colors.length];
-};
+export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
+  const [selectedHit, setSelectedHit] = useState<ProcessHit | null>(null);
 
-export function ProcessTimeline({
-  processId,
-  hitId,
-  filter,
-}: ProcessTimelineProps) {
-  const [movements, setMovements] = useState<ProcessMovement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    fetchMovements();
-  }, [processId, hitId, filter]);
-
-  const fetchMovements = async () => {
-    try {
-      setLoading(true);
-      
-      let query = supabase
-        .from('process_movements')
-        .select('id, process_id, nome, data_hora, codigo, tipo, complemento')
-        .eq('process_id', processId)
-        .order('data_hora', { ascending: filter?.ascending ?? false });
-
-      if (hitId) {
-        query = query.eq('hit_id', hitId);
-      }
-
-      if (filter?.startDate) {
-        query = query.gte('data_hora', filter.startDate.toISOString());
-      }
-
-      if (filter?.endDate) {
-        query = query.lte('data_hora', filter.endDate.toISOString());
-      }
-
-      const { data, error } = await query.returns<ProcessMovement[]>();
-      
-      if (error) throw error;
-      
-      setMovements(data as ProcessMovement[] || []);
-    } catch (error) {
-      console.error("Erro ao buscar movimentos:", error);
-      toast.error("Não foi possível carregar a timeline");
-      setMovements([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", {
-        locale: ptBR
-      });
-    } catch {
-      return "Data inválida";
-    }
-  };
-
-  if (loading) {
+  if (!hits || hits.length === 0) {
     return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="text-sm text-gray-500 italic">
+        Nenhuma movimentação processual encontrada.
       </div>
     );
   }
 
-  const handlePrev = () => {
-    setActiveIndex(prev => Math.max(0, prev - 1));
-  };
+  // Ordena os hits do mais recente para o mais antigo
+  const sortedHits = [...hits].sort((a, b) => 
+    new Date(b.data_ajuizamento).getTime() - new Date(a.data_ajuizamento).getTime()
+  );
 
-  const handleNext = () => {
-    setActiveIndex(prev => Math.min(movements.length - 1, prev + 1));
-  };
+  const [expandedHitId, setExpandedHitId] = useState<string | null>(null);
 
   return (
-    <div className="h-[400px] flex flex-col">
-      {movements.length === 0 ? (
-        <p className="text-center text-gray-500">Nenhum movimento encontrado</p>
-      ) : (
-        <Chrono
-          items={movements.map(mov => ({
-            title: format(new Date(mov.data_hora), "dd/MM/yyyy"),
-            cardTitle: mov.nome,
-            cardSubtitle: mov.codigo ? `Código: ${mov.codigo}` : undefined,
-            cardDetailedText: mov.complemento,
-          }))}
-          mode="HORIZONTAL"
-          activeItemIndex={activeIndex}
-          onItemSelected={({ index }: { index: number }) => setActiveIndex(index)}
-          theme={{
-            primary: '#3b82f6',
-            secondary: '#f3f4f6',
-            cardBgColor: '#ffffff',
-            titleColor: '#1f2937',
-            titleColorActive: '#3b82f6',
-            cardTitleColor: '#1f2937',
-            cardSubtitleColor: '#6b7280',
-            cardTextColor: '#374151',
-          }}
-          scrollable={{ scrollbar: true }}
-          cardHeight={100}
-          cardWidth={200}
-          cardPositionHorizontal="TOP"
-          cardPositionVertical="ALTERNATE"
-          fontSizes={{
-            title: '14px',
-            cardTitle: '12px',
-            cardSubtitle: '11px',
-            cardText: '11px'
-          }}
-          classNames={{
-            timeline: 'mx-auto',
-            card: 'shadow-sm p-2',
-          }}
-          cardTitle={(item: {cardTitle: string; cardSubtitle?: string}) => (
-            <div className="flex flex-col gap-1">
-              <span>{item.cardTitle}</span>
-              {item.cardSubtitle && (
-                <Badge 
-                  variant="outline" 
-                  className="w-fit"
-                  style={{
-                    backgroundColor: getBadgeColor(item.cardSubtitle.replace('Código: ', ''))
-                  }}
-                >
-                  Código: {item.cardSubtitle.replace('Código: ', '')}
-                </Badge>
+    <div className="w-full">
+      <div className="flex overflow-x-auto pb-4">
+        <div className="flex space-x-8">
+          {sortedHits.map((hit) => (
+            <div key={hit.id} className="flex flex-col items-center min-w-max">
+              <div className="w-3 h-3 rounded-full bg-blue-500 mb-2"></div>
+              <button
+                className="text-center"
+                onClick={() => setExpandedHitId(expandedHitId === hit.id ? null : hit.id)}
+              >
+                <h3 className="font-medium">{hit.nome}</h3>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(hit.data_ajuizamento), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                </p>
+                <ChevronDown 
+                  className={`h-4 w-4 text-gray-400 mx-auto mt-1 transition-transform ${
+                    expandedHitId === hit.id ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {expandedHitId === hit.id && (
+                <div className="mt-4 w-full">
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {hit.movements?.map((mov) => (
+                        <div key={mov.id} className="bg-white rounded-lg shadow p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-sm">{mov.nome}</h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Código: {mov.id}
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(mov.data_hora), "dd/MM/yyyy", { locale: ptBR })}
+                            </span>
+                          </div>
+                          {mov.complemento && (
+                            <p className="mt-2 text-xs text-gray-600">
+                              {mov.complemento}
+                            </p>
+                          )}
+                          <p className="mt-2 text-xs text-blue-500 font-medium">
+                            {formatDistanceToNow(new Date(mov.data_hora), {
+                              addSuffix: true,
+                              locale: ptBR
+                            })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          )}
-        />
-      )}
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

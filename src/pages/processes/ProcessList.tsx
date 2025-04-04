@@ -5,11 +5,27 @@ import { Eye, Trash, Printer, Share2, RefreshCw, Check, ChevronDown, ChevronUp, 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as ShadcnTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as MuiTabs, Tab as MuiTab } from '@mui/material';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import PeopleIcon from '@mui/icons-material/People';
+import ArticleIcon from '@mui/icons-material/Article';
+import TimelineIcon from '@mui/icons-material/Timeline';
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { Process } from "@/types/process";
+
+interface Assunto {
+  principal: boolean;
+  nome: string;
+  codigo?: string;
+}
+
+interface ProcessStatusData {
+  id: string;
+  status: string;
+}
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -28,6 +44,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProcessSubjects } from "@/components/process/ProcessSubjects";
+import { ProcessTimeline } from "@/components/process/ProcessTimeline";
 import { cn } from "@/lib/utils";
 import { ProcessScheduleConfig } from '@/components/ProcessScheduleConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -366,10 +383,6 @@ export function ProcessList({
         process?.id && typeof process.id === 'string' && process.id.trim() !== ''
       );
 
-      interface ProcessStatusData {
-        id: string;
-        status: string;
-      }
 
       // Busca o status diretamente da tabela processes
       const { data: processesData, error: processesError } = await supabase
@@ -499,20 +512,23 @@ export function ProcessList({
       }
 
       // Agrupa por process_id pegando apenas o hit mais recente
-      const hitsMap = (data || []).reduce((acc: Record<string, ProcessHit>, hit: ProcessHit) => {
-        if (!hit.process_id) return acc;
+      const hitsMap: Record<string, ProcessHit> = {};
+      
+      (data as ProcessHit[] || []).forEach((hit: ProcessHit) => {
+        if (!hit.process_id) return;
         
         const hitDate = hit.data_hora_ultima_atualizacao ? new Date(hit.data_hora_ultima_atualizacao) : null;
-        const accDate = acc[hit.process_id]?.data_hora_ultima_atualizacao ? new Date(acc[hit.process_id].data_hora_ultima_atualizacao || '') : null;
+        const existingDate = hitsMap[hit.process_id]?.data_hora_ultima_atualizacao 
+          ? new Date(hitsMap[hit.process_id].data_hora_ultima_atualizacao || '') 
+          : null;
         
-        if (!acc[hit.process_id] || (hitDate && accDate && hitDate > accDate)) {
-          acc[hit.process_id] = {
+        if (!hitsMap[hit.process_id] || (hitDate && existingDate && hitDate > existingDate)) {
+          hitsMap[hit.process_id] = {
             process_id: hit.process_id,
             data_hora_ultima_atualizacao: hit.data_hora_ultima_atualizacao
           };
         }
-        return acc;
-      }, {} as Record<string, ProcessHit>);
+      });
 
       setProcessHits(hitsMap);
     } catch (error) {
@@ -709,7 +725,7 @@ export function ProcessList({
                                 </Badge>
                               )}
                               {/* Badges das classes de movimentação */}
-                              {parentProcess.hits && parentProcess.hits.length > 0 && parentProcess.hits.map((hit, index) => {
+                              {parentProcess.hits && parentProcess.hits.length > 0 && parentProcess.hits.map((hit: {classe?: {nome: string}}, index: number) => {
                                 const isCurrentHit = index === 0;
                                 return (
                                   <Badge 
@@ -734,7 +750,7 @@ export function ProcessList({
                                   <Badge variant="outline" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90">
                                     {parentProcess.metadata.assuntos.length} {parentProcess.metadata.assuntos.length === 1 ? 'assunto' : 'assuntos'}
                                   </Badge>
-                                  {parentProcess.metadata.assuntos.map((assunto, index) => {
+                                  {parentProcess.metadata.assuntos.map((assunto: Assunto, index: number) => {
                                     const isPrincipal = assunto.principal;
                                     return (
                                       <Badge 
@@ -813,20 +829,157 @@ export function ProcessList({
                   
                   <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
                     <div className="text-sm text-gray-700 pt-1 overflow-visible">
-                      <button onClick={() => setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id)} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                      <button onClick={() => {
+                        setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id);
+                        setProcessTabStates(prev => ({
+                          ...prev,
+                          [parentProcess.id]: "movimentacoes"
+                        }));
+                      }} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
                         <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
                         Detalhes do Processo
                       </button>
                       <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 h-auto mt-1" : "opacity-0 h-0 overflow-hidden"}`}>
                         <div className="space-y-2 overflow-visible">
                           <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
-                            <h4 className="font-medium text-sm text-gray-900">Movimentações Processuais</h4>
-                            <ProcessHitsNavigation 
-                              processId={parentProcess.id} 
-                              hits={parentProcess.hits || []} 
-                              currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
-                              onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
-                            />
+                            <div className="md:hidden space-y-2 mb-4">
+                              {[
+                                { 
+                                  value: "movimentacoes", 
+                                  icon: <ListAltIcon className="h-4 w-4" />, 
+                                  label: "Movimentações", 
+                                  bgColor: "bg-[rgb(254,195,11)]",
+                                  textColor: "text-black"
+                                },
+                                { 
+                                  value: "partes", 
+                                  icon: <PeopleIcon className="h-4 w-4" />, 
+                                  label: "Partes", 
+                                  bgColor: "bg-[rgb(22,163,74)]",
+                                  textColor: "text-white"
+                                },
+                                { 
+                                  value: "inteiro-teor", 
+                                  icon: <ArticleIcon className="h-4 w-4" />, 
+                                  label: "Inteiro Teor", 
+                                  bgColor: "bg-[rgb(49,120,236)]",
+                                  textColor: "text-white"
+                                },
+                                { 
+                                  value: "timeline", 
+                                  icon: <TimelineIcon className="h-4 w-4" />, 
+                                  label: "Linha do Tempo", 
+                                  bgColor: "bg-[rgb(46,48,146)]",
+                                  textColor: "text-white"
+                                }
+                              ].map((tab) => (
+                                <button
+                                  key={tab.value}
+                                  className={`w-full flex items-center px-4 py-2 rounded-md ${processTabStates[parentProcess.id] === tab.value ? tab.bgColor : 'bg-gray-100'} ${processTabStates[parentProcess.id] === tab.value ? tab.textColor : 'text-gray-700'}`}
+                                  onClick={() => handleTabChange(parentProcess.id, tab.value)}
+                                >
+                                  {tab.icon}
+                                  <span className="ml-2">{tab.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                            
+                            <div className="hidden md:block w-full">
+                              <MuiTabs 
+                                value={processTabStates[parentProcess.id] || "movimentacoes"}
+                                onChange={(event, newValue) => handleTabChange(parentProcess.id, newValue)}
+                                variant="fullWidth"
+                                scrollButtons={false}
+                                className="mb-4 hidden md:block"
+                                sx={{
+                                  '& .MuiTab-root': {
+                                    fontSize: '0.75rem',
+                                    minHeight: '36px',
+                                    padding: '6px 12px',
+                                    flexGrow: 1
+                                  }
+                                }}
+                            >
+                              <MuiTab 
+                                icon={<ListAltIcon />}
+                                label="Movimentações"
+                                value="movimentacoes"
+                                className="min-w-0"
+                                sx={{
+                                  'backgroundColor': 'rgb(254 195 11)',
+                                  'color': 'black',
+                                  '&.Mui-selected': {
+                                    'backgroundColor': 'rgb(244 185 1)',
+                                    'color': 'black'
+                                  },
+                                  'borderRadius': '8px 8px 0 0'
+                                }}
+                              />
+                              <MuiTab
+                                icon={<PeopleIcon />}
+                                label="Partes"
+                                value="partes"
+                                className="min-w-0"
+                                sx={{
+                                  'backgroundColor': 'rgb(22 163 74)',
+                                  'color': 'white',
+                                  '&.Mui-selected': {
+                                    'backgroundColor': 'rgb(12 153 64)',
+                                    'color': 'white'
+                                  },
+                                  'borderRadius': '8px 8px 0 0'
+                                }}
+                              />
+                              <MuiTab
+                                icon={<ArticleIcon />}
+                                label="Inteiro Teor" 
+                                value="inteiro-teor"
+                                className="min-w-0"
+                                sx={{
+                                  'backgroundColor': 'rgb(49 120 236)',
+                                  'color': 'white',
+                                  '&.Mui-selected': {
+                                    'backgroundColor': 'rgb(39 110 226)',
+                                    'color': 'white'
+                                  },
+                                  'borderRadius': '8px 8px 0 0'
+                                }}
+                              />
+                              <MuiTab
+                                icon={<TimelineIcon />}
+                                label="Linha do Tempo"
+                                value="timeline"
+                                className="min-w-0"
+                                sx={{
+                                  'backgroundColor': 'rgb(46 48 146)',
+                                  'color': 'white',
+                                  '&.Mui-selected': {
+                                    'backgroundColor': 'rgb(36 38 136)',
+                                    'color': 'white'
+                                  },
+                                  'borderRadius': '8px 8px 0 0'
+                                }}
+                              />
+                              </MuiTabs>
+                            </div>
+
+                            {processTabStates[parentProcess.id] === "movimentacoes" && (
+                              <ProcessHitsNavigation 
+                                processId={parentProcess.id} 
+                                hits={parentProcess.hits || []} 
+                                currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
+                                onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
+                              />
+                            )}
+                            {processTabStates[parentProcess.id] === "partes" && (
+                              <ProcessParties processId={parentProcess.id} />
+                            )}
+                            {processTabStates[parentProcess.id] === "inteiro-teor" && (
+                              <ProcessDocuments processId={parentProcess.id} />
+                            )}
+                            {processTabStates[parentProcess.id] === "timeline" && (
+                              <ProcessTimeline hits={parentProcess.hits || []} />
+                            )}
                           </div>
                         </div>
                       </div>

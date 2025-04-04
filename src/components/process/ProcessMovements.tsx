@@ -535,13 +535,13 @@ export function ProcessMovements({
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-wrap items-center gap-2 sticky top-0 bg-white z-10 py-2 border-b">
-        <div className="flex-none">
-          {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="justify-start" />}
-        </div>
-        
-        <div className="flex flex-1 items-center gap-2 text-xs">
-          <div className="flex items-center gap-1">
+      <div className="flex flex-col gap-2 sticky top-0 bg-white z-10 py-2 border-b">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex-none">
+            {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="justify-start" />}
+          </div>
+          
+          <div className="flex-1 flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
@@ -558,39 +558,39 @@ export function ProcessMovements({
               ) : (
                 <ChevronDown className="h-3 w-3 mr-1" />
               )}
-              {appliedFilter?.ascending ? "Antigos Primeiro" : "Recentes Primeiro"}
+              {appliedFilter?.ascending ? "Antigos" : "Recentes"}
             </Button>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Pesquisar no texto do movimento"
-              value={textFilter}
-              onChange={(e) => setTextFilter(e.target.value)}
-              className="h-7 w-64 text-xs"
-            />
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            placeholder="Pesquisar"
+            value={textFilter}
+            onChange={(e) => setTextFilter(e.target.value)}
+            className="h-7 text-xs col-span-2"
+          />
 
-            <div className="flex items-center gap-1">
-              <DatePicker
-                selected={startDate}
-                onSelect={setStartDate}
-                placeholder="Data inicial"
-                className="h-7 w-32 text-xs bg-white [&_button]:bg-blue-500 [&_button]:text-white [&_button:hover]:text-white [&_.rdp-day:hover]:text-white [&_.rdp-day_button:hover]:text-white [&_.rdp-button:hover]:text-white"
-              />
+          <DatePicker
+            selected={startDate}
+            onSelect={setStartDate}
+            placeholder="Data inicial"
+            className="h-7 text-xs bg-white [&_button]:bg-blue-500 [&_button]:text-white"
+          />
 
-              <DatePicker
-                selected={endDate}
-                onSelect={setEndDate}
-                placeholder="Data final"
-                className="h-7 w-32 text-xs bg-white [&_button]:bg-blue-500 [&_button]:text-white [&_button:hover]:text-white [&_.rdp-day:hover]:text-white [&_.rdp-day_button:hover]:text-white [&_.rdp-button:hover]:text-white"
-              />
-            </div>
+          <DatePicker
+            selected={endDate}
+            onSelect={setEndDate}
+            placeholder="Data final"
+            className="h-7 text-xs bg-white [&_button]:bg-blue-500 [&_button]:text-white"
+          />
 
+          <div className="flex gap-2 col-span-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={handleFilter}
-              className="h-7 px-2 text-xs hover:bg-gray-100"
+              className="h-7 px-2 text-xs flex-1"
             >
               <Search className="h-3 w-3 mr-1" />
               Filtrar
@@ -598,7 +598,7 @@ export function ProcessMovements({
 
             {(textFilter || startDate || endDate) && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setTextFilter("");
@@ -607,7 +607,7 @@ export function ProcessMovements({
                   setAppliedFilter(undefined);
                   setCurrentPage(1);
                 }}
-                className="h-7 px-2 text-xs hover:bg-gray-100"
+                className="h-7 px-2 text-xs flex-1"
               >
                 <X className="h-3 w-3 mr-1" />
                 Limpar
