@@ -18,10 +18,7 @@ export default defineConfig(({ mode }) => ({
     port: 5000,
     host: '0.0.0.0',
     strictPort: true,
-    hmr: {
-      clientPort: 443,
-      path: 'hmr/',
-    },
+    hmr: true,
     watch: {
       usePolling: true,
       interval: 1000,
