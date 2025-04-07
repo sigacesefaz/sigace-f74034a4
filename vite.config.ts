@@ -15,14 +15,12 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 8080,
-    host: true,
+    port: 5000,
+    host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      protocol: 'ws',
-      host: '0.0.0.0',
-      port: 24678,
       clientPort: 443,
+      path: 'hmr/',
     },
     watch: {
       usePolling: true,
