@@ -22,3 +22,7 @@ args = "bun run dev"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[[ports]]
+localPort = 24678
+externalPort = 3000
