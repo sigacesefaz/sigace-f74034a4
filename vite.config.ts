@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
@@ -22,7 +21,11 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-    }
+    },
+    watch: {
+      usePolling: true,
+      interval: 100
+    },
   },
   css: {
     devSourcemap: true,
