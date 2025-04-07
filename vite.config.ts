@@ -19,8 +19,10 @@ export default defineConfig(({ mode }) => ({
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
+      host: '0.0.0.0',
+      protocol: 'ws',
       clientPort: 443,
-      host: true
+      timeout: 120000
     },
     watch: {
       usePolling: true,
