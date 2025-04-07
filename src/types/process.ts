@@ -5,9 +5,12 @@ export type PartyType = {
   id: string;
   document: string;
   name: string;
-  type: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito" | "AUTHOR" | "DEFENDANT" | "MP";
+  type: "autor" | "réu" | "terceiro" | "terceiro-prejudicado" | "advogado" | "assistente" | "perito" | "testemunha" | "mpe-to" | "pge-to";
   subtype: string;
   personType: PartyPersonType;
+  process_id?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 // Adicionando a interface Document, renomeada para ProcessDocument para evitar conflito com o tipo DOM Document
@@ -21,7 +24,7 @@ export interface ProcessDocument {
   created_at: string;
   updated_at?: string;
   process_id: string;
-  hit_id?: string;
+  hit_id: string | null;
 }
 
 // Adicionando a interface Decision

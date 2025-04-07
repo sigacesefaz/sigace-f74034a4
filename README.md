@@ -1,69 +1,92 @@
-# Welcome to your Lovable project
+# SIGACE - Sistema Integrado de Gestão e Acompanhamento de Processos
 
-## Project info
+## Tecnologias Utilizadas
 
-**URL**: https://lovable.dev/projects/cbb0dd2e-98ad-4d2d-abb6-0ced51a61ded
+- **Frontend**:
+  - Vite (build tool)
+  - React (biblioteca JavaScript)
+  - TypeScript (tipagem estática)
+  - Tailwind CSS (estilização)
+  - shadcn-ui (componentes UI)
 
-## How can I edit this code?
+- **Backend**:
+  - Node.js (runtime JavaScript)
+  - Supabase (banco de dados PostgreSQL)
 
-There are several ways of editing your application.
+- **Outras Ferramentas**:
+  - ESLint (análise de código)
+  - PostCSS (processamento CSS)
+  - Bun (gerenciador de pacotes)
 
-**Use Lovable**
+## Funcionalidades Principais
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cbb0dd2e-98ad-4d2d-abb6-0ced51a61ded) and start prompting.
+### Tela de Login
+- Autenticação de usuários
+- Validação de credenciais
+- Recuperação de senha
 
-Changes made via Lovable will be committed automatically to this repo.
+### Tela Principal (Dashboard)
+- Visão geral de processos
+- Gráficos e métricas
+- Acesso rápido às funcionalidades
 
-**Use your preferred IDE**
+### Gestão de Processos
+- Cadastro de novos processos
+- Consulta e filtragem avançada
+- Acompanhamento de movimentações
+- Upload de documentos relacionados
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Cadastro de Usuários
+- Criação de novos usuários
+- Atribuição de perfis e permissões
+- Edição e desativação de contas
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Relatórios
+- Geração de relatórios personalizados
+- Exportação em PDF e Excel
+- Filtros avançados
 
-Follow these steps:
+## Estrutura do Banco de Dados
 
+O sistema utiliza as seguintes tabelas principais:
+- `processes` - Armazena informações básicas dos processos
+- `process_details` - Detalhes específicos de cada processo
+- `process_movements` - Movimentações e histórico
+- `process_subjects` - Assuntos e classificações
+- `users` - Cadastro de usuários do sistema
+
+## Como Executar o Projeto Localmente
+
+1. Clone o repositório:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <URL_DO_REPOSITÓRIO>
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Instale as dependências:
+```sh
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Configure as variáveis de ambiente:
+- Crie um arquivo `.env` baseado no `.env.example`
+- Preencha com as credenciais do Supabase
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Inicie o servidor de desenvolvimento:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Acesse no navegador:
+```
+http://localhost:3000
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Implantação em Produção
 
-**Use GitHub Codespaces**
+O projeto pode ser implantado em qualquer serviço de hospedagem que suporte aplicações Node.js, como:
+- Vercel
+- Netlify
+- Render
+- Railway
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cbb0dd2e-98ad-4d2d-abb6-0ced51a61ded) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Para implantação com Supabase, consulte a documentação oficial em https://supabase.com/docs

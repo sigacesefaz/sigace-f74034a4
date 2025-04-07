@@ -32,7 +32,7 @@ export function ProcessParties({
   // Form states
   const [name, setName] = useState("");
   const [document, setDocument] = useState("");
-  const [type, setType] = useState<"autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito">("autor");
+  const [type, setType] = useState<"autor" | "réu" | "terceiro" | "terceiro-prejudicado" | "advogado" | "assistente" | "perito" | "testemunha" | "mpe-to" | "pge-to">("autor");
   const [subtype, setSubtype] = useState("");
   const [personType, setPersonType] = useState<PartyPersonType>("physical");
   useEffect(() => {
@@ -161,7 +161,73 @@ export function ProcessParties({
                   <Label htmlFor="name">Nome</Label>
                   <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
                 </div>
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={type} onValueChange={(value: "autor" | "réu" | "terceiro" | "terceiro-prejudicado" | "advogado" | "assistente" | "perito" | "testemunha" | "mpe-to" | "pge-to") => setType(value)} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="autor">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-green-600">
+                          Autor
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="réu">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-red-600">
+                          Réu
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="terceiro">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-yellow-600">
+                          Terceiro Interessado
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="terceiro-prejudicado">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-orange-600">
+                          Terceiro Prejudicado
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="advogado">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-indigo-600">
+                          Advogado
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="assistente">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-pink-600">
+                          Assistente
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="perito">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-gray-600">
+                          Perito
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="testemunha">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-teal-600">
+                          Testemunha
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="mpe-to">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-blue-600">
+                          Ministério Público Estadual - TO
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="pge-to">
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-white bg-purple-600">
+                          Procuradoria Geral Estadual - TO
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subtype">Subtipo (Opcional)</Label>
+                  <Input id="subtype" value={subtype} onChange={e => setSubtype(e.target.value)} placeholder="Ex: Assistente de acusação, etc." />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="personType">Tipo de Pessoa</Label>
                   <Select value={personType} onValueChange={(value: PartyPersonType) => setPersonType(value)}>
@@ -174,7 +240,7 @@ export function ProcessParties({
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="document">Documento</Label>
                   <MaskedInput
@@ -183,28 +249,6 @@ export function ProcessParties({
                     onChange={(value) => setDocument(value)}
                     placeholder={personType === "physical" ? "000.000.000-00" : "00.000.000/0000-00"}
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="type">Tipo</Label>
-                  <Select value={type} onValueChange={(value: "autor" | "réu" | "terceiro" | "advogado" | "assistente" | "perito") => setType(value)} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="autor">Autor</SelectItem>
-                      <SelectItem value="réu">Réu</SelectItem>
-                      <SelectItem value="terceiro">Terceiro Interessado</SelectItem>
-                      <SelectItem value="advogado">Advogado</SelectItem>
-                      <SelectItem value="assistente">Assistente</SelectItem>
-                      <SelectItem value="perito">Perito</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="subtype">Subtipo</Label>
-                  <Input id="subtype" value={subtype} onChange={e => setSubtype(e.target.value)} placeholder="Ex: Assistente de acusação, etc." />
                 </div>
                 
                 <DialogFooter>
@@ -231,14 +275,37 @@ export function ProcessParties({
                   <div>
                     <h4 className="font-medium text-xs">{party.name}</h4>
                     <div className="flex flex-wrap gap-0.5 mt-0.5">
-                      <Badge variant="outline" className="text-xs h-5 px-1">{party.type}</Badge>
+                      <Badge variant="outline" className={`text-xs h-5 px-1 ${
+                        party.type === 'autor' ? 'bg-green-600 text-white' :
+                        party.type === 'réu' ? 'bg-red-600 text-white' :
+                        party.type === 'terceiro' ? 'bg-yellow-600 text-white' :
+                        party.type === 'terceiro-prejudicado' ? 'bg-orange-600 text-white' :
+                        party.type === 'advogado' ? 'bg-indigo-600 text-white' :
+                        party.type === 'assistente' ? 'bg-pink-600 text-white' :
+                        party.type === 'perito' ? 'bg-gray-600 text-white' :
+                        party.type === 'testemunha' ? 'bg-teal-600 text-white' :
+                        party.type === 'mpe-to' ? 'bg-blue-600 text-white' :
+                        'bg-purple-600 text-white' // pge-to
+                      }`}>
+                        {party.type === 'autor' ? 'Autor' :
+                         party.type === 'réu' ? 'Réu' :
+                         party.type === 'terceiro' ? 'Terceiro Interessado' :
+                         party.type === 'terceiro-prejudicado' ? 'Terceiro Prejudicado' :
+                         party.type === 'advogado' ? 'Advogado' :
+                         party.type === 'assistente' ? 'Assistente' :
+                         party.type === 'perito' ? 'Perito' :
+                         party.type === 'testemunha' ? 'Testemunha' :
+                         party.type === 'mpe-to' ? 'Ministério Público Estadual - TO' :
+                         'Procuradoria Geral Estadual - TO'}
+                      </Badge>
                       {party.subtype && <Badge variant="secondary" className="text-xs h-5 px-1">{party.subtype}</Badge>}
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 text-xs h-5 px-1">
                         {party.personType === "physical" ? "Pessoa Física" : "Pessoa Jurídica"}
                       </Badge>
                     </div>
                     {party.document && <p className="text-xs text-gray-500 mt-0.5">
-                      Documento: {party.personType === "physical" ? formatCPF(party.document) : formatCNPJ(party.document)}
+                      {party.personType === "physical" ? "CPF: " : "CNPJ: "} 
+                      {party.personType === "physical" ? formatCPF(party.document) : formatCNPJ(party.document)}
                     </p>}
                   </div>
                 </div>

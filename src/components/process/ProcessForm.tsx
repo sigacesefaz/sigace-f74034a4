@@ -24,6 +24,7 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
       status: 'Em andamento',
       court: '',
       plaintiff: '',
+      plaintiff_type: 'physical',
       plaintiff_document: ''
     }
   });
@@ -126,7 +127,9 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="plaintiff_document">Documento do Autor</Label>
+          <Label htmlFor="plaintiff_document">
+            {watch('plaintiff_type') === "physical" ? "CPF do Autor" : "CNPJ do Autor"}
+          </Label>
           <Input
             id="plaintiff_document"
             {...register('plaintiff_document')}
