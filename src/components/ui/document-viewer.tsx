@@ -119,7 +119,7 @@ export function DocumentViewer({
               title={fileName || "Visualização do PDF"}
               loading="lazy"
               onLoad={handleIframeLoad}
-              sandbox="allow-same-origin allow-scripts allow-downloads"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             />
           )}
           
