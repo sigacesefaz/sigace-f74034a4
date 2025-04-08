@@ -152,7 +152,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   }, [filteredProcesses, sortOrder]);
 
   const applyFilters = useCallback(() => {
-    let processesToFilter = [...processes];
+    let processesToFilter = processes.filter(p => p.status !== "Arquivado");
     
     // Primeiro aplicar o filtro de status
     if (statusFilter !== "all") {
