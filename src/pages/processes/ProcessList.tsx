@@ -822,7 +822,7 @@ export function ProcessList({
                           onClick={() => setShowArchiveDialog(true)}
                           className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
                         >
-                          {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                          {parentProcess.status === "Arquivado" ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           setProcessToDelete(parentProcess.id);
