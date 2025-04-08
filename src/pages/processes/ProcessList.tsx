@@ -159,14 +159,13 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   }, [filteredProcesses, sortOrder]);
 
   const applyFilters = useCallback(() => {
-    let processesToFilter = processes;
-    
+    let processesToFilter = [...processes];
+
+    // First apply archive filter
     if (props.showArchiveInfo) {
-      // Show only archived processes
-      processesToFilter = processes.filter(p => p.status === "Arquivado");
+      processesToFilter = processesToFilter.filter(p => p.status === "Arquivado");
     } else {
-      // Show non-archived processes
-      processesToFilter = processes.filter(p => p.status !== "Arquivado");
+      processesToFilter = processesToFilter.filter(p => p.status !== "Arquivado");
     }
     
     // Primeiro aplicar o filtro de status

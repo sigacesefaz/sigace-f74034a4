@@ -25,7 +25,8 @@ export default function ArchivedProcesses() {
           *,
           archive_info:process_archive_info(*),
           hits:process_hits(*),
-          metadata:process_details(*)
+          metadata:process_details(*),
+          movimentacoes:process_movements(*)
         `)
         .eq('status', 'Arquivado')
         .order('updated_at', { ascending: false });
