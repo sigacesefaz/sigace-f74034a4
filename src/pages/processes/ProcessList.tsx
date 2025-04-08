@@ -92,6 +92,8 @@ export function ProcessList({
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [scheduleConfigOpen, setScheduleConfigOpen] = useState(false);
   const [processDetails, setProcessDetails] = useState<Record<string, { data_ajuizamento?: string }>>({});
+const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   const [processHits, setProcessHits] = useState<Record<string, { data_hora_ultima_atualizacao?: string }>>({});
   const itemsPerPage = 5;
 
@@ -819,7 +821,10 @@ export function ProcessList({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setShowArchiveDialog(true)}
+                          onClick={() => {
+                            setProcessToArchive(parentProcess);
+                            setShowArchiveDialog(true);
+                          }}
                           className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
                         >
                           {parentProcess.status === "Arquivado" ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
@@ -1075,5 +1080,36 @@ export function ProcessList({
       </Dialog>
 
       {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
+      
+      {processToArchive && (
+        <ProcessArchiveDialog
+          open={showArchiveDialog}
+          onOpenChange={setShowArchiveDialog}
+          onConfirm={async (password, reason) => {
+            try {
+              const supabase = getSupabaseClient();
+              const { error } = await supabase
+                .from('processes')
+                .update({ 
+                  status: processToArchive.status === "Arquivado" ? "Em andamento" : "Arquivado",
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', processToArchive.id);
+
+              if (error) throw error;
+
+              toast.success(`Processo ${processToArchive.status === "Arquivado" ? "desarquivado" : "arquivado"} com sucesso`);
+              if (onRefresh) {
+                await onRefresh(processToArchive.id);
+              }
+            } catch (error) {
+              console.error("Erro ao arquivar processo:", error);
+              toast.error("Erro ao processar operação");
+            }
+          }}
+          action={processToArchive.status === "Arquivado" ? "unarchive" : "archive"}
+          processNumber={processToArchive.number}
+        />
+      )}
     </div>;
 }
