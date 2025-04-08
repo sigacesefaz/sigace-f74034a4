@@ -60,12 +60,16 @@ interface ProcessListProps {
   onUnarchive?: (id: string, reason: string) => Promise<void>;
 }
 
-export function ProcessList({
-  processes,
-  isLoading,
-  onDelete,
-  onRefresh
-}: ProcessListProps) {
+export function ProcessList(props: ProcessListProps) {
+  const {
+    processes,
+    isLoading,
+    onDelete,
+    onRefresh,
+    hideNewProcessButton,
+    showArchiveInfo,
+    onUnarchive
+  } = props;
   const [expandedProcessId, setExpandedProcessId] = useState<string | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [bulkAlertOpen, setBulkAlertOpen] = useState(false);
