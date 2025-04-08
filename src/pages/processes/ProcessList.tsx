@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getSupabaseClient, checkProcessStatus } from "@/lib/supabase";
 import { Pagination } from "@/components/ui/pagination";
 import { ProcessReportDialog } from "@/components/process/ProcessReportDialog";
+import { ProcessArchiveDialog } from "@/components/process/ProcessArchiveDialog";
 import { formatProcessNumber } from "@/utils/format";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
