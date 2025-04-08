@@ -87,6 +87,11 @@ export function NavMenu() {
           description: "Visualize e gerencie todos os processos"
         },
         {
+          title: "Processos Arquivados",
+          href: "/processes/archived",
+          description: "Visualize os processos arquivados"
+        },
+        {
           title: "Novo Processo",
           href: "/processes/new",
           description: "Criar um novo processo"
