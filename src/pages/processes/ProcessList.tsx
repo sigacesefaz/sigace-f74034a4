@@ -55,6 +55,9 @@ interface ProcessListProps {
   isLoading: boolean;
   onDelete?: (id: string) => Promise<void>;
   onRefresh?: (id: string) => Promise<void>;
+  hideNewProcessButton?: boolean;
+  showArchiveInfo?: boolean;
+  onUnarchive?: (id: string, reason: string) => Promise<void>;
 }
 
 export function ProcessList({
@@ -563,9 +566,11 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     return <Card className="text-center py-6">
         <CardContent>
           <p className="text-gray-500">Nenhum processo encontrado</p>
-          <Link to="/processes/new">
-            <Button className="mt-2">Cadastrar Novo Processo</Button>
-          </Link>
+          {!props.hideNewProcessButton && (
+            <Link to="/processes/new">
+              <Button className="mt-2">Cadastrar Novo Processo</Button>
+            </Link>
+          )}
         </CardContent>
       </Card>;
   }

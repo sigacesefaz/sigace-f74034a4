@@ -89,6 +89,7 @@ export default function ArchivedProcesses() {
           onRefresh={refetch}
           showArchiveInfo={true}
           onUnarchive={handleUnarchive}
+          hideNewProcessButton={true}
         />
       </div>
     </MainLayout>
