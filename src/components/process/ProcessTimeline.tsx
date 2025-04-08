@@ -1,23 +1,26 @@
 
 import React, { useState } from 'react';
+import Timeline from '@mui/lab/Timeline';
+import TimelineItem from '@mui/lab/TimelineItem';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
+import TimelineDot from '@mui/lab/TimelineDot';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronDown } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { ProcessMovements } from './ProcessMovements';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProcessMovement {
   id: string;
   nome: string;
   data_hora: string;
   complemento?: string;
-  complementos_tabelados?: Array<{
-    nome: string;
-    valor: number;
-    codigo: number;
-    descricao: string;
-  }>;
+  codigo?: number;
+  tipo?: string;
 }
 
 interface ProcessHit {
@@ -34,19 +37,22 @@ interface ProcessTimelineProps {
 }
 
 export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
-  const [selectedHitId, setSelectedHitId] = useState<string | null>(null);
+  const [expandedHits, setExpandedHits] = useState<Record<string, boolean>>({});
 
   if (!hits || hits.length === 0) {
     return (
-      <div className="text-sm text-gray-500 italic">
+      <div className="text-sm text-gray-500 italic p-4">
         Nenhuma movimentação processual encontrada.
       </div>
     );
   }
 
-  const sortedHits = [...hits].sort((a, b) => 
-    new Date(b.data_ajuizamento).getTime() - new Date(a.data_ajuizamento).getTime()
-  );
+  const toggleHit = (hitId: string) => {
+    setExpandedHits(prev => ({
+      ...prev,
+      [hitId]: !prev[hitId]
+    }));
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -56,80 +62,84 @@ export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
     }
   };
 
+  const sortedHits = [...hits].sort((a, b) => 
+    new Date(b.data_ajuizamento).getTime() - new Date(a.data_ajuizamento).getTime()
+  );
+
   return (
     <ScrollArea className="w-full max-h-[600px]">
-      <div className="space-y-4 p-4">
-        {sortedHits.map((hit) => (
-          <div key={hit.id} className="relative">
-            <div className="flex items-start space-x-4">
-              <div className="min-w-[3px] h-full bg-blue-500" />
-              <div className="flex-1">
-                <button
-                  className="w-full text-left bg-white rounded-lg p-4 shadow-sm hover:shadow transition-shadow"
-                  onClick={() => setSelectedHitId(selectedHitId === hit.id ? null : hit.id)}
-                >
-                  <div className="flex justify-between items-start">
+      <div className="p-4">
+        <Timeline position="alternate" className="w-full">
+          {sortedHits.map((hit, index) => (
+            <TimelineItem key={hit.id}>
+              <TimelineSeparator>
+                <TimelineDot color="primary" />
+                <TimelineConnector />
+              </TimelineSeparator>
+              <TimelineContent>
+                <Card className="p-4 hover:shadow-md transition-shadow">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-left flex justify-between items-center"
+                    onClick={() => toggleHit(hit.id)}
+                  >
                     <div>
-                      <h3 className="font-medium text-gray-900">{hit.nome}</h3>
+                      <h3 className="font-medium">{hit.nome}</h3>
                       <p className="text-sm text-gray-500">
                         {formatDate(hit.data_ajuizamento)}
                       </p>
                     </div>
                     <ChevronDown 
-                      className={`h-5 w-5 text-gray-400 transition-transform ${
-                        selectedHitId === hit.id ? 'rotate-180' : ''
+                      className={`h-5 w-5 transition-transform ${
+                        expandedHits[hit.id] ? 'rotate-180' : ''
                       }`}
                     />
-                  </div>
-                </button>
+                  </Button>
 
-                {selectedHitId === hit.id && hit.movements && hit.movements.length > 0 && (
-                  <div className="mt-4 pl-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-medium text-sm mb-3">Movimentações do Hit</h4>
-                      <div className="space-y-3">
+                  {expandedHits[hit.id] && hit.movements && hit.movements.length > 0 && (
+                    <div className="mt-4">
+                      <Timeline position="right">
                         {hit.movements.map((movement) => (
-                          <div 
-                            key={movement.id} 
-                            className="bg-white rounded-lg p-3 shadow-sm"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h5 className="font-medium text-sm">{movement.nome}</h5>
-                                {movement.complemento && (
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {movement.complemento}
-                                  </p>
-                                )}
-                                {movement.complementos_tabelados && 
-                                 movement.complementos_tabelados.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {movement.complementos_tabelados.map((comp, idx) => (
-                                      <Badge 
-                                        key={idx}
-                                        variant="secondary" 
-                                        className="text-xs"
-                                      >
-                                        {comp.nome}
-                                      </Badge>
-                                    ))}
+                          <TimelineItem key={movement.id}>
+                            <TimelineSeparator>
+                              <TimelineDot variant="outlined" color="secondary" />
+                              <TimelineConnector />
+                            </TimelineSeparator>
+                            <TimelineContent>
+                              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="text-sm font-medium">
+                                      {movement.nome}
+                                    </h4>
+                                    {movement.complemento && (
+                                      <p className="text-xs text-gray-600 mt-1">
+                                        {movement.complemento}
+                                      </p>
+                                    )}
                                   </div>
-                                )}
+                                  <div className="flex flex-col items-end gap-1">
+                                    <span className="text-xs text-gray-500">
+                                      {formatDate(movement.data_hora)}
+                                    </span>
+                                    {movement.codigo && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Código: {movement.codigo}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <span className="text-xs text-gray-500">
-                                {formatDate(movement.data_hora)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                            </TimelineItem>
+                          ))}
+                      </Timeline>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+                  )}
+                </Card>
+              </TimelineContent>
+            </TimelineItem>
+          ))}
+        </Timeline>
       </div>
     </ScrollArea>
   );
