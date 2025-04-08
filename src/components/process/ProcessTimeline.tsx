@@ -11,6 +11,13 @@ interface ProcessMovement {
   nome: string;
   data_hora: string;
   complemento?: string;
+  tipo?: string;
+  complementos_tabelados?: Array<{
+    nome: string;
+    valor: number;
+    codigo: number;
+    descricao: string;
+  }>;
 }
 
 interface ProcessHit {
@@ -19,15 +26,32 @@ interface ProcessHit {
   data_ajuizamento: string;
   numero_processo?: string;
   movements?: ProcessMovement[];
+  classe?: {
+    nome: string;
+    codigo: number;
+  };
 }
 
 interface ProcessTimelineProps {
   hits: ProcessHit[];
   processId?: string;
+  onHitSelect?: (hitId: string) => void;
 }
 
-export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
+export function ProcessTimeline({ hits, processId, onHitSelect }: ProcessTimelineProps) {
   const [selectedHit, setSelectedHit] = useState<string | null>(null);
+  const [expandedMovements, setExpandedMovements] = useState<{[key: string]: boolean}>({});
+
+  const handleHitClick = (hitId: string) => {
+    setSelectedHit(selectedHit === hitId ? null : hitId);
+    if (onHitSelect) {
+      onHitSelect(hitId);
+    }
+    setExpandedMovements(prev => ({
+      ...prev,
+      [hitId]: !prev[hitId]
+    }));
+  };
 
   if (!hits || hits.length === 0) {
     return (
@@ -50,8 +74,8 @@ export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
             <div key={hit.id} className="flex flex-col items-center min-w-max">
               <div className="w-3 h-3 rounded-full bg-blue-500 mb-2"></div>
               <button
-                className="text-center"
-                onClick={() => setSelectedHit(selectedHit === hit.id ? null : hit.id)}
+                className="text-center hover:bg-gray-100 p-2 rounded-md transition-colors"
+                onClick={() => handleHitClick(hit.id)}
               >
                 <h3 className="font-medium">{hit.nome}</h3>
                 <p className="text-sm text-gray-500">

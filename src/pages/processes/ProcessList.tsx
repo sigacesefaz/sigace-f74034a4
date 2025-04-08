@@ -81,6 +81,7 @@ export function ProcessList(props: ProcessListProps) {
   const [processTabStates, setProcessTabStates] = useState<Record<string, string>>({});
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
   const [selectedHitIndex, setSelectedHitIndex] = useState<Record<string, number>>({});
+  const [selectedHit, setSelectedHit] = useState<string | null>(null); // Added state for selected hit
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [showTabsId, setShowTabsId] = useState<string | null>(null);
@@ -139,10 +140,10 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       const dateB = new Date(b.created_at).getTime();
       return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
     });
-    
+
     // Criar um array ordenado de grupos para preservar a ordem
     const orderedGroups: [string, { parent: Process | null; children: Process[] }][] = [];
-    
+
     // Agora vamos criar os grupos mantendo a ordem dos pais
     sortedParents.forEach(process => {
       const children = filteredProcesses.filter(p => p.parent_id === process.id);
@@ -154,7 +155,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
         }
       ]);
     });
-    
+
     return orderedGroups;
   }, [filteredProcesses, sortOrder]);
 
@@ -167,7 +168,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     } else {
       processesToFilter = processesToFilter.filter(p => p.status !== "Arquivado");
     }
-    
+
     // Primeiro aplicar o filtro de status
     if (statusFilter !== "all") {
       processesToFilter = processesToFilter.filter(process => {
@@ -198,7 +199,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
+
   const totalPages = Math.ceil(groupedProcesses.length / itemsPerPage);
 
   const handleDelete = async (id: string) => {
@@ -361,17 +362,17 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     try {
       const supabase = getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast.error("Usuário não autenticado");
         return false;
       }
-      
+
       if (!password.trim()) {
         setPasswordError("A senha não pode estar vazia");
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error("Erro ao verificar senha:", error);
@@ -382,7 +383,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
 
   const confirmBulkDeleteWithPassword = async () => {
     const isPasswordValid = await verifyPassword(password);
-    
+
     if (isPasswordValid) {
       await handleBulkDelete();
       setPassword("");
@@ -394,7 +395,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   const loadProcessStatuses = async (processes: Process[]) => {
     try {
       const supabase = getSupabaseClient();
-      
+
       // Filtra processos válidos
       const validProcesses = processes.filter(process => 
         process?.id && typeof process.id === 'string' && process.id.trim() !== ''
@@ -414,7 +415,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
 
       // Cria um mapa de status
       const statusMap: Record<string, string> = {};
-      
+
       if (processesData) {
         (processesData as ProcessStatusData[]).forEach(process => {
           statusMap[process.id] = process.status;
@@ -422,7 +423,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       }
 
       setProcessStatuses(statusMap);
-      
+
     } catch (error) {
       console.error('Erro ao carregar status dos processos:', error);
     }
@@ -455,7 +456,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     }
 
     const latestHit = process.hits[process.hits.length - 1];
-    
+
     if (!latestHit.movimentos || !Array.isArray(latestHit.movimentos)) {
       return "Em andamento";
     }
@@ -530,15 +531,15 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
 
       // Agrupa por process_id pegando apenas o hit mais recente
       const hitsMap: Record<string, ProcessHit> = {};
-      
+
       (data as ProcessHit[] || []).forEach((hit: ProcessHit) => {
         if (!hit.process_id) return;
-        
+
         const hitDate = hit.data_hora_ultima_atualizacao ? new Date(hit.data_hora_ultima_atualizacao) : null;
         const existingDate = hitsMap[hit.process_id]?.data_hora_ultima_atualizacao 
           ? new Date(hitsMap[hit.process_id].data_hora_ultima_atualizacao || '') 
           : null;
-        
+
         if (!hitsMap[hit.process_id] || (hitDate && existingDate && hitDate > existingDate)) {
           hitsMap[hit.process_id] = {
             process_id: hit.process_id,
@@ -599,7 +600,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
               Selecionar todos
             </label>
           </div>
-          
+
           <Badge variant="outline" className="px-2 py-1">
             Total: {Object.keys(groupedProcesses).length} processos
           </Badge>
@@ -660,7 +661,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
               </div>
             </PopoverContent>
           </Popover>
-          
+
           {selectedProcesses.length > 0 && (
             <Button 
               variant="destructive" 
@@ -783,7 +784,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                                       >
                                         {isPrincipal && <Check className="h-3 w-3 mr-1 inline-block" />}
                                         {assunto.nome}
-                                        {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
+                                        {assunto.codigo && <span className="ml-1 opacity90">({assunto.codigo})</span>}
                                       </Badge>
                                     );
                                   })}
@@ -856,7 +857,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                       </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
                     <div className="text-sm text-gray-700 pt-1 overflow-visible">
                       <button onClick={() => {
@@ -913,7 +914,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                                 </button>
                               ))}
                             </div>
-                            
+
                             <div className="hidden md:block w-full">
                               <MuiTabs 
                                 value={processTabStates[parentProcess.id] || "movimentacoes"}
@@ -1008,7 +1009,14 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                               <ProcessDocuments processId={parentProcess.id} />
                             )}
                             {processTabStates[parentProcess.id] === "timeline" && (
-                              <ProcessTimeline hits={parentProcess.hits || []} />
+                              <ProcessTimeline 
+                                hits={parentProcess.hits || []} 
+                                processId={parentProcess.id}
+                                onHitSelect={(hitId) => {
+                                  setSelectedHit(hitId);
+                                  handleTabChange(parentProcess.id, "movimentacoes");
+                                }}
+                              />
                             )}
                           </div>
                         </div>
@@ -1020,7 +1028,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
         })
       )}
 
-      
+
 
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
@@ -1097,7 +1105,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       </Dialog>
 
       {selectedProcess && <ProcessReportDialog process={selectedProcess} open={reportDialogOpen} onOpenChange={setReportDialogOpen} />}
-      
+
       {processToArchive && (
         <ProcessArchiveDialog
           open={showArchiveDialog}
