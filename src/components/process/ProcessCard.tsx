@@ -59,7 +59,31 @@ export function ProcessCard({ process }: ProcessCardProps) {
     }
   };
 
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const currentMovimento = movimentos[currentMovimentoIndex] || null;
+  const isArchived = process.status === "Arquivado";
+
+  const handleArchive = async (password: string, reason: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('processes')
+        .update({ 
+          status: isArchived ? "Em andamento" : "Arquivado",
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', process.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success(`Processo ${isArchived ? "desarquivado" : "arquivado"} com sucesso`);
+      window.location.reload();
+    } catch (error) {
+      console.error("Erro ao arquivar processo:", error);
+      toast.error("Erro ao processar operação");
+    }
+  };
 
   return (
     <Card className="p-6">
@@ -72,10 +96,24 @@ export function ProcessCard({ process }: ProcessCardProps) {
         </div>
         <h2 className="text-xl font-medium">{safeStringValue(process.type)}</h2>
         <div className="flex items-center gap-2">
-          <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
-          <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-            {safeStringValue(process.metadata?.formato, "Eletrônico")}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-blue-600">{safeStringValue(process.number)}</div>
+            <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+              {safeStringValue(process.metadata?.formato, "Eletrônico")}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowArchiveDialog(true)}
+              className="ml-2"
+            >
+              {isArchived ? (
+                <><ArchiveRestore className="h-4 w-4 mr-1" /> Desarquivar</>
+              ) : (
+                <><Archive className="h-4 w-4 mr-1" /> Arquivar</>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -267,6 +305,14 @@ export function ProcessCard({ process }: ProcessCardProps) {
           ))}
         </div>
       )}
+
+      <ProcessArchiveDialog
+        open={showArchiveDialog}
+        onOpenChange={setShowArchiveDialog}
+        onConfirm={handleArchive}
+        action={isArchived ? "unarchive" : "archive"}
+        processNumber={process.number}
+      />
     </Card>
   );
 }
