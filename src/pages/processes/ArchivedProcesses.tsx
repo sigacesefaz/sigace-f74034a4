@@ -21,9 +21,14 @@ export default function ArchivedProcesses() {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('processes')
-        .select('*, archive_info:process_archive_info(*)')
+        .select(`
+          *,
+          archive_info:process_archive_info(*),
+          hits:process_hits(*),
+          metadata:process_details(*)
+        `)
         .eq('status', 'Arquivado')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
       return data;
