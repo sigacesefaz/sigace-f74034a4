@@ -1,0 +1,28 @@
+The above error occurred in the <ProcessList> component:
+
+    at ProcessList (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/pages/processes/ProcessList.tsx:41:31)
+    at div
+    at div
+    at main
+    at div
+    at MainLayout (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/components/layout/MainLayout.tsx:14:30)
+    at ArchivedProcesses (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/pages/processes/ArchivedProcesses.tsx:19:75)
+    at div
+    at main
+    at div
+    at MainLayout (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/components/layout/MainLayout.tsx:14:30)
+    at ProtectedRoute (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/routes/ProtectedRoute.tsx:15:34)
+    at RenderedRoute (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/react-router-dom.js?v=9eac5e75:4069:5)
+    at Routes (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/react-router-dom.js?v=9eac5e75:4508:5)
+    at Suspense
+    at Router (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/react-router-dom.js?v=9eac5e75:4451:15)
+    at BrowserRouter (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/react-router-dom.js?v=9eac5e75:5196:5)
+    at AppRoutes
+    at Provider (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/chunk-XSD2Y4RK.js?v=9eac5e75:38:15)
+    at TooltipProvider (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=9eac5e75:66:5)
+    at QueryClientProvider (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/node_modules/.vite/deps/@tanstack_react-query.js?v=9eac5e75:2794:3)
+    at App (https://2e169ac9-eab3-4c37-9086-9fc3775ea34f-00-1nnjaxrwx1vo.janeway.replit.dev:5000/src/App.tsx:43:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+props is not defined
