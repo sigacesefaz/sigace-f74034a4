@@ -101,11 +101,13 @@ export function ProcessCard({ process }: ProcessCardProps) {
             <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
               {safeStringValue(process.metadata?.formato, "Eletrônico")}
             </Badge>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setShowArchiveDialog(true)}
-              className="ml-2"
+              className="flex items-center"
             >
               {isArchived ? (
                 <><ArchiveRestore className="h-4 w-4 mr-1" /> Desarquivar</>
