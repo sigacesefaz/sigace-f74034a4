@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight } from "lucide-react";
+import { ChevronUp, ChevronDown, Calendar, Building2, Scale, Eye, ArrowLeft, ArrowRight, Archive, ArchiveRestore } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { format } from "date-fns";
