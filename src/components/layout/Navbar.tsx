@@ -24,6 +24,9 @@ export function Navbar() {
               <Link to="/processes" className="text-gray-600 hover:text-gray-900">
                 Processos
               </Link>
+              <Link to="/processes/archived" className="text-gray-600 hover:text-gray-900">
+                Processos Arquivados
+              </Link>
               <Link to="/intimations" className="text-gray-600 hover:text-gray-900">
                 Intimações
               </Link>

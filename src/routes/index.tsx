@@ -14,6 +14,7 @@ import NotFound from "@/pages/NotFound";
 import ProcessListPage from "@/pages/processes/ProcessListPage";
 import NewProcess from "@/pages/processes/NewProcess";
 import ProcessDetails from "@/pages/processes/ProcessDetails";
+import ArchivedProcesses from "@/pages/processes/ArchivedProcesses";
 import ProcessCardExample from "@/pages/processes/ProcessCardExample";
 import { ProcessReportPage } from "@/pages/processes/ProcessReportPage";
 import IntimationList from "@/pages/intimations/IntimationList";
@@ -68,6 +69,17 @@ export const AppRoutes = () => {
               <ProtectedRoute>
                 <MainLayout>
                   <ProcessListPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processes/archived" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ArchivedProcesses />
                 </MainLayout>
               </ProtectedRoute>
             } 
