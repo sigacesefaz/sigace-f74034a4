@@ -53,9 +53,12 @@ export default function ProcessListPage() {
         const {
           data: processesData,
           error: processesError
-        } = await supabase.from('processes').select('*').order('created_at', {
-          ascending: false
-        });
+        } = await supabase.from('processes')
+          .select('*')
+          .eq('is_archived', false)
+          .order('created_at', {
+            ascending: false
+          });
         if (processesError) {
           console.error("Error fetching processes:", processesError);
           throw processesError;
@@ -215,18 +218,29 @@ export default function ProcessListPage() {
   // Filter processes based on the search term
   const filteredProcesses = processesData ? processesData.filter(process => {
     const searchLower = searchTerm.toLowerCase();
-    const number = process.number ? process.number.toLowerCase() : '';
+    // Normalize search term and process number by removing special characters
+    const normalizedSearch = searchLower.replace(/[.-]/g, '');
+    const normalizedNumber = (process.number || '').toLowerCase().replace(/[.-]/g, '');
 
-    // Safely extract the class name
-    let classeNome = '';
-    if (process.metadata?.classe) {
-      if (typeof process.metadata.classe === 'object' && process.metadata.classe !== null) {
-        classeNome = process.metadata.classe.nome || '';
-      } else if (typeof process.metadata.classe === 'string') {
-        classeNome = process.metadata.classe;
-      }
-    }
-    return number.includes(searchLower) || classeNome.toLowerCase().includes(searchLower);
+    // Extract all searchable fields
+    const searchableFields = [
+      normalizedNumber,
+      process.metadata?.classe?.nome?.toLowerCase() || '',
+      process.metadata?.orgaoJulgador?.nome?.toLowerCase() || '',
+      process.court?.toLowerCase() || '',
+      process.title?.toLowerCase() || '',
+      process.metadata?.sistema?.nome?.toLowerCase() || '',
+      (process.metadata?.assuntos || []).map(assunto => 
+        safeStringValue(assunto).toLowerCase()
+      ).join(' '),
+      process.status?.toLowerCase() || '',
+      process.instance?.toLowerCase() || ''
+    ];
+
+    // Check if any field contains the search term
+    return searchableFields.some(field => 
+      field.includes(searchLower) || field.includes(normalizedSearch)
+    );
   }) : [];
 
   // Resetar filtros

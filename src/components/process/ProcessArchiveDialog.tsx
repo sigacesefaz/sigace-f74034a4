@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,7 @@ export function ProcessArchiveDialog({
       return;
     }
     if (!reason.trim()) {
-      setError("O motivo é obrigatório");
+      setError(action === "archive" ? "O motivo do arquivamento é obrigatório" : "O motivo do desarquivamento é obrigatório");
       return;
     }
 
@@ -68,10 +67,12 @@ export function ProcessArchiveDialog({
               </>
             )}
           </DialogTitle>
-          <DialogDescription>
-            {processNumber}
-            <div className="mt-2">
-              Por motivos de segurança, digite sua senha e o motivo para {action === "archive" ? "arquivar" : "desarquivar"} o processo.
+          <DialogDescription asChild>
+            <div>
+              <p>Processo: {processNumber}</p>
+              <p className="mt-2">
+                Por motivos de segurança, digite sua senha e o motivo {action === "archive" ? "do arquivamento" : "do desarquivamento"}.
+              </p>
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -90,12 +91,14 @@ export function ProcessArchiveDialog({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="reason">Motivo</Label>
+            <Label htmlFor="reason">
+              {action === "archive" ? "Motivo do Arquivamento" : "Motivo do Desarquivamento"}
+            </Label>
             <Textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder={`Digite o motivo para ${action === "archive" ? "arquivar" : "desarquivar"} o processo`}
+              placeholder={action === "archive" ? "Digite o motivo do arquivamento" : "Digite o motivo do desarquivamento"}
               className={error && !reason ? "border-red-500" : ""}
               rows={4}
             />
@@ -109,7 +112,12 @@ export function ProcessArchiveDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onOpenChange(false);
+              setPassword("");
+              setReason("");
+              setError("");
+            }}
             disabled={isLoading}
           >
             Cancelar

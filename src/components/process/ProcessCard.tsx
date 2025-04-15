@@ -11,6 +11,9 @@ import { ProcessTimeline } from "./ProcessTimeline";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessNavigation } from "./ProcessNavigation";
 import { ProcessMovements } from "./ProcessMovements";
+import { getSupabaseClient } from "@/lib/supabase";
+import { toast } from "sonner";
+import { ProcessArchiveDialog } from "@/components/process/ProcessArchiveDialog";
 
 interface ProcessCardProps {
   process: {
@@ -20,6 +23,8 @@ interface ProcessCardProps {
     metadata: any;
     created_at: string;
     updated_at: string;
+    status?: string;
+    is_archived?: boolean;
     hits?: Array<{
       id: string;
       number: string;
@@ -61,14 +66,40 @@ export function ProcessCard({ process }: ProcessCardProps) {
 
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const currentMovimento = movimentos[currentMovimentoIndex] || null;
-  const isArchived = process.status === "Arquivado";
+  const isArchived = process.is_archived === true;
 
   const handleArchive = async (password: string, reason: string) => {
     try {
+      const supabase = getSupabaseClient();
+      
+      // Primeiro, vamos verificar o estado atual do processo
+      const { data: currentProcess, error: fetchError } = await supabase
+        .from('processes')
+        .select('status, is_archived')
+        .eq('id', process.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Se houver inconsistência entre status e is_archived, vamos corrigir
+      if ((currentProcess.status === 'Arquivado' && !currentProcess.is_archived) ||
+          (currentProcess.status !== 'Arquivado' && currentProcess.is_archived)) {
+        await supabase
+          .from('processes')
+          .update({
+            status: currentProcess.is_archived ? 'Baixado' : 'Em andamento'
+          })
+          .eq('id', process.id);
+      }
+
+      // Agora podemos prosseguir com a operação de arquivamento/desarquivamento
       const { data, error } = await supabase
         .from('processes')
         .update({ 
-          status: isArchived ? "Em andamento" : "Arquivado",
+          status: isArchived ? "Em andamento" : "Baixado",
+          is_archived: !isArchived,
+          archive_reason: isArchived ? null : reason,
+          archived_at: isArchived ? null : new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', process.id)

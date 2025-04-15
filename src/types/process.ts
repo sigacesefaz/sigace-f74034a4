@@ -72,7 +72,15 @@ export interface ProcessHit {
   hit_score?: number;
   data?: any;
   situacao: { nome: string; codigo?: number };
-  movimentos?: { data: string; descricao: string }[];
+  movimentos?: {
+    id: string;
+    process_id: number;
+    nome: string;
+    data_hora: string;
+    codigo?: number;
+    tipo?: string;
+    complemento?: string;
+  }[];
   [key: string]: any;
 }
 

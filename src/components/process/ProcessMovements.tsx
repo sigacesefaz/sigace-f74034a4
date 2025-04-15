@@ -54,6 +54,7 @@ interface ProcessMovementsProps {
   filter?: MovementFilter;
   defaultShowFilter?: boolean;
   defaultAscending?: boolean;
+  onMovementsChange?: (movements: ProcessMovement[]) => void;
 }
 
 export function ProcessMovements({
@@ -61,7 +62,8 @@ export function ProcessMovements({
   hitId,
   filter,
   defaultShowFilter = false,
-  defaultAscending = false
+  defaultAscending = false,
+  onMovementsChange
 }: ProcessMovementsProps) {
   const [movements, setMovements] = useState<MovementWithDocuments[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,15 +85,9 @@ export function ProcessMovements({
   const [textFilter, setTextFilter] = useState<string>(filter?.text || "");
   const [appliedFilter, setAppliedFilter] = useState<MovementFilter | undefined>(filter);
 
-  useEffect(() => {
-    setAppliedFilter(filter);
-  }, [filter]);
-
-  useEffect(() => {
-    fetchMovements();
-  }, [processId, hitId, appliedFilter, currentPage]);
-
-  const fetchMovements = async () => {
+  const fetchMovements = useCallback(async () => {
+    if (!processId) return;
+    
     try {
       setLoading(true);
       
@@ -138,6 +134,9 @@ export function ProcessMovements({
       // Se não houver itens, não precisamos fazer a segunda query
       if (totalItems === 0) {
         setMovements([]);
+        if (onMovementsChange) {
+          onMovementsChange([]);
+        }
         return;
       }
 
@@ -202,15 +201,34 @@ export function ProcessMovements({
       })) as MovementWithDocuments[];
       
       setMovements(movementsWithCounts);
+      if (onMovementsChange) {
+        onMovementsChange(movementsWithCounts);
+      }
     } catch (error) {
       console.error("Erro ao buscar movimentos:", error);
       toast.error("Não foi possível carregar os movimentos do processo");
       setMovements([]);
+      if (onMovementsChange) {
+        onMovementsChange([]);
+      }
       setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  };
+  }, [processId, hitId, appliedFilter, currentPage, defaultAscending, itemsPerPage]);
+
+  // Atualiza o filtro apenas quando o prop filter muda
+  useEffect(() => {
+    if (JSON.stringify(filter) !== JSON.stringify(appliedFilter)) {
+      setAppliedFilter(filter);
+      setCurrentPage(1);
+    }
+  }, [filter]);
+
+  // Busca os movimentos quando as dependências relevantes mudam
+  useEffect(() => {
+    fetchMovements();
+  }, [fetchMovements]);
 
   const handleFilter = () => {
     const newFilter = { ...appliedFilter };

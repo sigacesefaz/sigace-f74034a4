@@ -19,9 +19,9 @@ export default defineConfig(({ mode }) => ({
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      host: '0.0.0.0',
+      host: 'localhost',
       protocol: 'ws',
-      clientPort: 443,
+      port: 3000,
       timeout: 120000
     },
     watch: {

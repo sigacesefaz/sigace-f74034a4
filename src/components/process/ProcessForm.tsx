@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,6 @@ export function ProcessForm({ onSubmit, onCancel, initialData }: ProcessFormProp
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Em andamento">Em andamento</SelectItem>
-                <SelectItem value="Arquivado">Arquivado</SelectItem>
                 <SelectItem value="Suspenso">Suspenso</SelectItem>
                 <SelectItem value="Baixado">Baixado</SelectItem>
               </SelectContent>

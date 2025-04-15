@@ -14,18 +14,7 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProcessMovements } from "@/components/process/ProcessMovements";
-import { Process } from "@/types/process";
-
-interface Assunto {
-  principal: boolean;
-  nome: string;
-  codigo?: string;
-}
-
-interface ProcessStatusData {
-  id: string;
-  status: string;
-}
+import { Process, ProcessMovement, ScheduleConfig } from "@/types/process";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -49,6 +38,18 @@ import { ProcessTimeline } from "@/components/process/ProcessTimeline";
 import { cn } from "@/lib/utils";
 import { ProcessScheduleConfig } from '@/components/ProcessScheduleConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ProcessHit, Movement } from "@/types/process";
+
+interface Assunto {
+  nome: string;
+  codigo?: string;
+  principal: boolean;
+}
+
+interface ProcessStatusData {
+  id: string;
+  status: string;
+}
 
 interface ProcessListProps {
   processes: Process[];
@@ -57,7 +58,17 @@ interface ProcessListProps {
   onRefresh?: (id: string) => Promise<void>;
   hideNewProcessButton?: boolean;
   showArchiveInfo?: boolean;
-  onUnarchive?: (id: string, reason: string) => Promise<void>;
+  onUnarchive?: (id: string) => Promise<void>;
+  onShowArchiveReason?: (id: string) => void;
+  customStatusBadge?: (process: Process) => React.ReactNode;
+}
+
+interface ProcessHitIndexMap {
+  [processId: string]: number;
+}
+
+interface SelectedHitIndex {
+  [processId: string]: number;
 }
 
 export function ProcessList(props: ProcessListProps) {
@@ -68,7 +79,9 @@ export function ProcessList(props: ProcessListProps) {
     onRefresh,
     hideNewProcessButton,
     showArchiveInfo,
-    onUnarchive
+    onUnarchive,
+    onShowArchiveReason,
+    customStatusBadge
   } = props;
   const [expandedProcessId, setExpandedProcessId] = useState<string | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -80,8 +93,8 @@ export function ProcessList(props: ProcessListProps) {
   const [showOverviewId, setShowOverviewId] = useState<string | null>(null);
   const [processTabStates, setProcessTabStates] = useState<Record<string, string>>({});
   const [currentMovementIndex, setCurrentMovementIndex] = useState<Record<string, number>>({});
-  const [selectedHitIndex, setSelectedHitIndex] = useState<Record<string, number>>({});
-  const [selectedHit, setSelectedHit] = useState<string | null>(null); // Added state for selected hit
+  const [selectedHitIndex, setSelectedHitIndex] = useState<SelectedHitIndex>({});
+  const [selectedHit, setSelectedHit] = useState<string | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [showTabsId, setShowTabsId] = useState<string | null>(null);
@@ -101,22 +114,19 @@ export function ProcessList(props: ProcessListProps) {
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [scheduleConfigOpen, setScheduleConfigOpen] = useState(false);
   const [processDetails, setProcessDetails] = useState<Record<string, { data_ajuizamento?: string }>>({});
-const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   const [processHits, setProcessHits] = useState<Record<string, { data_hora_ultima_atualizacao?: string }>>({});
   const itemsPerPage = 5;
 
-  // Função de ordenação centralizada
   const sortProcessesByDate = (processes: Process[], order: "recent" | "oldest" = "recent") => {
     return [...processes].sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
-      // Garante que datas mais recentes vêm primeiro
       return order === "recent" ? dateB - dateA : dateA - dateB;
     });
   };
 
-  // Inicialização - sempre começa com os mais recentes
   useEffect(() => {
     if (processes.length > 0) {
       const sortedProcesses = sortProcessesByDate(processes, "recent");
@@ -131,9 +141,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     setFilteredProcesses(prev => sortProcessesByDate(prev, newSortOrder));
   };
 
-  // Agrupa os processos mantendo a ordem de criação
   const groupedProcesses = useMemo(() => {
-    // Primeiro, vamos criar um array de processos pai ordenados por data
     const parentProcesses = filteredProcesses.filter(p => p.is_parent || !p.parent_id);
     const sortedParents = parentProcesses.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
@@ -141,10 +149,8 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
     });
 
-    // Criar um array ordenado de grupos para preservar a ordem
     const orderedGroups: [string, { parent: Process | null; children: Process[] }][] = [];
 
-    // Agora vamos criar os grupos mantendo a ordem dos pais
     sortedParents.forEach(process => {
       const children = filteredProcesses.filter(p => p.parent_id === process.id);
       orderedGroups.push([
@@ -162,14 +168,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   const applyFilters = useCallback(() => {
     let processesToFilter = [...processes];
 
-    // First apply archive filter
-    if (props.showArchiveInfo) {
-      processesToFilter = processesToFilter.filter(p => p.status === "Arquivado");
-    } else {
-      processesToFilter = processesToFilter.filter(p => p.status !== "Arquivado");
-    }
-
-    // Primeiro aplicar o filtro de status
     if (statusFilter !== "all") {
       processesToFilter = processesToFilter.filter(process => {
         const status = process.status || "Em andamento";
@@ -179,7 +177,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       });
     }
 
-    // Depois aplicar a ordenação
     processesToFilter.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
@@ -189,12 +186,10 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     setFilteredProcesses(processesToFilter);
   }, [processes, sortOrder, statusFilter]);
 
-  // Effect para reaplicar filtros quando as dependências mudarem
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
-  // Ajustar a paginação para trabalhar com o array ordenado
   const paginatedGroups = groupedProcesses.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -351,13 +346,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     }));
   };
 
-  const handleHitSelect = (processId: string, hitIndex: number) => {
-    setSelectedHitIndex(prev => ({
-      ...prev,
-      [processId]: hitIndex
-    }));
-  };
-
   const verifyPassword = async (password: string): Promise<boolean> => {
     try {
       const supabase = getSupabaseClient();
@@ -396,13 +384,10 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     try {
       const supabase = getSupabaseClient();
 
-      // Filtra processos válidos
       const validProcesses = processes.filter(process => 
         process?.id && typeof process.id === 'string' && process.id.trim() !== ''
       );
 
-
-      // Busca o status diretamente da tabela processes
       const { data: processesData, error: processesError } = await supabase
         .from('processes')
         .select('id, status')
@@ -413,7 +398,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
         return;
       }
 
-      // Cria um mapa de status
       const statusMap: Record<string, string> = {};
 
       if (processesData) {
@@ -476,7 +460,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
   };
 
   const handleScheduleUpdate = (updatedProcess: Process) => {
-    // Atualiza o processo na lista
     setFilteredProcesses((prevProcesses: Process[]) =>
       prevProcesses.map((p: Process) =>
         p.id === updatedProcess.id ? updatedProcess : p
@@ -484,7 +467,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     );
   };
 
-  // Função para buscar detalhes dos processos
   const fetchProcessDetails = async (processIds: string[]) => {
     try {
       const supabase = getSupabaseClient();
@@ -498,10 +480,12 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
         return;
       }
 
-      const detailsMap = (data || []).reduce((acc, detail) => ({
-        ...acc,
-        [detail.process_id]: detail
-      }), {});
+      const detailsMap = (data || []).reduce((acc: Record<string, any>, detail) => {
+        if (detail.process_id) {
+          acc[detail.process_id.toString()] = detail;
+        }
+        return acc;
+      }, {});
 
       setProcessDetails(detailsMap);
     } catch (error) {
@@ -509,7 +493,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     }
   };
 
-  // Função para buscar detalhes dos hits dos processos
   const fetchProcessHits = async (processIds: string[]) => {
     try {
       const supabase = getSupabaseClient();
@@ -529,8 +512,7 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
         data_hora_ultima_atualizacao?: string;
       }
 
-      // Agrupa por process_id pegando apenas o hit mais recente
-      const hitsMap: Record<string, ProcessHit> = {};
+      const hitsMap: Record<string, {process_id: string, data_hora_ultima_atualizacao?: string}> = {};
 
       (data as ProcessHit[] || []).forEach((hit: ProcessHit) => {
         if (!hit.process_id) return;
@@ -554,7 +536,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
     }
   };
 
-  // Buscar detalhes quando os processos mudarem
   useEffect(() => {
     if (processes.length > 0) {
       const processIds = processes.map(p => p.id);
@@ -562,6 +543,83 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
       fetchProcessHits(processIds);
     }
   }, [processes]);
+
+  const getHitStatus = (process: Process): { status: string, movement?: Movement } => {
+    if (!process.hits?.length) return { status: "Em andamento" };
+    
+    // Pega o primeiro hit (mais recente)
+    const latestHit = process.hits[0];
+    if (!latestHit.movimentos?.length) return { status: "Em andamento" };
+    
+    // Procura por movimentos com código 22 ou 848 no hit mais recente
+    const baixaMovement = latestHit.movimentos.find((movimento: { codigo?: string | number }) => {
+      const code = typeof movimento.codigo === 'string' ? parseInt(movimento.codigo, 10) : movimento.codigo;
+      return code === 22 || code === 848;
+    });
+
+    // Se encontrou um movimento de baixa, retorna o nome do movimento, senão retorna "Em andamento"
+    return { status: baixaMovement?.nome || "Em andamento", movement: baixaMovement };
+  };
+
+  const getStatusColor = (status: string, movement?: Movement) => {
+    const code = movement?.codigo ? (typeof movement.codigo === 'string' ? parseInt(movement.codigo, 10) : movement.codigo) : undefined;
+    if (code === 22 || code === 848) {
+      return { bg: "rgb(210 28 28)", text: "white" };
+    }
+    return { bg: "rgb(244 185 1)", text: "black" };
+  };
+
+  const handleHitSelect = (processId: string, hitIndex: number) => {
+    setSelectedHitIndex(prev => {
+      const newState = { ...prev };
+      newState[processId] = hitIndex;
+      return newState;
+    });
+  };
+
+  const searchProcesses = (searchTerm: string) => {
+    const searchLower = searchTerm.toLowerCase();
+    // Normalize search term by removing all special characters
+    const normalizedSearch = searchLower.replace(/[.,\-/#!$%\^&\*;:{}=\-_`~()]/g, '');
+
+    // Extract all searchable fields
+    const searchableFields = [
+      searchLower,
+      normalizedSearch
+    ];
+
+    // Check if any field contains the search term (either normalized or original)
+    const filteredProcesses = processes.filter(process => {
+      const searchableFields = [
+        process.number?.toLowerCase() || '',
+        process.metadata?.classe?.nome?.toLowerCase() || '',
+        process.metadata?.orgaoJulgador?.nome?.toLowerCase() || '',
+        process.court?.toLowerCase() || '',
+        process.title?.toLowerCase() || '',
+        process.metadata?.sistema?.nome?.toLowerCase() || '',
+        (process.metadata?.assuntos || []).map(assunto => 
+          typeof assunto === 'string' ? assunto.toLowerCase() : 
+          (assunto.nome || assunto.name || '').toLowerCase()
+        ).join(' '),
+        process.status?.toLowerCase() || '',
+        process.instance?.toLowerCase() || '',
+        process.metadata?.dataAjuizamento?.toLowerCase() || '',
+        process.metadata?.grau?.toLowerCase() || '',
+        (process.movimentacoes || []).map(mov => 
+          (mov.nome || mov.descricao || '').toLowerCase()
+        ).join(' '),
+        (process.hits || []).map(hit => 
+          (hit.data_hora_ultima_atualizacao || '').toLowerCase()
+        ).join(' ')
+      ];
+
+      return searchableFields.some(field => 
+        field.includes(searchLower) || field.includes(normalizedSearch)
+      );
+    });
+
+    setFilteredProcesses(filteredProcesses);
+  };
 
   if (isLoading) {
     return <div className="space-y-2">
@@ -686,65 +744,40 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
           </CardContent>
         </Card>
       ) : (
-        paginatedGroups.map(([groupId, group]) => {
-          const parentProcess = group.parent;
-          if (!parentProcess) return null;
-          return <div key={groupId} className="space-y-1">
-                <Card className="overflow-hidden border-gray-200 shadow-sm h-auto">
-                  <CardHeader className="bg-gray-50 p-2 h-auto">
-                    <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 justify-between w-full">
-                      <div className="flex flex-col sm:flex-row items-start gap-3 w-full sm:w-auto flex-grow">
-                        <Checkbox checked={selectedProcesses.includes(parentProcess.id)} onCheckedChange={() => toggleProcessSelection(parentProcess.id)} className="mt-1" />
-                        <div>
-                          <CardTitle className="text-lg font-medium text-gray-900 mb-1">
-                            <span className="font-mono text-base text-gray-600">
-                              {formatProcessNumber(parentProcess.number)}
-                            </span>
-                          </CardTitle>
-                          <div className="flex flex-wrap items-center gap-1 mb-1">
-                            {parentProcess.hits && parentProcess.hits.length > 0 && (
-                              <>
-                                <Badge 
-                                  variant="secondary" 
-                                  className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90"
-                                >
-                                  Movimentação Atual
-                                </Badge>
-                                <Badge 
-                                  variant="default"
-                                  className="h-6 px-2 bg-green-600 text-white hover:bg-green-700"
-                                >
-                                  {parentProcess.hits[0].classe?.nome || "Classe não informada"}
-                                </Badge>
-                              </>
-                            )}
-                            <Badge 
-                              variant={getStatusBadgeVariant(parentProcess.status)}
-                              className={cn(
-                                "h-6 px-2",
-                                parentProcess.status === "Baixado" 
-                                  ? "bg-red-600 text-white hover:bg-red-700" 
-                                  : "bg-[#fec30b] text-black hover:bg-[#fec30b]/90"
-                              )}
-                            >
-                              {parentProcess.status || "Em andamento"}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-col space-y-1">
+        <>
+          {paginatedGroups.map(([groupId, group]) => {
+            const parentProcess = group.parent;
+            if (!parentProcess) return null;
+            
+            return <div key={groupId} className="space-y-1">
+                  <Card className="overflow-hidden border-gray-200 shadow-sm h-auto">
+                    <CardHeader className="bg-gray-50 p-2 h-auto">
+                      <div className="flex flex-col sm:flex-row items-start gap-3 justify-between w-full">
+                        <div className="flex flex-col sm:flex-row items-start gap-3">
+                          <Checkbox 
+                            checked={selectedProcesses.includes(parentProcess.id)} 
+                            onCheckedChange={() => toggleProcessSelection(parentProcess.id)} 
+                            className="mt-1" 
+                          />
+                          <div>
+                            <CardTitle className="text-lg font-medium text-gray-900 mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-base text-gray-600">
+                                  {formatProcessNumber(parentProcess.number)}
+                                </span>
+                              </div>
+                            </CardTitle>
                             <div className="flex flex-wrap items-center gap-1 mb-1">
-                              {/* Badge de eventos */}
                               {parentProcess.movimentacoes && parentProcess.movimentacoes.length > 0 && (
                                 <Badge variant="secondary" className="h-6 px-2 bg-[#fec30b] text-black hover:bg-[#fec30b]/90">
                                   {parentProcess.movimentacoes.length} {parentProcess.movimentacoes.length === 1 ? 'evento' : 'eventos'}
                                 </Badge>
                               )}
-                              {/* Badge de movimentações processuais */}
                               {parentProcess.hits && parentProcess.hits.length > 0 && (
                                 <Badge variant="secondary" className="h-6 px-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
                                   {parentProcess.hits.length} {parentProcess.hits.length === 1 ? 'movimentação processual' : 'movimentações processuais'}
                                 </Badge>
                               )}
-                              {/* Badges das classes de movimentação */}
                               {parentProcess.hits && parentProcess.hits.length > 0 && parentProcess.hits.map((hit: {classe?: {nome: string}}, index: number) => {
                                 const isCurrentHit = index === 0;
                                 return (
@@ -764,7 +797,6 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                               })}
                             </div>
                             <div className="flex flex-wrap items-baseline gap-1 mb-1">
-                              {/* Badge de assuntos */}
                               {parentProcess.metadata?.assuntos && Array.isArray(parentProcess.metadata.assuntos) && parentProcess.metadata.assuntos.length > 0 ? (
                                 <>
                                   <Badge variant="outline" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90">
@@ -784,14 +816,14 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                                       >
                                         {isPrincipal && <Check className="h-3 w-3 mr-1 inline-block" />}
                                         {assunto.nome}
-                                        {assunto.codigo && <span className="ml-1 opacity90">({assunto.codigo})</span>}
+                                        {assunto.codigo && <span className="ml-1 opacity-90">({assunto.codigo})</span>}
                                       </Badge>
                                     );
                                   })}
                                 </>
                               ) : (
-                                <Badge variant="default" className="h-6 px-2 bg-[#2e3092] text-white hover:bg-[#2e3092]/90 whitespace-normal text-xs">
-                                  Assunto não informado
+                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
+                                  Sem assuntos
                                 </Badge>
                               )}
                             </div>
@@ -806,229 +838,272 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
                                 <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
                                   Grau: {parentProcess.metadata?.grau || "G1"}
                                 </Badge>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-4 mt-1 sm:mt-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">Criado em:</span>
-                                  <span className="font-medium text-gray-700">{formatDate(parentProcess.created_at)}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">Última Atualização:</span>
-                                  <span className="font-medium text-gray-700">
-                                    {formatDate(processHits[parentProcess.id]?.data_hora_ultima_atualizacao || parentProcess.updated_at)}
-                                  </span>
-                                </div>
+                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
+                                  Criado em: {formatDate(parentProcess.created_at)}
+                                </Badge>
+                                <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
+                                  Última Atualização: {formatDate(processHits[parentProcess.id]?.data_hora_ultima_atualizacao || parentProcess.updated_at)}
+                                </Badge>
+                                {showArchiveInfo && parentProcess.archived_at && (
+                                  <Badge variant="outline" className="h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300">
+                                    Arquivado em: {formatDate(parentProcess.archived_at)}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1 mt-2 sm:mt-0 self-end sm:self-auto w-full sm:w-auto justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setProcessToArchive(parentProcess);
-                            setShowArchiveDialog(true);
-                          }}
-                          className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
-                        >
-                          {parentProcess.status === "Arquivado" ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => {
-                          setProcessToDelete(parentProcess.id);
-                          setAlertOpen(true);
-                        }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50">
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                        <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
-                    <div className="text-sm text-gray-700 pt-1 overflow-visible">
-                      <button onClick={() => {
-                        setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id);
-                        setProcessTabStates(prev => ({
-                          ...prev,
-                          [parentProcess.id]: "movimentacoes"
-                        }));
-                      }} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
-                        <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
-                        Detalhes do Processo
-                      </button>
-                      <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 h-auto mt-1" : "opacity-0 h-0 overflow-hidden"}`}>
-                        <div className="space-y-2 overflow-visible">
-                          <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
-                            <div className="md:hidden space-y-2 mb-4">
-                              {[
-                                { 
-                                  value: "movimentacoes", 
-                                  icon: <ListAltIcon className="h-4 w-4" />, 
-                                  label: "Movimentações", 
-                                  bgColor: "bg-[rgb(254,195,11)]",
-                                  textColor: "text-black"
-                                },
-                                { 
-                                  value: "partes", 
-                                  icon: <PeopleIcon className="h-4 w-4" />, 
-                                  label: "Partes", 
-                                  bgColor: "bg-[rgb(22,163,74)]",
-                                  textColor: "text-white"
-                                },
-                                { 
-                                  value: "inteiro-teor", 
-                                  icon: <ArticleIcon className="h-4 w-4" />, 
-                                  label: "Inteiro Teor", 
-                                  bgColor: "bg-[rgb(49,120,236)]",
-                                  textColor: "text-white"
-                                },
-                                { 
-                                  value: "timeline", 
-                                  icon: <TimelineIcon className="h-4 w-4" />, 
-                                  label: "Linha do Tempo", 
-                                  bgColor: "bg-[rgb(46,48,146)]",
-                                  textColor: "text-white"
-                                }
-                              ].map((tab) => (
-                                <button
-                                  key={tab.value}
-                                  className={`w-full flex items-center px-4 py-2 rounded-md ${processTabStates[parentProcess.id] === tab.value ? tab.bgColor : 'bg-gray-100'} ${processTabStates[parentProcess.id] === tab.value ? tab.textColor : 'text-gray-700'}`}
-                                  onClick={() => handleTabChange(parentProcess.id, tab.value)}
+                        <div className="flex items-center gap-1 sm:ml-auto">
+                          {showArchiveInfo ? (
+                            <>
+                              {onShowArchiveReason && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => onShowArchiveReason(parentProcess.id)}
+                                  className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                                  title="Ver motivo do arquivamento"
                                 >
-                                  {tab.icon}
-                                  <span className="ml-2">{tab.label}</span>
-                                </button>
-                              ))}
-                            </div>
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  Motivo do Arquivamento
+                                </Button>
+                              )}
+                              {onUnarchive && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => {
+                                    setProcessToArchive(parentProcess);
+                                    setShowArchiveDialog(true);
+                                  }}
+                                  className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+                                  title="Desarquivar processo"
+                                >
+                                  <ArchiveRestore className="h-4 w-4 mr-1" />
+                                  Desarquivar
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Button size="sm" variant="ghost" onClick={() => handleRefresh?.(parentProcess.id)} disabled={loadingProcessId === parentProcess.id || !onRefresh} className="h-7 px-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Atualizar processo">
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handlePrint(parentProcess)} className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50" title="Imprimir processo">
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleView(parentProcess)} className="h-7 px-2 text-green-500 hover:text-green-700 hover:bg-green-50" title="Visualizar processo">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleShare(parentProcess)} className="h-7 px-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50" title="Compartilhar processo">
+                                <Share2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setProcessToArchive(parentProcess);
+                                  setShowArchiveDialog(true);
+                                }}
+                                className="h-7 px-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+                                title="Arquivar processo"
+                              >
+                                <Archive className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                setProcessToDelete(parentProcess.id);
+                                setAlertOpen(true);
+                              }} disabled={loadingProcessId === parentProcess.id || !onDelete} className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50" title="Excluir processo">
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
 
-                            <div className="hidden md:block w-full">
-                              <MuiTabs 
-                                value={processTabStates[parentProcess.id] || "movimentacoes"}
-                                onChange={(event, newValue) => handleTabChange(parentProcess.id, newValue)}
-                                variant="fullWidth"
-                                scrollButtons={false}
-                                className="mb-4 hidden md:block"
-                                sx={{
-                                  '& .MuiTab-root': {
-                                    fontSize: '0.75rem',
-                                    minHeight: '36px',
-                                    padding: '6px 12px',
-                                    flexGrow: 1
+                    <CardContent className="py-1 px-2 bg-gray-50 border-t border-b divide-y divide-gray-100 overflow-visible h-auto min-h-0">
+                      <div className="text-sm text-gray-700 pt-1 overflow-visible">
+                        <button onClick={() => {
+                          setShowOverviewId(showOverviewId === parentProcess.id ? null : parentProcess.id);
+                          setProcessTabStates(prev => ({
+                            ...prev,
+                            [parentProcess.id]: "movimentacoes"
+                          }));
+                        }} className="flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors">
+                          <ChevronRight className={`h-4 w-4 transition-transform ${showOverviewId === parentProcess.id ? "rotate-90" : ""}`} />
+                          Detalhes do Processo
+                        </button>
+                        <div id={`overview-${parentProcess.id}`} className={`transition-all duration-200 bg-gray-50 rounded-lg p-2 ${showOverviewId === parentProcess.id ? "opacity-100 h-auto mt-1" : "opacity-0 h-0 overflow-hidden"}`}>
+                          <div className="space-y-2 overflow-visible">
+                            <div className="bg-white rounded-lg p-3 space-y-2 overflow-visible">
+                              <div className="md:hidden space-y-2 mb-4">
+                                {[
+                                  { 
+                                    value: "movimentacoes", 
+                                    icon: <ListAltIcon className="h-4 w-4" />, 
+                                    label: "Movimentações", 
+                                    bgColor: "bg-[rgb(254,195,11)]",
+                                    textColor: "text-black"
+                                  },
+                                  { 
+                                    value: "partes", 
+                                    icon: <PeopleIcon className="h-4 w-4" />, 
+                                    label: "Partes", 
+                                    bgColor: "bg-[rgb(22,163,74)]",
+                                    textColor: "text-white"
+                                  },
+                                  { 
+                                    value: "inteiro-teor", 
+                                    icon: <ArticleIcon className="h-4 w-4" />, 
+                                    label: "Inteiro Teor", 
+                                    bgColor: "bg-[rgb(49,120,236)]",
+                                    textColor: "text-white"
+                                  },
+                                  { 
+                                    value: "timeline", 
+                                    icon: <TimelineIcon className="h-4 w-4" />, 
+                                    label: "Linha do Tempo", 
+                                    bgColor: "bg-[rgb(46,48,146)]",
+                                    textColor: "text-white"
                                   }
-                                }}
-                            >
-                              <MuiTab 
-                                icon={<ListAltIcon />}
-                                label="Movimentações"
-                                value="movimentacoes"
-                                className="min-w-0"
-                                sx={{
-                                  'backgroundColor': 'rgb(254 195 11)',
-                                  'color': 'black',
-                                  '&.Mui-selected': {
-                                    'backgroundColor': 'rgb(244 185 1)',
-                                    'color': 'black'
-                                  },
-                                  'borderRadius': '8px 8px 0 0'
-                                }}
-                              />
-                              <MuiTab
-                                icon={<PeopleIcon />}
-                                label="Partes"
-                                value="partes"
-                                className="min-w-0"
-                                sx={{
-                                  'backgroundColor': 'rgb(22 163 74)',
-                                  'color': 'white',
-                                  '&.Mui-selected': {
-                                    'backgroundColor': 'rgb(12 153 64)',
-                                    'color': 'white'
-                                  },
-                                  'borderRadius': '8px 8px 0 0'
-                                }}
-                              />
-                              <MuiTab
-                                icon={<ArticleIcon />}
-                                label="Inteiro Teor" 
-                                value="inteiro-teor"
-                                className="min-w-0"
-                                sx={{
-                                  'backgroundColor': 'rgb(49 120 236)',
-                                  'color': 'white',
-                                  '&.Mui-selected': {
-                                    'backgroundColor': 'rgb(39 110 226)',
-                                    'color': 'white'
-                                  },
-                                  'borderRadius': '8px 8px 0 0'
-                                }}
-                              />
-                              <MuiTab
-                                icon={<TimelineIcon />}
-                                label="Linha do Tempo"
-                                value="timeline"
-                                className="min-w-0"
-                                sx={{
-                                  'backgroundColor': 'rgb(46 48 146)',
-                                  'color': 'white',
-                                  '&.Mui-selected': {
-                                    'backgroundColor': 'rgb(36 38 136)',
-                                    'color': 'white'
-                                  },
-                                  'borderRadius': '8px 8px 0 0'
-                                }}
-                              />
-                              </MuiTabs>
-                            </div>
+                                ].map((tab) => (
+                                  <button
+                                    key={tab.value}
+                                    className={`w-full flex items-center px-4 py-2 rounded-md ${processTabStates[parentProcess.id] === tab.value ? tab.bgColor : 'bg-gray-100'} ${processTabStates[parentProcess.id] === tab.value ? tab.textColor : 'text-gray-700'}`}
+                                    onClick={() => handleTabChange(parentProcess.id, tab.value)}
+                                  >
+                                    {tab.icon}
+                                    <span className="ml-2">{tab.label}</span>
+                                  </button>
+                                ))}
+                              </div>
 
-                            {processTabStates[parentProcess.id] === "movimentacoes" && (
-                              <ProcessHitsNavigation 
-                                processId={parentProcess.id} 
-                                hits={parentProcess.hits || []} 
-                                currentHitIndex={selectedHitIndex[parentProcess.id] || 0}
-                                onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
-                              />
-                            )}
-                            {processTabStates[parentProcess.id] === "partes" && (
-                              <ProcessParties processId={parentProcess.id} />
-                            )}
-                            {processTabStates[parentProcess.id] === "inteiro-teor" && (
-                              <ProcessDocuments processId={parentProcess.id} />
-                            )}
-                            {processTabStates[parentProcess.id] === "timeline" && (
-                              <ProcessTimeline 
-                                hits={parentProcess.hits || []} 
-                                processId={parentProcess.id}
-                                onHitSelect={(hitId) => {
-                                  setSelectedHit(hitId);
-                                  handleTabChange(parentProcess.id, "movimentacoes");
-                                }}
-                              />
-                            )}
+                              <div className="hidden md:block w-full">
+                                <MuiTabs 
+                                  value={processTabStates[parentProcess.id] || "movimentacoes"}
+                                  onChange={(event, newValue) => handleTabChange(parentProcess.id, newValue)}
+                                  variant="fullWidth"
+                                  scrollButtons={false}
+                                  className="mb-4 hidden md:block"
+                                  sx={{
+                                    '& .MuiTab-root': {
+                                      fontSize: '0.75rem',
+                                      minHeight: '36px',
+                                      padding: '6px 12px',
+                                      flexGrow: 1
+                                    }
+                                  }}
+                              >
+                                <MuiTab 
+                                  icon={<ListAltIcon />}
+                                  label="Movimentações"
+                                  value="movimentacoes"
+                                  className="min-w-0"
+                                  sx={{
+                                    'backgroundColor': 'rgb(254 195 11)',
+                                    'color': 'black',
+                                    '&.Mui-selected': {
+                                      'backgroundColor': 'rgb(244 185 1)',
+                                      'color': 'black'
+                                    },
+                                    'borderRadius': '8px 8px 0 0'
+                                  }}
+                                />
+                                <MuiTab
+                                  icon={<PeopleIcon />}
+                                  label="Partes"
+                                  value="partes"
+                                  className="min-w-0"
+                                  sx={{
+                                    'backgroundColor': 'rgb(22 163 74)',
+                                    'color': 'white',
+                                    '&.Mui-selected': {
+                                      'backgroundColor': 'rgb(12 153 64)',
+                                      'color': 'white'
+                                    },
+                                    'borderRadius': '8px 8px 0 0'
+                                  }}
+                                />
+                                <MuiTab
+                                  icon={<ArticleIcon />}
+                                  label="Inteiro Teor" 
+                                  value="inteiro-teor"
+                                  className="min-w-0"
+                                  sx={{
+                                    'backgroundColor': 'rgb(49 120 236)',
+                                    'color': 'white',
+                                    '&.Mui-selected': {
+                                      'backgroundColor': 'rgb(39 110 226)',
+                                      'color': 'white'
+                                    },
+                                    'borderRadius': '8px 8px 0 0'
+                                  }}
+                                />
+                                <MuiTab
+                                  icon={<TimelineIcon />}
+                                  label="Linha do Tempo"
+                                  value="timeline"
+                                  className="min-w-0"
+                                  sx={{
+                                    'backgroundColor': 'rgb(46 48 146)',
+                                    'color': 'white',
+                                    '&.Mui-selected': {
+                                      'backgroundColor': 'rgb(36 38 136)',
+                                      'color': 'white'
+                                    },
+                                    'borderRadius': '8px 8px 0 0'
+                                  }}
+                                />
+                                </MuiTabs>
+                              </div>
+
+                              {processTabStates[parentProcess.id] === "movimentacoes" && (
+                                <ProcessHitsNavigation 
+                                  key={`${parentProcess.id}-${selectedHitIndex[parentProcess.id]}`}
+                                  processId={parentProcess.id} 
+                                  hits={parentProcess.hits || []} 
+                                  currentHitIndex={selectedHitIndex[parentProcess.id] ?? 0}
+                                  onHitSelect={(index) => handleHitSelect(parentProcess.id, index)}
+                                />
+                              )}
+                              {processTabStates[parentProcess.id] === "partes" && (
+                                <ProcessParties processId={parentProcess.id} />
+                              )}
+                              {processTabStates[parentProcess.id] === "inteiro-teor" && (
+                                <ProcessDocuments processId={parentProcess.id} />
+                              )}
+                              {processTabStates[parentProcess.id] === "timeline" && (
+                                <ProcessTimeline 
+                                  hits={parentProcess.hits || []} 
+                                  processId={parentProcess.id}
+                                  onHitSelect={(hitId) => {
+                                    setSelectedHit(hitId);
+                                    handleTabChange(parentProcess.id, "movimentacoes");
+                                  }}
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>;
-        })
+                    </CardContent>
+                  </Card>
+                </div>;
+          })}
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 gap-2">
+            <div className="flex flex-wrap items-center gap-4">
+              <Badge variant="outline" className="px-2 py-1">
+                Página {currentPage} de {totalPages}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
+            </div>
+          </div>
+        </>
       )}
-
-
 
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
@@ -1113,26 +1188,48 @@ const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
           onConfirm={async (password, reason) => {
             try {
               const supabase = getSupabaseClient();
+              const now = new Date().toISOString();
+              
+              // Registra o histórico de arquivamento/desarquivamento
+              await supabase.from('process_archive_info').insert({
+                process_id: processToArchive.id,
+                action: showArchiveInfo ? 'unarchive' : 'archive',
+                reason: reason,
+                date: now
+              });
+              
+              // Atualiza o processo
               const { error } = await supabase
                 .from('processes')
                 .update({ 
-                  status: processToArchive.status === "Arquivado" ? "Em andamento" : "Arquivado",
-                  updated_at: new Date().toISOString()
+                  is_archived: !showArchiveInfo,
+                  status: showArchiveInfo ? 'Em andamento' : 'Baixado',
+                  archive_reason: showArchiveInfo ? null : reason,
+                  archived_at: showArchiveInfo ? null : now,
+                  updated_at: now
                 })
                 .eq('id', processToArchive.id);
 
               if (error) throw error;
 
-              toast.success(`Processo ${processToArchive.status === "Arquivado" ? "desarquivado" : "arquivado"} com sucesso`);
-              if (onRefresh) {
+              toast.success(showArchiveInfo ? "Processo desarquivado com sucesso" : "Processo arquivado com sucesso");
+              
+              if (showArchiveInfo && onRefresh) {
                 await onRefresh(processToArchive.id);
+              } else {
+                // Remove o processo arquivado da lista
+                const updatedProcesses = filteredProcesses.filter(p => p.id !== processToArchive.id);
+                setFilteredProcesses(updatedProcesses);
               }
             } catch (error) {
-              console.error("Erro ao arquivar processo:", error);
+              console.error(showArchiveInfo ? "Erro ao desarquivar processo:" : "Erro ao arquivar processo:", error);
               toast.error("Erro ao processar operação");
+            } finally {
+              setShowArchiveDialog(false);
+              setProcessToArchive(null);
             }
           }}
-          action={processToArchive.status === "Arquivado" ? "unarchive" : "archive"}
+          action={showArchiveInfo ? "unarchive" : "archive"}
           processNumber={processToArchive.number}
         />
       )}

@@ -914,7 +914,7 @@ export type Database = {
         | "Agravo de Petição"
         | "Outros"
       process_priority: "Normal" | "Urgente" | "Alta" | "Baixa"
-      process_status: "Em andamento" | "Arquivado" | "Suspenso" | "Baixado"
+      process_status: "Em andamento" | "Suspenso" | "Baixado"
       process_type: "liminar" | "recurso" | "outros"
       user_type: "internal" | "external"
     }

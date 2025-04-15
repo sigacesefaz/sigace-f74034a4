@@ -13,7 +13,6 @@ import { ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProcessMovement {
   id: string;
@@ -35,6 +34,7 @@ interface ProcessHit {
 interface ProcessTimelineProps {
   hits: ProcessHit[];
   processId?: string;
+  onHitSelect?: (hitId: string) => void;
 }
 
 export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
@@ -70,12 +70,12 @@ export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
   return (
     <ScrollArea className="w-full max-h-[600px]">
       <div className="p-4">
-        <Timeline position="alternate" className="w-full">
+        <Timeline position="alternate" className="w-full flex overflow-x-auto pb-4">
           {sortedHits.map((hit, index) => (
-            <TimelineItem key={hit.id}>
-              <TimelineSeparator>
+            <TimelineItem key={hit.id} className="min-w-[300px]">
+              <TimelineSeparator className="flex flex-col items-center">
                 <TimelineDot color="primary" />
-                <TimelineConnector />
+                <TimelineConnector className="w-full h-[2px] mx-2" />
               </TimelineSeparator>
               <TimelineContent>
                 <Card className="p-4 hover:shadow-md transition-shadow">
@@ -99,13 +99,13 @@ export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
 
                   {expandedHits[hit.id] && hit.movements && hit.movements.length > 0 && (
                     <div className="mt-4">
-                      <Timeline position="right">
-                        {hit.movements.map((movement) => (
-                          <TimelineItem key={movement.id}>
-                            <TimelineSeparator>
-                              <TimelineDot variant="outlined" color="secondary" />
-                              <TimelineConnector />
-                            </TimelineSeparator>
+                    <Timeline position="right" className="flex overflow-x-auto">
+                      {hit.movements.map((movement) => (
+                        <TimelineItem key={movement.id} className="min-w-[250px]">
+                          <TimelineSeparator className="flex flex-col items-center">
+                            <TimelineDot variant="outlined" color="secondary" />
+                            <TimelineConnector className="w-full h-[2px] mx-2" />
+                          </TimelineSeparator>
                             <TimelineContent>
                               <div className="bg-gray-50 rounded-lg p-3 mb-4">
                                 <div className="flex justify-between items-start">
@@ -131,8 +131,9 @@ export function ProcessTimeline({ hits, processId }: ProcessTimelineProps) {
                                   </div>
                                 </div>
                               </div>
-                            </TimelineItem>
-                          ))}
+                            </TimelineContent>
+                          </TimelineItem>
+                        ))}
                       </Timeline>
                     </div>
                   )}

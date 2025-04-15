@@ -23,6 +23,8 @@ import { ProcessMovements } from "@/components/process/ProcessMovements";
 import { ProcessDecisions } from "@/components/process/ProcessDecisions";
 import { ProcessParties } from "@/components/process/ProcessParties";
 import { ProcessDocuments } from "@/components/process/ProcessDocuments";
+import { ProcessMovement } from "@/types/movements";
+import { cn } from "@/lib/utils";
 
 interface ProcessHitsNavigationProps {
   processId: string;
@@ -34,9 +36,29 @@ interface ProcessHitsNavigationProps {
 export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, onHitSelect }: ProcessHitsNavigationProps) {
   const [internalHitIndex, setInternalHitIndex] = useState(currentHitIndex);
   const [activeTab, setActiveTab] = useState("eventos");
+  const [movements, setMovements] = useState<any[]>([]);
 
   const currentHit = hits && hits.length > 0 ? hits[internalHitIndex] : null;
   const totalHits = hits?.length || 0;
+
+  const getHitStatus = (hit: ProcessHit | null): string => {
+    if (!hit) return "Em andamento";
+    
+    // Procura por movimentos com código 22 ou 848
+    const baixaMovement = movements.find((movimento) => {
+      return movimento.codigo === 22 || movimento.codigo === 848;
+    });
+
+    // Se encontrou um movimento de baixa, retorna o nome do movimento, senão retorna "Em andamento"
+    return baixaMovement?.nome || "Em andamento";
+  };
+
+  const getStatusColor = (status: string, movement?: ProcessMovement) => {
+    if (movement?.codigo === 22 || movement?.codigo === 848) {
+      return { bg: "rgb(210 28 28)", text: "white" };
+    }
+    return { bg: "rgb(244 185 1)", text: "black" };
+  };
 
   useEffect(() => {
     setInternalHitIndex(currentHitIndex);
@@ -164,9 +186,7 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
           <div className="bg-white rounded-lg p-2 md:p-3 space-y-2 md:space-y-3 mb-3 mx-0 md:mx-0 overflow-visible">
             <div className="flex items-center justify-between px-1 cursor-pointer">
               <h4 className="font-medium text-xs md:text-sm text-gray-900">Detalhes do Processo</h4>
-              <Badge variant="outline" className="text-[10px] md:text-xs min-w-[36px] md:min-w-[50px] text-center">
-                {currentHit.hit_index || `#${internalHitIndex + 1}`}
-              </Badge>
+              <span className="text-sm">{currentHit.hit_index || `#${internalHitIndex + 1}`}</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mt-1 md:mt-2 px-1">
@@ -200,7 +220,16 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                 
                 <div>
                   <h5 className="text-xs font-medium text-gray-500">Status</h5>
-                  <p className="text-sm">{currentHit.status || "Não informado"}</p>
+                  <Badge 
+                    variant="outline" 
+                    style={{
+                      backgroundColor: getStatusColor(getHitStatus(currentHit), movements.find(m => m.codigo === 22 || m.codigo === 848)).bg,
+                      color: getStatusColor(getHitStatus(currentHit), movements.find(m => m.codigo === 22 || m.codigo === 848)).text,
+                      border: "none"
+                    }}
+                  >
+                    {getHitStatus(currentHit)}
+                  </Badge>
                 </div>
                 
                 <div>
@@ -361,7 +390,8 @@ export function ProcessHitsNavigation({ processId, hits, currentHitIndex = 0, on
                   {activeTab === "eventos" && (
                     <ProcessMovements 
                       processId={processId} 
-                      hitId={currentHit.id} 
+                      hitId={currentHit.id}
+                      onMovementsChange={setMovements}
                       filter={{
                         ascending: false
                       }}
