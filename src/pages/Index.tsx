@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ import {
 
 // Cores institucionais com tonalidades
 const colors = {
-  primary: "#2e3092",
+  primary: "#6B46C1",
   secondary: "#ffd700",
 };
 
@@ -37,21 +36,20 @@ function LandingHeader() {
           <div className="flex items-center space-x-2">
             <Link to="/">
               <img 
-                src="/images/logo_sefaz.png" 
-                alt="Governo do Tocantins" 
-                style={{filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))"}} 
-                className="h-10 md:h-12 object-fill" 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=64&h=64&fit=crop&auto=format" 
+                alt="Logo" 
+                className="h-10 md:h-12 object-contain rounded" 
               />
             </Link>
             {!isMobile ? (
               <div className="flex flex-col">
-              <span className="font-bold text-[#2e3092] text-base">SIGACE - Sistema de Gestão de Ações Contra o Estado</span>
-              <span className="text-gray-500 text-xs font-bold">Superintendência de Assuntos Jurídicos</span>
+              <span className="font-bold text-primary text-base">SIGPRO - Sistema de Gestão de Processos</span>
+              <span className="text-gray-500 text-xs font-bold">Gestão Processual Inteligente</span>
             </div>
             ) : (
               <div className="flex flex-col">
-                  <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
-                  <span className="text-xs text-gray-500 font-bold">SEFAZ-TO</span>
+                  <span className="font-bold text-primary text-sm">SIGPRO</span>
+                  <span className="text-xs text-gray-500 font-bold">Gestão</span>
             </div>
  
             )}
@@ -74,24 +72,12 @@ export default function Index() {
       <main className="flex-grow mt-16">
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-cover bg-center" style={{
-        backgroundImage: `url('/images/imagem_fundo_1.jpeg'), linear-gradient(135deg, rgba(46,48,146,0.95) 0%, rgba(46,48,146,0.85) 100%)`
+        backgroundImage: `url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop'), linear-gradient(135deg, rgba(107,70,193,0.95) 0%, rgba(107,70,193,0.85) 100%)`
       }}>
         <div className="absolute inset-0 bg-black/50"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 md:space-y-8">
-              <motion.div initial={{
-                opacity: 0,
-                y: 20
-              }} animate={{
-                opacity: 1,
-                y: 0
-              }} transition={{
-                duration: 0.5
-              }} className="inline-flex items-center px-4 py-2 rounded-full text-secondary-800 text-sm font-medium border border-secondary/30 shadow-sm bg-amber-400">
-                <span className="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
-                Um Sistema Oficial SEFAZ-TO
-              </motion.div>
               
               <motion.h1 initial={{
                 opacity: 0,
@@ -116,7 +102,7 @@ export default function Index() {
                 duration: 0.5,
                 delay: 0.4
               }} className="text-lg md:text-xl text-white/90">
-                Sistema de Gestão de Ações Contra o Estado
+                Sistema de Gestão de Processos
               </motion.p>
               
               <motion.div initial={{
@@ -297,9 +283,9 @@ export default function Index() {
         <section className="py-16 md:py-20 bg-gradient-to-b from-[#f8f9fa] to-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">Sobre a SEFAZ-TO</h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Sobre Nossa Organização</h2>
               <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
-                Conheça mais sobre a Secretaria da Fazenda do Tocantins e suas principais atribuições
+                Conheça mais sobre nossa organização e suas principais atribuições
               </p>
             </div>
 
@@ -325,7 +311,7 @@ export default function Index() {
                       <h3 className="text-xl font-bold">Missão</h3>
                     </div>
                     <p className="text-gray-600">
-                      Promover a gestão fiscal e financeira do Estado, garantindo a arrecadação e aplicação dos recursos públicos com transparência e eficiência.
+                      Promover a gestão processual, garantindo a tramitação e aplicação dos recursos com transparência e eficiência.
                     </p>
                   </CardContent>
                 </Card>
@@ -352,7 +338,7 @@ export default function Index() {
                       <h3 className="text-xl font-bold">Visão</h3>
                     </div>
                     <p className="text-gray-600">
-                      Ser referência nacional em gestão fiscal e financeira, contribuindo para o desenvolvimento sustentável do Tocantins.
+                      Ser referência em gestão processual, contribuindo para o desenvolvimento sustentável do sistema judiciário.
                     </p>
                   </CardContent>
                 </Card>
@@ -379,7 +365,7 @@ export default function Index() {
                       <h3 className="text-xl font-bold">Valores</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="text-blue-600 border-blue-600">
+                      <Badge variant="outline" className="text-blue-600 border-blue-600">
     Transparência
 </Badge>
 <Badge variant="outline" className="text-green-600 border-green-600">

@@ -15,7 +15,7 @@ export function LoginDropdown() {
   return (
     <Button 
       onClick={handleLogin}
-      className="bg-[#ffd700] hover:bg-[#ffd700]/90 text-black font-bold"
+      className="bg-primary hover:bg-primary-dark text-white font-bold"
     >
       Entrar
     </Button>
