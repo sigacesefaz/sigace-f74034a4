@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -261,7 +262,7 @@ export function NavMenu() {
       {!isMobile && (
         <Button 
           variant="secondary"
-          className="bg-[#fec30b] hover:bg-[#fec30b]/90 text-gray-900"
+          className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
           onClick={handleLogout}
         >
           Sair
