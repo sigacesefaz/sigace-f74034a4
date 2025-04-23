@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -23,14 +24,14 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: "#2e3092",
-          light: "#3f42a3",
-          dark: "#252779",
+          DEFAULT: "#6B46C1",
+          light: "#805AD5",
+          dark: "#553C9A",
         },
         secondary: {
-          DEFAULT: "#fec30b",
-          light: "#fed23d",
-          dark: "#d1a209",
+          DEFAULT: "#718096",
+          light: "#A0AEC0",
+          dark: "#4A5568",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

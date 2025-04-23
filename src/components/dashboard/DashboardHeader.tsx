@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { NavMenu } from "@/components/navigation/NavMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,23 +13,20 @@ export function DashboardHeader() {
           <div className="absolute left-0 flex items-center space-x-4">
             <Link to="/dashboard">
               <img 
-                src="/images/logo_sefaz.png" 
-                alt="Governo do Tocantins" 
-                className="h-12 object-contain" 
-                style={{
-                  filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))"
-                }} 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=64&h=64&fit=crop&auto=format"
+                alt="SIGPRO Logo" 
+                className="h-12 object-contain rounded" 
               />
             </Link>
             {!isMobile ? (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-base">SIGACE - Sefaz - Tocantins</span>
-                <span className="text-gray-500 text-xs font-bold">Superintendência de Assuntos Jurídicos</span>
+                <span className="font-bold text-primary text-base">SIGPRO - Sistema de Gestão de Processos</span>
+                <span className="text-gray-500 text-xs font-bold">Gestão Processual Inteligente</span>
               </div>
             ) : (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
-                <span className="text-xs text-gray-500 font-bold">SAJ</span>
+                <span className="font-bold text-primary text-sm">SIGPRO</span>
+                <span className="text-xs text-gray-500 font-bold">Gestão</span>
               </div>
             )}
           </div>

@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LoginDropdown } from "@/components/LoginDropdown";
@@ -12,21 +13,20 @@ export function LandingHeader() {
           <div className="flex items-center space-x-2">
             <Link to="/">
               <img 
-                src="/images/logo_sefaz.png" 
-                alt="Governo do Tocantins" 
-                style={{filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0))"}} 
-                className="h-10 md:h-12 object-fill" 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=64&h=64&fit=crop&auto=format"
+                alt="SIGPRO Logo" 
+                className="h-10 md:h-12 object-contain rounded" 
               />
             </Link>
             {!isMobile ? (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-base">SIGACE - Sistema de Gestão de Ações Contra o Estado</span>
-                <span className="text-gray-500 text-xs font-bold">Superintendência de Assuntos Jurídicos</span>
+                <span className="font-bold text-primary text-base">SIGPRO - Sistema de Gestão de Processos</span>
+                <span className="text-gray-500 text-xs font-bold">Gestão Processual Inteligente</span>
               </div>
             ) : (
               <div className="flex flex-col">
-                <span className="font-bold text-[#2e3092] text-sm">SIGACE</span>
-                <span className="text-xs text-gray-500 font-bold">SEFAZ-TO</span>
+                <span className="font-bold text-primary text-sm">SIGPRO</span>
+                <span className="text-xs text-gray-500 font-bold">Gestão</span>
               </div>
             )}
           </div>
@@ -35,4 +35,4 @@ export function LandingHeader() {
       </div>
     </header>
   );
-} 
+}
