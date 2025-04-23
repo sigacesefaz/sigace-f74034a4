@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -95,10 +94,14 @@ export default function Login() {
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 to-white">
       <Card className="w-full max-w-md p-8 bg-slate-50">
         <div className="flex justify-center mb-6">
-          <img src="/images/sefaz_t1i.png" alt="SEFAZ Tecnologia" className="h-12" />
+          <img 
+            src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=64&h=64&fit=crop&auto=format" 
+            alt="SIGPRO Logo" 
+            className="h-12" 
+          />
         </div>
         
-        <p className="text-center mb-6 text-slate-900 font-bold text-sm">Sigace - Sistema de Gestão da Ações Contra o Estado</p>
+        <p className="text-center mb-6 text-slate-900 font-bold text-sm">SIGPRO - Sistema de Gestão de Processos</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
